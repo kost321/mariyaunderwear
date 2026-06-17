@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: olga-shop-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: olga
+      POSTGRES_PASSWORD: olga
+      POSTGRES_DB: olga_shop
+    ports:
+      # Хост:Контейнер. На хосте используем 5432.
+      - '5432:5432'
+    volumes:
+      # Данные БД сохраняются между перезапусками контейнера.
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U olga -d olga_shop']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:

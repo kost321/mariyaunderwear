@@ -7,13 +7,9 @@ import type { Media } from '@/payload-types'
  */
 export function getMediaUrl(
   media: number | string | Media | null | undefined,
-  size?: 'thumbnail' | 'card' | 'full',
 ): string | undefined {
   if (!media || typeof media !== 'object') return undefined
 
-  if (size && media.sizes?.[size]?.url) {
-    return media.sizes[size]!.url ?? undefined
-  }
   return media.url ?? undefined
 }
 

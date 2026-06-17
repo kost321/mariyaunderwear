@@ -3,8 +3,11 @@ import { fileURLToPath } from 'url'
 
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import { buildConfig } from 'payload'
+import { uk } from '@payloadcms/translations/languages/uk'
 import sharp from 'sharp'
+import { cloudinaryAdapter } from './lib/cloudinaryAdapter'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
@@ -22,6 +25,11 @@ export default buildConfig({
     meta: {
       titleSuffix: '— Olga Shop',
     },
+  },
+
+  i18n: {
+    supportedLanguages: { uk },
+    fallbackLanguage: 'uk',
   },
 
   // Регистрируем все коллекции.
@@ -47,4 +55,17 @@ export default buildConfig({
 
   // sharp нужен для генерации превью изображений (imageSizes в Media).
   sharp,
+
+  plugins: [
+    cloudStoragePlugin({
+      collections: {
+        media: {
+          adapter: cloudinaryAdapter(),
+          disableLocalStorage: true,
+          generateFileURL: ({ filename }) =>
+            `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${filename}`,
+        },
+      },
+    }),
+  ],
 })

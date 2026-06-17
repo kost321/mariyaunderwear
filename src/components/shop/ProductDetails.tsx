@@ -30,7 +30,7 @@ export function ProductDetails({ product }: { product: Product }) {
   const [added, setAdded] = useState(false)
 
   const mainImage = images[activeImage]?.image
-  const mainUrl = getMediaUrl(mainImage, 'full')
+  const mainUrl = getMediaUrl(mainImage)
   const mainAlt = getMediaAlt(mainImage, product.title)
 
   function handleAddToCart() {
@@ -39,7 +39,7 @@ export function ProductDetails({ product }: { product: Product }) {
       title: product.title,
       price: product.price,
       slug: product.slug ?? '',
-      image: getMediaUrl(images[0]?.image, 'thumbnail'),
+      image: getMediaUrl(images[0]?.image),
       size,
       color,
       quantity: 1,
@@ -73,7 +73,7 @@ export function ProductDetails({ product }: { product: Product }) {
         {images.length > 1 && (
           <div className="grid grid-cols-5 gap-2">
             {images.map((item, i) => {
-              const thumb = getMediaUrl(item.image, 'thumbnail')
+              const thumb = getMediaUrl(item.image)
               if (!thumb) return null
               return (
                 <button

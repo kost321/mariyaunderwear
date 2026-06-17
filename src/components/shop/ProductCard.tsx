@@ -11,7 +11,7 @@ import { formatPrice } from '@/lib/utils'
 export function ProductCard({ product }: { product: Product }) {
   // Берём первое изображение из галереи.
   const firstImage = product.images?.[0]?.image
-  const url = getMediaUrl(firstImage, 'card')
+  const url = getMediaUrl(firstImage)
   const alt = getMediaAlt(firstImage, product.title)
 
   return (

@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const product = await getProductBySlug(slug)
   if (!product) return { title: 'Товар не найден' }
 
-  const ogImage = getMediaUrl(product.images?.[0]?.image, 'full')
+  const ogImage = getMediaUrl(product.images?.[0]?.image)
 
   return {
     title: product.title,

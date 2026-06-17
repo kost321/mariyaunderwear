@@ -1,0 +1,17 @@
+/* Убираем синий цвет ссылок в навигации и хлебных крошках */
+* a,
+a {
+  color: inherit !important;
+}
+
+/* Кнопки — графитовый акцент */
+.btn--style-primary {
+  background-color: #1a1a1a !important;
+  border-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+.btn--style-primary:hover {
+  background-color: #3a3a3a !important;
+  border-color: #3a3a3a !important;
+}

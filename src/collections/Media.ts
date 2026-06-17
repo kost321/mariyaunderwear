@@ -29,25 +29,12 @@ export const Media: CollectionConfig = {
   upload: {
     staticDir: 'public/media',
     mimeTypes: ['image/*'],
-    imageSizes: [
-      {
-        name: 'thumbnail',
-        width: 400,
-        height: 400,
-        position: 'centre',
-      },
-      {
-        name: 'card',
-        width: 768,
-        height: 1024,
-        position: 'centre',
-      },
-      {
-        name: 'full',
-        width: 1600,
-        height: undefined,
-      },
-    ],
+    adminThumbnail: ({ doc }) => {
+      const filename = doc.filename as string
+      if (!filename) return ''
+      const cloud = process.env.CLOUDINARY_CLOUD_NAME || 'dzbov07se'
+      return `https://res.cloudinary.com/${cloud}/image/upload/w_400,h_400,c_fill/${filename}`
+    },
   },
   fields: [
     {

@@ -9,8 +9,8 @@ next-env.d.ts
 # production
 /build
 
-# payload generated
-/src/payload-types.ts
+# payload generated types тепер у репо (потрібні для білду)
+# /src/payload-types.ts
 
 # env
 .env

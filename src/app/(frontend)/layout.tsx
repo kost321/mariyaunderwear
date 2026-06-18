@@ -9,13 +9,13 @@ const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 export const metadata: Metadata = {
   metadataBase: new URL(serverUrl),
   title: {
-    default: 'OLGA — магазин одежды',
+    default: 'OLGA — магазин одягу',
     template: '%s — OLGA',
   },
-  description: 'Интернет-магазин женской одежды OLGA. Платья, куртки, аксессуары.',
+  description: 'Інтернет-магазин жіночого одягу OLGA. Нічні сорочки, піжами, халати, комплекти.',
   openGraph: {
     type: 'website',
-    locale: 'ru_RU',
+    locale: 'uk_UA',
     siteName: 'OLGA',
   },
 }
@@ -26,13 +26,13 @@ export default function FrontendLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ru">
+    <html lang="uk">
       <body className="min-h-screen bg-background">
         <CartProvider>
           <Header />
           <main className="container py-8">{children}</main>
           <footer className="border-t py-8 text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} OLGA. Все права защищены.
+            © {new Date().getFullYear()} OLGA. Всі права захищені.
           </footer>
         </CartProvider>
       </body>

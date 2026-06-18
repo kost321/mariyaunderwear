@@ -5,7 +5,7 @@ import { ProductCard } from '@/components/shop/ProductCard'
 
 export const metadata: Metadata = {
   title: 'Каталог',
-  description: 'Каталог одежды OLGA — платья, куртки, аксессуары.',
+  description: 'Каталог одягу OLGA — нічні сорочки, піжами, халати, комплекти.',
 }
 
 // Каталог получает данные на сервере при каждом запросе.
@@ -28,7 +28,7 @@ export default async function CatalogPage({
       <div>
         <h1 className="text-3xl font-bold">Каталог</h1>
         <p className="mt-1 text-muted-foreground">
-          {products.length} товаров
+          {products.length} товарів
         </p>
       </div>
 
@@ -41,7 +41,7 @@ export default async function CatalogPage({
               !category ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
             }`}
           >
-            Все
+            Всі
           </Link>
           {categories.map((cat) => (
             <Link
@@ -68,7 +68,7 @@ export default async function CatalogPage({
         </div>
       ) : (
         <p className="py-16 text-center text-muted-foreground">
-          Товары не найдены. Добавьте их в админке Payload.
+          Товари не знайдено.
         </p>
       )}
     </div>

@@ -27,7 +27,7 @@ export function ProductCard({ product }: { product: Product }) {
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            нет фото
+            немає фото
           </div>
         )}
       </div>

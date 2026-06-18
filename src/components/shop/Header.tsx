@@ -21,11 +21,12 @@ export function Header() {
         <nav className="flex items-center gap-6 text-sm">
           <Link href="/catalog" className="hover:text-muted-foreground">
             Каталог
+
           </Link>
           <Link
             href="/cart"
             className="relative flex items-center gap-1 hover:text-muted-foreground"
-            aria-label="Корзина"
+            aria-label="Кошик"
           >
             <ShoppingBag className="h-5 w-5" />
             {totalCount > 0 && (

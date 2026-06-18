@@ -27,13 +27,13 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
   const product = await getProductBySlug(slug)
-  if (!product) return { title: 'Товар не найден' }
+  if (!product) return { title: 'Товар не знайдено' }
 
   const ogImage = getMediaUrl(product.images?.[0]?.image)
 
   return {
     title: product.title,
-    description: `${product.title} — купить в магазине OLGA.`,
+    description: `${product.title} — купити в магазині OLGA.`,
     openGraph: {
       title: product.title,
       images: ogImage ? [{ url: ogImage }] : undefined,
@@ -52,7 +52,7 @@ export default async function ProductPage({ params }: Params) {
     <article className="space-y-10">
       <nav className="text-sm text-muted-foreground">
         <Link href="/catalog" className="hover:text-foreground">
-          ← Назад в каталог
+          ← Назад до каталогу
         </Link>
       </nav>
 
@@ -60,7 +60,7 @@ export default async function ProductPage({ params }: Params) {
 
       {product.description && (
         <section className="max-w-2xl space-y-3">
-          <h2 className="text-lg font-semibold">Описание</h2>
+          <h2 className="text-lg font-semibold">Опис</h2>
           <RichText data={product.description as SerializedEditorState} />
         </section>
       )}

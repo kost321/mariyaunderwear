@@ -64,7 +64,7 @@ export function ProductDetails({ product }: { product: Product }) {
             />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
-              нет фото
+              немає фото
             </div>
           )}
         </div>
@@ -100,13 +100,14 @@ export function ProductDetails({ product }: { product: Product }) {
           <p className="mt-2 text-2xl">{formatPrice(product.price)}</p>
           {product.sku && (
             <p className="mt-1 text-sm text-muted-foreground">Артикул: {product.sku}</p>
+
           )}
         </div>
 
         {/* Размеры */}
         {sizes.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium">Размер</p>
+            <p className="text-sm font-medium">Розмір</p>
             <div className="flex flex-wrap gap-2">
               {sizes.map((s) => (
                 <button
@@ -130,7 +131,7 @@ export function ProductDetails({ product }: { product: Product }) {
         {colors.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium">
-              Цвет{color ? `: ${color}` : ''}
+              Колір{color ? `: ${color}` : ''}
             </p>
             <div className="flex flex-wrap gap-2">
               {colors.map((c) => (
@@ -153,7 +154,7 @@ export function ProductDetails({ product }: { product: Product }) {
         )}
 
         <Button onClick={handleAddToCart} size="lg" className="w-full sm:w-auto">
-          {added ? 'Добавлено ✓' : 'В корзину'}
+          {added ? 'Додано ✓' : 'До кошика'}
         </Button>
       </div>
     </div>

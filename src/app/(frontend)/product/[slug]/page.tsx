@@ -14,8 +14,13 @@ type Params = { params: Promise<{ slug: string }> }
  * Делает страницы статичными и максимально SEO-friendly.
  */
 export async function generateStaticParams() {
-  const slugs = await getAllProductSlugs()
-  return slugs.map((slug) => ({ slug }))
+  try {
+    const slugs = await getAllProductSlugs()
+    return slugs.map((slug) => ({ slug }))
+  } catch {
+    // БД недоступна під час білду (наприклад, на Railway без підключеної бази)
+    return []
+  }
 }
 
 /** Динамические SEO-метаданные на основе товара. */

@@ -235,23 +235,13 @@ async function uploadImageFromUrl(imageUrl, altText = '') {
   return null
 }
 
-async function productExists(title, sku) {
-  // Проверяем по title и по SKU — любое совпадение = дубликат
+async function productExists(title) {
+  // Перевіряємо тільки по точній назві
   const byTitle = await fetch(
     `${PAYLOAD_URL}/api/products?where[title][equals]=${encodeURIComponent(title)}&limit=1`,
     { headers: authHeaders() }
   ).then(r => r.json())
-  if (byTitle.docs?.length > 0) return true
-
-  if (sku) {
-    const bySku = await fetch(
-      `${PAYLOAD_URL}/api/products?where[sku][equals]=${encodeURIComponent(sku)}&limit=1`,
-      { headers: authHeaders() }
-    ).then(r => r.json())
-    if (bySku.docs?.length > 0) return true
-  }
-
-  return false
+  return byTitle.docs?.length > 0
 }
 
 async function createProduct(productData) {
@@ -262,6 +252,21 @@ async function createProduct(productData) {
   })
   const data = await res.json()
   if (data.doc) return data.doc
+
+  // Якщо конфлікт SKU — спробуємо без SKU (використовуємо унікальний slug)
+  const skuConflict = JSON.stringify(data).includes('"sku"')
+  if (skuConflict && productData.sku) {
+    const fallback = { ...productData, sku: undefined, slug: `${productData.slug}-${Date.now()}` }
+    const res2 = await fetch(`${PAYLOAD_URL}/api/products`, {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(fallback),
+    })
+    const data2 = await res2.json()
+    if (data2.doc) return data2.doc
+    throw new Error(`Ошибка создания товара: ${JSON.stringify(data2).slice(0, 300)}`)
+  }
+
   throw new Error(`Ошибка создания товара: ${JSON.stringify(data).slice(0, 300)}`)
 }
 
@@ -322,7 +327,7 @@ async function main() {
     const slug = sku ? `${baseSlug}-${sku}` : baseSlug
 
     // Проверка на дубликат по title и SKU
-    if (await productExists(title, sku)) {
+    if (await productExists(title)) {
       warn(`Товар уже существует, пропускаю: ${title}`)
       skipped++
       continue

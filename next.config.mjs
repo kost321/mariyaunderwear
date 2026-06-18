@@ -6,8 +6,10 @@ const nextConfig = {
   // редиректы, заголовки и т.д.
   images: {
     remotePatterns: [
-      // Локальная отдача медиа Payload идёт с того же домена,
-      // поэтому дополнительных паттернов на старте не требуется.
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
     ],
   },
 }

@@ -49,7 +49,7 @@ export default buildConfig({
   // Адаптер базы данных — PostgreSQL.
   db: postgresAdapter({
     pool: {
-      connectionString: process.env.DATABASE_URI || '',
+      connectionString: process.env.DATABASE_URI || process.env.DATABASE_URL || '',
     },
     push: process.env.NODE_ENV === 'production',
   }),

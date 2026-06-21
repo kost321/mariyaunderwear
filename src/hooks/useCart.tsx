@@ -109,7 +109,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 export function useCart() {
   const ctx = useContext(CartContext)
   if (!ctx) {
-    throw new Error('useCart должен использоваться внутри <CartProvider>')
+    throw new Error('useCart має використовуватись всередині <CartProvider>')
   }
   return ctx
 }

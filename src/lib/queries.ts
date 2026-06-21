@@ -30,7 +30,7 @@ export async function getProducts(options?: {
   const result = await payload.find({
     collection: 'products',
     where,
-    limit: options?.limit ?? 24,
+    limit: options?.limit ?? 100,
     sort: '-createdAt',
     // depth: 2 — подтянуть связанные media и category объектами,
     // а не просто их id.

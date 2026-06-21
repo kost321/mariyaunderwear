@@ -24,7 +24,7 @@ export const Products: CollectionConfig = {
   },
   labels: {
     singular: 'Товар',
-    plural: 'Товары',
+    plural: 'Товари',
   },
   access: {
     // Читать можно публично, но в запросах фронта мы дополнительно
@@ -37,7 +37,7 @@ export const Products: CollectionConfig = {
   fields: [
     {
       name: 'title',
-      label: 'Название',
+      label: 'Назва',
       type: 'text',
       required: true,
     },
@@ -49,7 +49,7 @@ export const Products: CollectionConfig = {
       index: true,
       admin: {
         position: 'sidebar',
-        description: 'Оставьте пустым — сгенерируется из названия.',
+        description: 'Залиште порожнім — згенерується з назви.',
       },
       hooks: {
         beforeValidate: [formatSlug('title')],
@@ -57,7 +57,7 @@ export const Products: CollectionConfig = {
     },
     {
       name: 'active',
-      label: 'Активен (показывать в каталоге)',
+      label: 'Активний (показувати в каталозі)',
       type: 'checkbox',
       defaultValue: true,
       admin: {
@@ -66,7 +66,7 @@ export const Products: CollectionConfig = {
     },
     {
       name: 'price',
-      label: 'Цена, ₽',
+      label: 'Ціна, ₴',
       type: 'number',
       required: true,
       min: 0,
@@ -85,24 +85,24 @@ export const Products: CollectionConfig = {
     },
     {
       name: 'category',
-      label: 'Категория',
+      label: 'Категорія',
       type: 'relationship',
       relationTo: 'categories',
       required: true,
     },
     {
       name: 'description',
-      label: 'Описание',
+      label: 'Опис',
       type: 'richText',
     },
     {
       name: 'images',
-      label: 'Галерея изображений',
+      label: 'Галерея зображень',
       type: 'array',
       minRows: 1,
       labels: {
-        singular: 'Изображение',
-        plural: 'Изображения',
+        singular: 'Зображення',
+        plural: 'Зображення',
       },
       fields: [
         {
@@ -116,13 +116,13 @@ export const Products: CollectionConfig = {
     },
     {
       name: 'sizes',
-      label: 'Доступные размеры',
+      label: 'Доступні розміри',
       type: 'array',
-      labels: { singular: 'Размер', plural: 'Размеры' },
+      labels: { singular: 'Розмір', plural: 'Розміри' },
       fields: [
         {
           name: 'value',
-          label: 'Размер',
+          label: 'Розмір',
           type: 'text',
           required: true,
         },
@@ -130,19 +130,19 @@ export const Products: CollectionConfig = {
     },
     {
       name: 'colors',
-      label: 'Доступные цвета',
+      label: 'Доступні кольори',
       type: 'array',
-      labels: { singular: 'Цвет', plural: 'Цвета' },
+      labels: { singular: 'Колір', plural: 'Кольори' },
       fields: [
         {
           name: 'name',
-          label: 'Название цвета',
+          label: 'Назва кольору',
           type: 'text',
           required: true,
         },
         {
           name: 'hex',
-          label: 'HEX-код (например, #1a1a1a)',
+          label: 'HEX-код (наприклад, #1a1a1a)',
           type: 'text',
         },
       ],

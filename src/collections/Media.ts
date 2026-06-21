@@ -16,8 +16,8 @@ export const Media: CollectionConfig = {
     group: 'Каталог',
   },
   labels: {
-    singular: 'Изображение',
-    plural: 'Медиа',
+    singular: 'Зображення',
+    plural: 'Медіа',
   },
   access: {
     // Картинки магазина должны быть видны всем посетителям сайта.
@@ -39,7 +39,7 @@ export const Media: CollectionConfig = {
   fields: [
     {
       name: 'alt',
-      label: 'Alt-текст (для SEO и доступности)',
+      label: 'Alt-текст (для SEO та доступності)',
       type: 'text',
     },
   ],

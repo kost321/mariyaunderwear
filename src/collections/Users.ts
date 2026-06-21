@@ -12,11 +12,11 @@ export const Users: CollectionConfig = {
   auth: true,
   admin: {
     useAsTitle: 'email',
-    group: 'Настройки',
+    group: 'Налаштування',
   },
   labels: {
-    singular: 'Пользователь',
-    plural: 'Пользователи',
+    singular: 'Користувач',
+    plural: 'Користувачі',
   },
   access: {
     // Доступ к данным имеют только залогиненные пользователи CMS.
@@ -28,7 +28,7 @@ export const Users: CollectionConfig = {
   fields: [
     {
       name: 'name',
-      label: 'Имя',
+      label: "Ім'я",
       type: 'text',
     },
     // Поля email и password добавляются автоматически благодаря auth: true.

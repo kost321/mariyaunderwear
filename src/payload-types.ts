@@ -131,7 +131,7 @@ export interface Product {
   id: number;
   title: string;
   /**
-   * Оставьте пустым — сгенерируется из названия.
+   * Залиште порожнім — згенерується з назви.
    */
   slug?: string | null;
   active?: boolean | null;
@@ -183,7 +183,7 @@ export interface Category {
   id: number;
   title: string;
   /**
-   * Оставьте пустым — сгенерируется из названия.
+   * Залиште порожнім — згенерується з назви.
    */
   slug?: string | null;
   image?: (number | null) | Media;
@@ -233,7 +233,7 @@ export interface Order {
       }[]
     | null;
   /**
-   * Считается автоматически на сервере.
+   * Розраховується автоматично на сервері.
    */
   totalPrice?: number | null;
   updatedAt: string;

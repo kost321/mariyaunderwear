@@ -13,8 +13,8 @@ export const Categories: CollectionConfig = {
     group: 'Каталог',
   },
   labels: {
-    singular: 'Категория',
-    plural: 'Категории',
+    singular: 'Категорія',
+    plural: 'Категорії',
   },
   access: {
     read: () => true, // категории публичны
@@ -25,7 +25,7 @@ export const Categories: CollectionConfig = {
   fields: [
     {
       name: 'title',
-      label: 'Название',
+      label: 'Назва',
       type: 'text',
       required: true,
     },
@@ -37,7 +37,7 @@ export const Categories: CollectionConfig = {
       index: true,
       admin: {
         position: 'sidebar',
-        description: 'Оставьте пустым — сгенерируется из названия.',
+        description: 'Залиште порожнім — згенерується з назви.',
       },
       hooks: {
         // Перед сохранением приводим slug к URL-безопасному виду.
@@ -46,7 +46,7 @@ export const Categories: CollectionConfig = {
     },
     {
       name: 'image',
-      label: 'Изображение категории',
+      label: 'Зображення категорії',
       type: 'upload',
       relationTo: 'media',
     },

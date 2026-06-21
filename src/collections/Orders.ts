@@ -24,8 +24,8 @@ export const Orders: CollectionConfig = {
     group: 'Магазин',
   },
   labels: {
-    singular: 'Заказ',
-    plural: 'Заказы',
+    singular: 'Замовлення',
+    plural: 'Замовлення',
   },
   access: {
     // Создание заказа доступно публично (покупатель не залогинен).
@@ -57,7 +57,7 @@ export const Orders: CollectionConfig = {
   fields: [
     {
       name: 'orderNumber',
-      label: 'Номер заказа',
+      label: 'Номер замовлення',
       type: 'text',
       admin: {
         readOnly: true,
@@ -71,10 +71,10 @@ export const Orders: CollectionConfig = {
       required: true,
       defaultValue: 'new',
       options: [
-        { label: 'Новый', value: 'new' },
-        { label: 'В обработке', value: 'processing' },
-        { label: 'Выполнен', value: 'completed' },
-        { label: 'Отменён', value: 'cancelled' },
+        { label: 'Новий', value: 'new' },
+        { label: 'В обробці', value: 'processing' },
+        { label: 'Виконано', value: 'completed' },
+        { label: 'Скасовано', value: 'cancelled' },
       ],
       admin: {
         position: 'sidebar',
@@ -82,7 +82,7 @@ export const Orders: CollectionConfig = {
     },
     {
       name: 'customerName',
-      label: 'Имя покупателя',
+      label: "Ім'я покупця",
       type: 'text',
       required: true,
     },
@@ -99,47 +99,48 @@ export const Orders: CollectionConfig = {
     },
     {
       name: 'comment',
-      label: 'Комментарий к заказу',
+      label: 'Коментар до замовлення',
       type: 'textarea',
     },
     {
       name: 'products',
-      label: 'Состав заказа',
+      label: 'Склад замовлення',
       type: 'array',
       minRows: 1,
-      labels: { singular: 'Позиция', plural: 'Позиции' },
+      labels: { singular: 'Позиція', plural: 'Позиції' },
       fields: [
         {
           name: 'product',
           label: 'Товар',
+
           type: 'relationship',
           relationTo: 'products',
           required: true,
         },
         {
           name: 'titleSnapshot',
-          label: 'Название (снимок)',
+          label: 'Назва (знімок)',
           type: 'text',
         },
         {
           name: 'priceSnapshot',
-          label: 'Цена на момент заказа, ₽',
+          label: 'Ціна на момент замовлення, ₴',
           type: 'number',
           required: true,
         },
         {
           name: 'size',
-          label: 'Размер',
+          label: 'Розмір',
           type: 'text',
         },
         {
           name: 'color',
-          label: 'Цвет',
+          label: 'Колір',
           type: 'text',
         },
         {
           name: 'quantity',
-          label: 'Количество',
+          label: 'Кількість',
           type: 'number',
           required: true,
           min: 1,
@@ -149,11 +150,11 @@ export const Orders: CollectionConfig = {
     },
     {
       name: 'totalPrice',
-      label: 'Итого, ₽',
+      label: 'Разом, ₴',
       type: 'number',
       admin: {
         readOnly: true,
-        description: 'Считается автоматически на сервере.',
+        description: 'Розраховується автоматично на сервері.',
       },
     },
   ],

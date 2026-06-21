@@ -10,11 +10,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/** Форматирование цены в рублях для отображения в UI. */
 export function formatPrice(value: number): string {
-  return new Intl.NumberFormat('ru-RU', {
+  return new Intl.NumberFormat('uk-UA', {
     style: 'currency',
-    currency: 'RUB',
+    currency: 'UAH',
     maximumFractionDigits: 0,
   }).format(value)
 }

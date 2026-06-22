@@ -15,7 +15,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="text-xl font-bold tracking-tight">
-          OLGA
+          Mariya Underwear
         </Link>
 
         <nav className="flex items-center gap-6 text-sm">

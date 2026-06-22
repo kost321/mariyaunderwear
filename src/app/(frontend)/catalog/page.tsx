@@ -5,7 +5,7 @@ import { ProductCard } from '@/components/shop/ProductCard'
 
 export const metadata: Metadata = {
   title: 'Каталог',
-  description: 'Каталог одягу OLGA — нічні сорочки, піжами, халати, комплекти.',
+  description: 'Каталог одягу Mariya Underwear — нічні сорочки, піжами, халати, комплекти.',
 }
 
 // Каталог получает данные на сервере при каждом запросе.

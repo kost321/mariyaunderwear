@@ -23,7 +23,7 @@ export default buildConfig({
   admin: {
     user: Users.slug,
     meta: {
-      titleSuffix: '— Olga Shop',
+      titleSuffix: '— Mariya Underwear',
     },
   },
 

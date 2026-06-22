@@ -9,14 +9,14 @@ const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 export const metadata: Metadata = {
   metadataBase: new URL(serverUrl),
   title: {
-    default: 'OLGA — магазин одягу',
-    template: '%s — OLGA',
+    default: 'Mariya Underwear — магазин одягу',
+    template: '%s — Mariya Underwear',
   },
-  description: 'Інтернет-магазин жіночого одягу OLGA. Нічні сорочки, піжами, халати, комплекти.',
+  description: 'Інтернет-магазин жіночого одягу Mariya Underwear. Нічні сорочки, піжами, халати, комплекти.',
   openGraph: {
     type: 'website',
     locale: 'uk_UA',
-    siteName: 'OLGA',
+    siteName: 'Mariya Underwear',
   },
 }
 
@@ -32,7 +32,7 @@ export default function FrontendLayout({
           <Header />
           <main className="container py-8">{children}</main>
           <footer className="border-t py-8 text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} OLGA. Всі права захищені.
+            © {new Date().getFullYear()} Mariya Underwear. Всі права захищені.
           </footer>
         </CartProvider>
       </body>

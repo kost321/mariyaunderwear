@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   return {
     title: product.title,
-    description: `${product.title} — купити в магазині OLGA.`,
+    description: `${product.title} — купити в магазині Mariya Underwear.`,
     openGraph: {
       title: product.title,
       images: ogImage ? [{ url: ogImage }] : undefined,

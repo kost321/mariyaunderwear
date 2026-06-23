@@ -23,6 +23,8 @@ export interface CartItem {
 export interface CheckoutForm {
   customerName: string
   phone: string
+  city: string
+  novaPoshtaBranch: string
   email?: string
   comment?: string
 }

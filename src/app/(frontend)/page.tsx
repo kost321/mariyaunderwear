@@ -8,7 +8,9 @@ export default function HomePage() {
         Mariya Underwear
       </h1>
       <p className="max-w-md text-muted-foreground">
-        Нова колекція вже в каталозі. Нічні сорочки, піжами, халати та комплекти ручного відбору.
+        Нічні сорочки, домашній одяг, елегантні сукні.
+        <br />
+        Нова колекція вже в каталозі.
       </p>
       <Link href="/catalog" className={buttonVariants({ size: 'lg' })}>
         Перейти до каталогу

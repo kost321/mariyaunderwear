@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     .join('')
 
   await resend.emails.send({
-    from: 'Mariya Underwear <onboarding@resend.dev>',
+    from: 'Mariya Underwear <orders@mariyaunderwear.com>',
     to: 'kostyannn1996@gmail.com',
     subject: `Нове замовлення #${order.id} — ${form.customerName}`,
     html: `

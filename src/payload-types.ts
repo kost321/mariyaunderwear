@@ -68,6 +68,7 @@ export interface Config {
   blocks: {};
   collections: {
     products: Product;
+    'product-models': ProductModel;
     categories: Category;
     orders: Order;
     media: Media;
@@ -80,6 +81,7 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     products: ProductsSelect<false> | ProductsSelect<true>;
+    'product-models': ProductModelsSelect<false> | ProductModelsSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -136,8 +138,26 @@ export interface Product {
   slug?: string | null;
   active?: boolean | null;
   price: number;
+  /**
+   * Може повторюватися — напр. у різних кольорів однієї моделі однаковий артикул.
+   */
   sku?: string | null;
   category: number | Category;
+  /**
+   * Оберіть модель, щоб зв'язати цей колір з іншими кольорами того самого товару. Порожньо — товар без варіантів кольору. Моделі створюються у розділі «Каталог → Моделі».
+   */
+  model?: (number | null) | ProductModel;
+  /**
+   * Напр. "Молочний". Показується у перемикачі кольорів.
+   */
+  colorName?: string | null;
+  /**
+   * Напр. #f3e9dd — колір кружечка у перемикачі.
+   */
+  colorHex?: string | null;
+  /**
+   * Звичайний текст опису. Для таблиць та складного форматування використовуйте поле «HTML-опис» нижче.
+   */
   description?: {
     root: {
       type: string;
@@ -153,6 +173,14 @@ export interface Product {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * Готовий HTML — напр. таблиця <table>…</table>. Показується на сторінці товару під звичайним описом, як є. Якщо порожньо — нічого не додається.
+   */
+  descriptionHtml?: string | null;
+  /**
+   * Готовий HTML з таблицею розмірів для цього товару. На сторінці товару поруч із вибором розміру з'явиться посилання «Розмірна таблиця», яке відкриває це у модальному вікні. Порожньо — посилання не показується.
+   */
+  sizeChartHtml?: string | null;
   images?:
     | {
         image: number | Media;
@@ -208,6 +236,25 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * Модель об'єднує кольори одного товару. Спочатку створіть модель, потім у кожній картці кольору оберіть її в полі «Модель».
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-models".
+ */
+export interface ProductModel {
+  id: number;
+  /**
+   * Напр. «Халат Перлинний ранок». Покупцям не показується.
+   */
+  title: string;
+  /**
+   * Залиште порожнім — згенерується з назви.
+   */
+  slug?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -294,6 +341,10 @@ export interface PayloadLockedDocument {
         value: number | Product;
       } | null)
     | ({
+        relationTo: 'product-models';
+        value: number | ProductModel;
+      } | null)
+    | ({
         relationTo: 'categories';
         value: number | Category;
       } | null)
@@ -362,7 +413,12 @@ export interface ProductsSelect<T extends boolean = true> {
   price?: T;
   sku?: T;
   category?: T;
+  model?: T;
+  colorName?: T;
+  colorHex?: T;
   description?: T;
+  descriptionHtml?: T;
+  sizeChartHtml?: T;
   images?:
     | T
     | {
@@ -382,6 +438,16 @@ export interface ProductsSelect<T extends boolean = true> {
         hex?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-models_select".
+ */
+export interface ProductModelsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
   updatedAt?: T;
   createdAt?: T;
 }

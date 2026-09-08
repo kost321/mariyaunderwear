@@ -78,9 +78,10 @@ export const Products: CollectionConfig = {
       name: 'sku',
       label: 'Артикул (SKU)',
       type: 'text',
-      unique: true,
       admin: {
         position: 'sidebar',
+        description:
+          'Може повторюватися — напр. у різних кольорів однієї моделі однаковий артикул.',
       },
     },
     {
@@ -91,9 +92,63 @@ export const Products: CollectionConfig = {
       required: true,
     },
     {
+      name: 'model',
+      label: 'Модель',
+      type: 'relationship',
+      relationTo: 'product-models',
+      index: true,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Оберіть модель, щоб зв\'язати цей колір з іншими кольорами того самого товару. Порожньо — товар без варіантів кольору. Моделі створюються у розділі «Каталог → Моделі».',
+      },
+    },
+    {
+      name: 'colorName',
+      label: 'Назва цього кольору',
+      type: 'text',
+      admin: {
+        position: 'sidebar',
+        description: 'Напр. "Молочний". Показується у перемикачі кольорів.',
+      },
+    },
+    {
+      name: 'colorHex',
+      label: 'HEX-код цього кольору',
+      type: 'text',
+      admin: {
+        position: 'sidebar',
+        description: 'Напр. #f3e9dd — колір кружечка у перемикачі.',
+      },
+    },
+    {
       name: 'description',
       label: 'Опис',
       type: 'richText',
+      admin: {
+        description:
+          'Звичайний текст опису. Для таблиць та складного форматування використовуйте поле «HTML-опис» нижче.',
+      },
+    },
+    {
+      name: 'descriptionHtml',
+      label: 'HTML-опис (таблиці, складне форматування)',
+      type: 'textarea',
+      admin: {
+        description:
+          'Готовий HTML — напр. таблиця <table>…</table>. Показується на сторінці товару під звичайним описом, як є. Якщо порожньо — нічого не додається.',
+        rows: 10,
+      },
+    },
+    {
+      name: 'sizeChartHtml',
+      label: 'Розмірна таблиця (HTML)',
+      type: 'textarea',
+      admin: {
+        description:
+          'Готовий HTML з таблицею розмірів для цього товару. На сторінці товару поруч із вибором розміру з\'явиться посилання «Розмірна таблиця», яке відкриває це у модальному вікні. Порожньо — посилання не показується.',
+        rows: 12,
+      },
     },
     {
       name: 'images',

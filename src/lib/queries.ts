@@ -37,6 +37,9 @@ export async function getProducts(options?: {
     depth: 2,
   })
 
+  // Каждый товар (в т.ч. каждый цвет модели) показывается в каталоге
+  // отдельной плиткой. Связь цветов работает только на странице товара
+  // через переключатель (getColorVariants).
   return result.docs
 }
 
@@ -55,6 +58,33 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   })
 
   return result.docs[0] ?? null
+}
+
+/**
+ * Все карточки одной модели (варианты цвета).
+ * Каждый цвет — самостоятельный товар со своим slug; связаны полем `model`
+ * (relationship на коллекцию product-models).
+ * Возвращаются в том же порядке, в каком заведены в админке.
+ */
+export async function getColorVariants(
+  modelId: number | string,
+): Promise<Product[]> {
+  if (!modelId) return []
+
+  const payload = await getPayload()
+
+  const result = await payload.find({
+    collection: 'products',
+    where: {
+      model: { equals: modelId },
+      active: { equals: true },
+    },
+    limit: 20,
+    sort: 'createdAt',
+    depth: 1,
+  })
+
+  return result.docs
 }
 
 /** Получить все категории (для меню/фильтра). */

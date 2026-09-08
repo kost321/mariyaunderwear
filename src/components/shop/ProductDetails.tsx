@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { formatPrice, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { SizeChart } from '@/components/shop/SizeChart'
 import { useCart } from '@/hooks/useCart'
 
 /**
@@ -17,12 +19,22 @@ import { useCart } from '@/hooks/useCart'
  * Данные приходят пропсом из серверного page.tsx, поэтому этот
  * клиентский компонент сам ничего не запрашивает.
  */
-export function ProductDetails({ product }: { product: Product }) {
+export function ProductDetails({
+  product,
+  colorVariants = [],
+}: {
+  product: Product
+  /** Другие цветовые карточки той же модели (связаны полем model). */
+  colorVariants?: Product[]
+}) {
   const { addItem } = useCart()
 
   const images = product.images ?? []
   const sizes = product.sizes ?? []
   const colors = product.colors ?? []
+
+  // Показываем переключатель-ссылки только если у модели есть хотя бы 2 цвета-карточки.
+  const showVariantSwitch = colorVariants.length > 1
 
   const [activeImage, setActiveImage] = useState(0)
   const [size, setSize] = useState<string | undefined>(sizes[0]?.value)
@@ -41,7 +53,9 @@ export function ProductDetails({ product }: { product: Product }) {
       slug: product.slug ?? '',
       image: getMediaUrl(images[0]?.image),
       size,
-      color,
+      // Если модель разбита на цветовые карточки — цвет берём из карточки,
+      // иначе из старого массива colors (выбор внутри страницы).
+      color: showVariantSwitch ? (product.colorName ?? undefined) : color,
       quantity: 1,
     })
     setAdded(true)
@@ -107,7 +121,10 @@ export function ProductDetails({ product }: { product: Product }) {
         {/* Размеры */}
         {sizes.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium">Розмір</p>
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm font-medium">Розмір</p>
+              <SizeChart html={product.sizeChartHtml} />
+            </div>
             <div className="flex flex-wrap gap-2">
               {sizes.map((s) => (
                 <button
@@ -127,8 +144,55 @@ export function ProductDetails({ product }: { product: Product }) {
           </div>
         )}
 
-        {/* Цвета */}
-        {colors.length > 0 && (
+        {/* Розмірна таблиця, якщо розмірів немає, але таблиця задана */}
+        {sizes.length === 0 && product.sizeChartHtml && (
+          <SizeChart html={product.sizeChartHtml} />
+        )}
+
+        {/* Цвета: варианты-карточки (переход по клику) */}
+        {showVariantSwitch && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">
+              Колір{product.colorName ? `: ${product.colorName}` : ''}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {colorVariants.map((v) => {
+                const isCurrent = v.id === product.id
+                const label = v.colorName ?? v.title
+                const swatchClass = cn(
+                  'block h-9 w-9 rounded-full border-2 transition-transform',
+                  isCurrent
+                    ? 'border-primary scale-110'
+                    : 'border-border hover:scale-105',
+                )
+                const style = { backgroundColor: v.colorHex ?? '#ddd' }
+
+                return isCurrent ? (
+                  <span
+                    key={v.id}
+                    title={label}
+                    aria-label={`${label} (обраний)`}
+                    aria-current="true"
+                    className={swatchClass}
+                    style={style}
+                  />
+                ) : (
+                  <Link
+                    key={v.id}
+                    href={`/product/${v.slug}`}
+                    title={label}
+                    aria-label={label}
+                  >
+                    <span className={swatchClass} style={style} />
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Цвета: выбор внутри одной карточки (когда модель не разбита на варианты) */}
+        {!showVariantSwitch && colors.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium">
               Колір{color ? `: ${color}` : ''}

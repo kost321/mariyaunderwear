@@ -12,6 +12,7 @@ import { cloudinaryAdapter } from './lib/cloudinaryAdapter'
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Categories } from './collections/Categories'
+import { ProductModels } from './collections/ProductModels'
 import { Products } from './collections/Products'
 import { Orders } from './collections/Orders'
 
@@ -33,7 +34,7 @@ export default buildConfig({
   },
 
   // Регистрируем все коллекции.
-  collections: [Products, Categories, Orders, Media, Users],
+  collections: [Products, ProductModels, Categories, Orders, Media, Users],
 
   // Редактор richText по умолчанию (для описаний товаров).
   editor: lexicalEditor(),

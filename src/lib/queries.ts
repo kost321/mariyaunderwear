@@ -101,6 +101,18 @@ export async function getCategories(): Promise<Category[]> {
   return result.docs
 }
 
+/** Глобальний текст «Доставка та оплата» (глобал Settings). */
+export async function getDeliveryPaymentHtml(): Promise<string | null> {
+  try {
+    const payload = await getPayload()
+    const settings = await payload.findGlobal({ slug: 'settings' })
+    return settings?.deliveryPaymentHtml ?? null
+  } catch {
+    // Таблиця settings ще не створена (напр. білд до міграції) — не валимо сторінку.
+    return null
+  }
+}
+
 /** slug всех активных товаров — для generateStaticParams (SSG/SEO). */
 export async function getAllProductSlugs(): Promise<string[]> {
   const payload = await getPayload()

@@ -15,6 +15,7 @@ import { Categories } from './collections/Categories'
 import { ProductModels } from './collections/ProductModels'
 import { Products } from './collections/Products'
 import { Orders } from './collections/Orders'
+import { Settings } from './globals/Settings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -35,6 +36,9 @@ export default buildConfig({
 
   // Регистрируем все коллекции.
   collections: [Products, ProductModels, Categories, Orders, Media, Users],
+
+  // Глобальні налаштування магазину.
+  globals: [Settings],
 
   // Редактор richText по умолчанию (для описаний товаров).
   editor: lexicalEditor(),

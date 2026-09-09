@@ -95,8 +95,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    settings: Setting;
+  };
+  globalsSelect: {
+    settings: SettingsSelect<false> | SettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -155,9 +159,6 @@ export interface Product {
    * Напр. #f3e9dd — колір кружечка у перемикачі.
    */
   colorHex?: string | null;
-  /**
-   * Звичайний текст опису. Для таблиць та складного форматування використовуйте поле «HTML-опис» нижче.
-   */
   description?: {
     root: {
       type: string;
@@ -174,7 +175,7 @@ export interface Product {
     [k: string]: unknown;
   } | null;
   /**
-   * Готовий HTML — напр. таблиця <table>…</table>. Показується на сторінці товару під звичайним описом, як є. Якщо порожньо — нічого не додається.
+   * Опис товару у форматі HTML — звичайний текст, абзаци <p>…</p>, списки, таблиці <table>…</table>. Показується на сторінці товару як є. Порожньо — блок опису не показується.
    */
   descriptionHtml?: string | null;
   /**
@@ -568,6 +569,29 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings".
+ */
+export interface Setting {
+  id: number;
+  /**
+   * Текст у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>, таблиці. Показується в акордеоні «Доставка та оплата» на сторінці кожного товару. Порожньо — секція не показується.
+   */
+  deliveryPaymentHtml?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings_select".
+ */
+export interface SettingsSelect<T extends boolean = true> {
+  deliveryPaymentHtml?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

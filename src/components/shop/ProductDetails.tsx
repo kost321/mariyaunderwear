@@ -8,7 +8,10 @@ import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { formatPrice, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { SizeChart } from '@/components/shop/SizeChart'
+import { ProductAccordion } from '@/components/shop/ProductAccordion'
+import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
 import { useCart } from '@/hooks/useCart'
+import type { CartItem } from '@/types/shop'
 
 /**
  * Интерактивная часть карточки товара:
@@ -22,10 +25,13 @@ import { useCart } from '@/hooks/useCart'
 export function ProductDetails({
   product,
   colorVariants = [],
+  deliveryPaymentHtml,
 }: {
   product: Product
   /** Другие цветовые карточки той же модели (связаны полем model). */
   colorVariants?: Product[]
+  /** Общий для магазина текст «Доставка та оплата» (глобал Settings). */
+  deliveryPaymentHtml?: string | null
 }) {
   const { addItem } = useCart()
 
@@ -39,25 +45,30 @@ export function ProductDetails({
   const [activeImage, setActiveImage] = useState(0)
   const [size, setSize] = useState<string | undefined>(sizes[0]?.value)
   const [color, setColor] = useState<string | undefined>(colors[0]?.name)
+  const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
+  const [quickOpen, setQuickOpen] = useState(false)
 
   const mainImage = images[activeImage]?.image
   const mainUrl = getMediaUrl(mainImage)
   const mainAlt = getMediaAlt(mainImage, product.title)
 
+  // Позиция для корзины / быстрого заказа из текущего выбора на странице.
+  const selectedItem: CartItem = {
+    productId: String(product.id),
+    title: product.title,
+    price: product.price,
+    slug: product.slug ?? '',
+    image: getMediaUrl(images[0]?.image),
+    size,
+    // Если модель разбита на цветовые карточки — цвет берём из карточки,
+    // иначе из старого массива colors (выбор внутри страницы).
+    color: showVariantSwitch ? (product.colorName ?? undefined) : color,
+    quantity,
+  }
+
   function handleAddToCart() {
-    addItem({
-      productId: String(product.id),
-      title: product.title,
-      price: product.price,
-      slug: product.slug ?? '',
-      image: getMediaUrl(images[0]?.image),
-      size,
-      // Если модель разбита на цветовые карточки — цвет берём из карточки,
-      // иначе из старого массива colors (выбор внутри страницы).
-      color: showVariantSwitch ? (product.colorName ?? undefined) : color,
-      quantity: 1,
-    })
+    addItem(selectedItem)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }
@@ -217,10 +228,62 @@ export function ProductDetails({
           </div>
         )}
 
-        <Button onClick={handleAddToCart} size="lg" className="w-full sm:w-auto">
-          {added ? 'Додано ✓' : 'До кошика'}
+        {/* Кількість + додати в кошик */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center rounded-md border">
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              disabled={quantity <= 1}
+              className="flex h-11 w-11 items-center justify-center text-lg leading-none disabled:opacity-40"
+              aria-label="Зменшити кількість"
+            >
+              −
+            </button>
+            <span
+              className="min-w-10 text-center text-sm tabular-nums"
+              aria-live="polite"
+            >
+              {quantity}
+            </span>
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => q + 1)}
+              className="flex h-11 w-11 items-center justify-center text-lg leading-none"
+              aria-label="Збільшити кількість"
+            >
+              +
+            </button>
+          </div>
+
+          <Button onClick={handleAddToCart} size="lg" className="flex-1 sm:flex-none">
+            {added ? 'Додано ✓' : 'До кошика'}
+          </Button>
+        </div>
+
+        <Button
+          onClick={() => setQuickOpen(true)}
+          size="lg"
+          variant="outline"
+          className="w-full sm:w-auto"
+        >
+          Швидке замовлення
         </Button>
+
+        {/* Опис + Доставка та оплата — акордеон */}
+        <ProductAccordion
+          sections={[
+            { title: 'Опис', html: product.descriptionHtml },
+            { title: 'Доставка та оплата', html: deliveryPaymentHtml },
+          ]}
+        />
       </div>
+
+      <QuickOrderModal
+        open={quickOpen}
+        onClose={() => setQuickOpen(false)}
+        item={selectedItem}
+      />
     </div>
   )
 }

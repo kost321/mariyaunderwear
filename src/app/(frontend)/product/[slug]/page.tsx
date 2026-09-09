@@ -1,10 +1,14 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getProductBySlug, getAllProductSlugs, getColorVariants } from '@/lib/queries'
+import {
+  getProductBySlug,
+  getAllProductSlugs,
+  getColorVariants,
+  getDeliveryPaymentHtml,
+} from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
 import { ProductDetails } from '@/components/shop/ProductDetails'
-import { RawHtml } from '@/components/shop/RichText'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -60,7 +64,10 @@ export default async function ProductPage({ params }: Params) {
     typeof product.model === 'object' && product.model !== null
       ? product.model.id
       : product.model
-  const colorVariants = modelId ? await getColorVariants(modelId) : []
+  const [colorVariants, deliveryPaymentHtml] = await Promise.all([
+    modelId ? getColorVariants(modelId) : Promise.resolve([]),
+    getDeliveryPaymentHtml(),
+  ])
 
   return (
     <article className="space-y-10">
@@ -70,14 +77,11 @@ export default async function ProductPage({ params }: Params) {
         </Link>
       </nav>
 
-      <ProductDetails product={product} colorVariants={colorVariants} />
-
-      {product.descriptionHtml && (
-        <section className="max-w-2xl space-y-3">
-          <h2 className="text-lg font-semibold">Опис</h2>
-          <RawHtml html={product.descriptionHtml} />
-        </section>
-      )}
+      <ProductDetails
+        product={product}
+        colorVariants={colorVariants}
+        deliveryPaymentHtml={deliveryPaymentHtml}
+      />
     </article>
   )
 }

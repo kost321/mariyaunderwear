@@ -4,8 +4,7 @@ import Link from 'next/link'
 import { getProductBySlug, getAllProductSlugs, getColorVariants } from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
 import { ProductDetails } from '@/components/shop/ProductDetails'
-import { RichText, RawHtml } from '@/components/shop/RichText'
-import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
+import { RawHtml } from '@/components/shop/RichText'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -73,12 +72,9 @@ export default async function ProductPage({ params }: Params) {
 
       <ProductDetails product={product} colorVariants={colorVariants} />
 
-      {(product.description || product.descriptionHtml) && (
+      {product.descriptionHtml && (
         <section className="max-w-2xl space-y-3">
           <h2 className="text-lg font-semibold">Опис</h2>
-          {product.description && (
-            <RichText data={product.description as SerializedEditorState} />
-          )}
           <RawHtml html={product.descriptionHtml} />
         </section>
       )}

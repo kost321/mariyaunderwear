@@ -30,3 +30,6 @@ yarn-error.log*
 
 # docker volumes
 /postgres-data
+
+# Сировина для разових імпортів товарів — не потрібна в репо
+scripts/data/

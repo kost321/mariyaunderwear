@@ -56,11 +56,13 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || process.env.DATABASE_URL || '',
     },
-    // push синхронізує схему БД з колекціями без міграцій.
-    // dev — щоб локальна база одразу підхоплювала нові поля/глобали.
-    // prod — у цьому проєкті схема теж ведеться через push (міграції
-    // фактично не застосовуються, див. scripts/start.sh).
-    push: true,
+    // push синхронізує схему з колекціями автоматично, але робить це
+    // «на свій розсуд» — у проді це призводило до розсинхрону _rels
+    // таблиць (падав каскадний DELETE товару). Тому:
+    //   dev  — push увімкнено, зручно для локальної розробки;
+    //   prod — вимкнено, схемою керують ТІЛЬКИ міграції (scripts/start.sh
+    //          → payload migrate).
+    push: process.env.NODE_ENV !== 'production',
   }),
 
   // sharp нужен для генерации превью изображений (imageSizes в Media).

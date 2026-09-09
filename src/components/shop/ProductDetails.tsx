@@ -270,10 +270,11 @@ export function ProductDetails({
           Швидке замовлення
         </Button>
 
-        {/* Опис + Доставка та оплата — акордеон */}
+        {/* Опис + Характеристика + Доставка та оплата — акордеон */}
         <ProductAccordion
           sections={[
-            { title: 'Опис', html: product.descriptionHtml },
+            { title: 'Опис', html: product.description },
+            { title: 'Характеристика', html: product.descriptionHtml },
             { title: 'Доставка та оплата', html: deliveryPaymentHtml },
           ]}
         />

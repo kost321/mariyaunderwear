@@ -159,23 +159,12 @@ export interface Product {
    * Напр. #f3e9dd — колір кружечка у перемикачі.
    */
   colorHex?: string | null;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
   /**
-   * Опис товару у форматі HTML — звичайний текст, абзаци <p>…</p>, списки, таблиці <table>…</table>. Показується на сторінці товару як є. Порожньо — блок опису не показується.
+   * Опис товару у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>, таблиці. Показується в акордеоні «Опис» на сторінці товару. Порожньо — секція не показується.
+   */
+  description?: string | null;
+  /**
+   * Характеристики товару у форматі HTML — текст, списки, таблиця <table>…</table>. Показується в акордеоні «Характеристика» на сторінці товару. Порожньо — секція не показується.
    */
   descriptionHtml?: string | null;
   /**

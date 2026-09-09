@@ -10,6 +10,13 @@ import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical
 type Params = { params: Promise<{ slug: string }> }
 
 /**
+ * ISR: сторінка статична, але не рідше ніж раз на 60 секунд Next пересобирає
+ * її з актуальними даними з БД. Правки в адмінці (ціна, кольори, варіанти
+ * моделі) підхоплюються без ручного редеплою.
+ */
+export const revalidate = 60
+
+/**
  * SSG: заранее генерируем страницы всех активных товаров.
  * Делает страницы статичными и максимально SEO-friendly.
  */

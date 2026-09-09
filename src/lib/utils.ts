@@ -10,10 +10,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Ціна у гривнях: "1 799 грн".
+ * Форматуємо вручну (розряди через нерозривний пробіл, суфікс «грн») —
+ * Intl.NumberFormat зі style: 'currency' дає різний результат залежно від
+ * ICU-локалі середовища (Node vs браузер) і ламає гідратацію.
+ */
 export function formatPrice(value: number): string {
-  return new Intl.NumberFormat('uk-UA', {
-    style: 'currency',
-    currency: 'UAH',
-    maximumFractionDigits: 0,
-  }).format(value)
+  const digits = Math.round(value)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  return `${digits} грн`
 }

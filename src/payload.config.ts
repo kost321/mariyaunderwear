@@ -56,7 +56,11 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || process.env.DATABASE_URL || '',
     },
-    push: process.env.NODE_ENV === 'production',
+    // push синхронізує схему БД з колекціями без міграцій.
+    // dev — щоб локальна база одразу підхоплювала нові поля/глобали.
+    // prod — у цьому проєкті схема теж ведеться через push (міграції
+    // фактично не застосовуються, див. scripts/start.sh).
+    push: true,
   }),
 
   // sharp нужен для генерации превью изображений (imageSizes в Media).

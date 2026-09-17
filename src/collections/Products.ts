@@ -203,5 +203,17 @@ export const Products: CollectionConfig = {
         },
       ],
     },
+    {
+      name: 'relatedProducts',
+      label: 'Схожі товари',
+      type: 'relationship',
+      relationTo: 'products',
+      hasMany: true,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Оберіть товари, які показуватимуться в блоці «Схожі товари» на сторінці цього товару. Порожньо — блок не показується.',
+      },
+    },
   ],
 }

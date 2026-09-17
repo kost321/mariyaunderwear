@@ -9,6 +9,7 @@ import {
 } from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
 import { ProductDetails } from '@/components/shop/ProductDetails'
+import type { Product } from '@/payload-types'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -69,6 +70,12 @@ export default async function ProductPage({ params }: Params) {
     getDeliveryPaymentHtml(),
   ])
 
+  // relatedProducts — товари, вручну обрані в адмінці (relationship, hasMany).
+  // Payload с depth: 2 повертає їх повними об'єктами, а не просто id.
+  const relatedProducts = (product.relatedProducts ?? []).filter(
+    (item): item is Product => typeof item === 'object' && item !== null,
+  )
+
   return (
     <article className="space-y-10">
       <nav className="text-sm text-muted-foreground">
@@ -80,6 +87,7 @@ export default async function ProductPage({ params }: Params) {
       <ProductDetails
         product={product}
         colorVariants={colorVariants}
+        relatedProducts={relatedProducts}
         deliveryPaymentHtml={deliveryPaymentHtml}
       />
     </article>

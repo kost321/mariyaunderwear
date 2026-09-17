@@ -190,6 +190,10 @@ export interface Product {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Оберіть товари, які показуватимуться в блоці «Схожі товари» на сторінці цього товару. Порожньо — блок не показується.
+   */
+  relatedProducts?: (number | Product)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -428,6 +432,7 @@ export interface ProductsSelect<T extends boolean = true> {
         hex?: T;
         id?: T;
       };
+  relatedProducts?: T;
   updatedAt?: T;
   createdAt?: T;
 }

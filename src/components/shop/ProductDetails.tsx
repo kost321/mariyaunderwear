@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { SizeChart } from '@/components/shop/SizeChart'
 import { ProductAccordion } from '@/components/shop/ProductAccordion'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
+import { ProductCard } from '@/components/shop/ProductCard'
 import { useCart } from '@/hooks/useCart'
 import type { CartItem } from '@/types/shop'
 
@@ -25,11 +26,14 @@ import type { CartItem } from '@/types/shop'
 export function ProductDetails({
   product,
   colorVariants = [],
+  relatedProducts = [],
   deliveryPaymentHtml,
 }: {
   product: Product
   /** Другие цветовые карточки той же модели (связаны полем model). */
   colorVariants?: Product[]
+  /** Товары, вручную выбранные в админке для блока «Схожі товари». */
+  relatedProducts?: Product[]
   /** Общий для магазина текст «Доставка та оплата» (глобал Settings). */
   deliveryPaymentHtml?: string | null
 }) {
@@ -74,6 +78,7 @@ export function ProductDetails({
   }
 
   return (
+    <>
     <div className="grid gap-8 md:grid-cols-2">
       {/* ГАЛЕРЕЯ */}
       <div className="space-y-4">
@@ -286,5 +291,18 @@ export function ProductDetails({
         item={selectedItem}
       />
     </div>
+
+    {/* Схожі товари — вручну обрані в адмінці */}
+    {relatedProducts.length > 0 && (
+      <div className="mt-12 space-y-4">
+        <h2 className="text-xl font-semibold">Схожі товари</h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {relatedProducts.map((related) => (
+            <ProductCard key={related.id} product={related} />
+          ))}
+        </div>
+      </div>
+    )}
+    </>
   )
 }

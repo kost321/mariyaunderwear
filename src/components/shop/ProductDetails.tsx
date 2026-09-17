@@ -262,7 +262,7 @@ export function ProductDetails({
           </div>
 
           <Button onClick={handleAddToCart} size="lg" className="flex-1 sm:flex-none">
-            {added ? 'Додано ✓' : 'До кошика'}
+            {added ? 'Додано ✓' : 'Купити'}
           </Button>
         </div>
 

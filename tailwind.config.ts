@@ -15,7 +15,16 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['var(--font-manrope)', 'sans-serif'],
+        display: ['var(--font-cormorant)', 'serif'],
+      },
       colors: {
+        // Бренд-палітра Mariya Underwear (з макету Figma): темне чорнило,
+        // кремовий "shell" на тексті/фоні, теплий бежевий фон секцій.
+        ink: '#151210',
+        shell: '#F7F4EF',
+        sand: '#EFE8DE',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

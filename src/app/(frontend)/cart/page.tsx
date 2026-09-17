@@ -6,5 +6,9 @@ export const metadata: Metadata = {
 }
 
 export default function Cart() {
-  return <CartPage />
+  return (
+    <div className="container py-8">
+      <CartPage />
+    </div>
+  )
 }

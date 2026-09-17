@@ -70,7 +70,7 @@ export default async function ProductPage({ params }: Params) {
   ])
 
   return (
-    <article className="space-y-10">
+    <article className="container space-y-10 py-8">
       <nav className="text-sm text-muted-foreground">
         <Link href="/catalog" className="hover:text-foreground">
           ← Назад до каталогу

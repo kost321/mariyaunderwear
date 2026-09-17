@@ -1,20 +1,5 @@
-import Link from 'next/link'
-import { buttonVariants } from '@/components/ui/button'
+import { Hero } from '@/components/shop/Hero'
 
 export default function HomePage() {
-  return (
-    <section className="flex flex-col items-center justify-center gap-6 py-24 text-center">
-      <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-        Mariya Underwear
-      </h1>
-      <p className="max-w-md text-muted-foreground">
-        Нічні сорочки, домашній одяг, елегантні сукні.
-        <br />
-        Нова колекція вже в каталозі.
-      </p>
-      <Link href="/catalog" className={buttonVariants({ size: 'lg' })}>
-        Перейти до каталогу
-      </Link>
-    </section>
-  )
+  return <Hero />
 }

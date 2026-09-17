@@ -24,7 +24,7 @@ export default async function CatalogPage({
   ])
 
   return (
-    <div className="space-y-8">
+    <div className="container space-y-8 py-8">
       <div>
         <h1 className="text-3xl font-bold">Каталог</h1>
         <p className="mt-1 text-muted-foreground">

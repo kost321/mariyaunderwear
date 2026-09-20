@@ -171,6 +171,10 @@ export interface Product {
    * Готовий HTML з таблицею розмірів для цього товару. На сторінці товару поруч із вибором розміру з'явиться посилання «Розмірна таблиця», яке відкриває це у модальному вікні. Порожньо — посилання не показується.
    */
   sizeChartHtml?: string | null;
+  /**
+   * Рекомендації з догляду за товаром у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>. Показується в акордеоні «Догляд» на сторінці товару. Порожньо — секція не показується.
+   */
+  careHtml?: string | null;
   images?:
     | {
         image: number | Media;
@@ -413,6 +417,7 @@ export interface ProductsSelect<T extends boolean = true> {
   description?: T;
   descriptionHtml?: T;
   sizeChartHtml?: T;
+  careHtml?: T;
   images?:
     | T
     | {
@@ -571,7 +576,7 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface Setting {
   id: number;
   /**
-   * Текст у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>, таблиці. Показується в акордеоні «Доставка та оплата» на сторінці кожного товару. Порожньо — секція не показується.
+   * Текст у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>, таблиці. Раніше показувався в акордеоні «Доставка та оплата» на сторінці кожного товару; зараз секція на сайті прихована, поле лишили в адмінці на майбутнє.
    */
   deliveryPaymentHtml?: string | null;
   updatedAt?: string | null;

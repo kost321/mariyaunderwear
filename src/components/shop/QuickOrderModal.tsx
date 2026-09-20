@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import type { CartItem } from '@/types/shop'
 
@@ -163,13 +162,6 @@ export function QuickOrderModal({
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? 'Відправляємо…' : 'Замовити'}
             </Button>
-
-            <p className="text-center text-xs text-muted-foreground">
-              Потрібна доставка Новою Поштою?{' '}
-              <Link href="/cart" className="underline" onClick={onClose}>
-                Оформити через кошик
-              </Link>
-            </p>
           </form>
         )}
       </div>

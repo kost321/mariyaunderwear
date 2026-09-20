@@ -3,6 +3,7 @@ import * as migration_20260908_075419_color_models from './20260908_075419_color
 import * as migration_20260909_100000_settings_global from './20260909_100000_settings_global';
 import * as migration_20260909_140000_description_to_html from './20260909_140000_description_to_html';
 import * as migration_20260917_210000_related_products from './20260917_210000_related_products';
+import * as migration_20260920_160352_care_html from './20260920_160352_care_html';
 
 export const migrations = [
   {
@@ -29,5 +30,10 @@ export const migrations = [
     up: migration_20260917_210000_related_products.up,
     down: migration_20260917_210000_related_products.down,
     name: '20260917_210000_related_products',
+  },
+  {
+    up: migration_20260920_160352_care_html.up,
+    down: migration_20260920_160352_care_html.down,
+    name: '20260920_160352_care_html',
   },
 ];

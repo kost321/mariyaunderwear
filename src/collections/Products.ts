@@ -122,34 +122,72 @@ export const Products: CollectionConfig = {
       },
     },
     {
-      name: 'description',
+      type: 'collapsible',
       label: 'Опис',
-      type: 'textarea',
-      admin: {
-        description:
-          'Опис товару у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>, таблиці. Показується в акордеоні «Опис» на сторінці товару. Порожньо — секція не показується.',
-        rows: 12,
-      },
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          name: 'description',
+          label: 'Опис',
+          type: 'textarea',
+          admin: {
+            description:
+              'Опис товару у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>, таблиці. Показується в акордеоні «Опис» на сторінці товару. Порожньо — секція не показується.',
+            rows: 12,
+          },
+        },
+      ],
     },
     {
-      name: 'descriptionHtml',
+      type: 'collapsible',
       label: 'Характеристика',
-      type: 'textarea',
-      admin: {
-        description:
-          'Характеристики товару у форматі HTML — текст, списки, таблиця <table>…</table>. Показується в акордеоні «Характеристика» на сторінці товару. Порожньо — секція не показується.',
-        rows: 12,
-      },
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          name: 'descriptionHtml',
+          label: 'Характеристика',
+          type: 'textarea',
+          admin: {
+            description:
+              'Характеристики товару у форматі HTML — текст, списки, таблиця <table>…</table>. Показується в акордеоні «Характеристика» на сторінці товару. Порожньо — секція не показується.',
+            rows: 12,
+          },
+        },
+      ],
     },
     {
-      name: 'sizeChartHtml',
-      label: 'Розмірна таблиця (HTML)',
-      type: 'textarea',
-      admin: {
-        description:
-          'Готовий HTML з таблицею розмірів для цього товару. На сторінці товару поруч із вибором розміру з\'явиться посилання «Розмірна таблиця», яке відкриває це у модальному вікні. Порожньо — посилання не показується.',
-        rows: 12,
-      },
+      type: 'collapsible',
+      label: 'Розмірна таблиця',
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          name: 'sizeChartHtml',
+          label: 'Розмірна таблиця (HTML)',
+          type: 'textarea',
+          admin: {
+            description:
+              'Готовий HTML з таблицею розмірів для цього товару. На сторінці товару поруч із вибором розміру з\'явиться посилання «Розмірна таблиця», яке відкриває це у модальному вікні. Порожньо — посилання не показується.',
+            rows: 12,
+          },
+        },
+      ],
+    },
+    {
+      type: 'collapsible',
+      label: 'Догляд',
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          name: 'careHtml',
+          label: 'Догляд',
+          type: 'textarea',
+          admin: {
+            description:
+              'Рекомендації з догляду за товаром у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>. Показується в акордеоні «Догляд» на сторінці товару. Порожньо — секція не показується.',
+            rows: 12,
+          },
+        },
+      ],
     },
     {
       name: 'images',

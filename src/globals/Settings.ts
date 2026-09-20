@@ -17,14 +17,21 @@ export const Settings: GlobalConfig = {
   },
   fields: [
     {
-      name: 'deliveryPaymentHtml',
+      type: 'collapsible',
       label: 'Доставка та оплата',
-      type: 'textarea',
-      admin: {
-        description:
-          'Текст у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>, таблиці. Показується в акордеоні «Доставка та оплата» на сторінці кожного товару. Порожньо — секція не показується.',
-        rows: 14,
-      },
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          name: 'deliveryPaymentHtml',
+          label: 'Доставка та оплата',
+          type: 'textarea',
+          admin: {
+            description:
+              'Текст у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>, таблиці. Раніше показувався в акордеоні «Доставка та оплата» на сторінці кожного товару; зараз секція на сайті прихована, поле лишили в адмінці на майбутнє.',
+            rows: 14,
+          },
+        },
+      ],
     },
   ],
 }

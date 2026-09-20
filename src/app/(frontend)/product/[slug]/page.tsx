@@ -5,7 +5,6 @@ import {
   getProductBySlug,
   getAllProductSlugs,
   getColorVariants,
-  getDeliveryPaymentHtml,
 } from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
 import { ProductDetails } from '@/components/shop/ProductDetails'
@@ -65,9 +64,8 @@ export default async function ProductPage({ params }: Params) {
     typeof product.model === 'object' && product.model !== null
       ? product.model.id
       : product.model
-  const [colorVariants, deliveryPaymentHtml] = await Promise.all([
+  const [colorVariants] = await Promise.all([
     modelId ? getColorVariants(modelId) : Promise.resolve([]),
-    getDeliveryPaymentHtml(),
   ])
 
   // relatedProducts — товари, вручну обрані в адмінці (relationship, hasMany).
@@ -88,7 +86,6 @@ export default async function ProductPage({ params }: Params) {
         product={product}
         colorVariants={colorVariants}
         relatedProducts={relatedProducts}
-        deliveryPaymentHtml={deliveryPaymentHtml}
       />
     </article>
   )

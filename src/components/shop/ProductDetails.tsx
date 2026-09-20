@@ -27,15 +27,12 @@ export function ProductDetails({
   product,
   colorVariants = [],
   relatedProducts = [],
-  deliveryPaymentHtml,
 }: {
   product: Product
   /** Другие цветовые карточки той же модели (связаны полем model). */
   colorVariants?: Product[]
   /** Товары, вручную выбранные в админке для блока «Схожі товари». */
   relatedProducts?: Product[]
-  /** Общий для магазина текст «Доставка та оплата» (глобал Settings). */
-  deliveryPaymentHtml?: string | null
 }) {
   const { addItem } = useCart()
 
@@ -275,12 +272,12 @@ export function ProductDetails({
           Швидке замовлення
         </Button>
 
-        {/* Опис + Характеристика + Доставка та оплата — акордеон */}
+        {/* Опис + Характеристика + Догляд — акордеон */}
         <ProductAccordion
           sections={[
             { title: 'Опис', html: product.description },
             { title: 'Характеристика', html: product.descriptionHtml },
-            { title: 'Доставка та оплата', html: deliveryPaymentHtml },
+            { title: 'Догляд', html: product.careHtml },
           ]}
         />
       </div>

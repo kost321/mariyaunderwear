@@ -1,6 +1,6 @@
 {
   "Meta": {
-    "siteTitle": "Mariya Underwear — sklep z odzieżą",
+    "siteTitle": "Mariya Underwear — sklep z odzieżą damską",
     "siteDescription": "Sklep internetowy z odzieżą damską Mariya Underwear. Koszule nocne, piżamy, szlafroki, komplety.",
     "catalogTitle": "Katalog",
     "catalogDescription": "Katalog odzieży Mariya Underwear — koszule nocne, piżamy, szlafroki, komplety.",
@@ -35,7 +35,7 @@
   },
   "Product": {
     "backToCatalog": "← Wróć do katalogu",
-    "sku": "Kod: {sku}",
+    "sku": "Kod produktu: {sku}",
     "size": "Rozmiar",
     "color": "Kolor",
     "selected": "{label} (wybrany)",
@@ -46,7 +46,7 @@
     "added": "Dodano ✓",
     "quickOrder": "Szybkie zamówienie",
     "description": "Opis",
-    "specs": "Charakterystyka",
+    "specs": "Szczegóły",
     "care": "Pielęgnacja",
     "related": "Podobne produkty"
   },
@@ -70,9 +70,11 @@
     "name": "Imię i nazwisko",
     "namePlaceholder": "Anna Kowalska",
     "phone": "Numer telefonu",
+    "phonePlaceholder": "+380 (00) 000-00-00",
     "city": "Miasto",
     "cityPlaceholder": "Kijów",
-    "branch": "Nr oddziału Nowej Poczty (Nova Poshta)",
+    "branch": "Numer oddziału Nova Poshta",
+    "branchPlaceholder": "np. 1",
     "submit": "Potwierdź zamówienie",
     "error": "Coś poszło nie tak. Spróbuj ponownie lub skontaktuj się z nami."
   },
@@ -84,6 +86,7 @@
     "pcs": "{count} szt.",
     "name": "Imię",
     "phone": "Telefon",
+    "phonePlaceholder": "+380",
     "submit": "Zamów",
     "required": "Podaj imię i numer telefonu.",
     "error": "Coś poszło nie tak. Spróbuj ponownie lub zadzwoń do nas."

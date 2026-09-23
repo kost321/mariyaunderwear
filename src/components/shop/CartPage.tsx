@@ -142,7 +142,7 @@ export function CartPage() {
             name="phone"
             value={form.phone}
             onChange={handleChange}
-            placeholder="+380 (00) 000-00-00"
+            placeholder={t('phonePlaceholder')}
             required
             className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
           />
@@ -166,7 +166,7 @@ export function CartPage() {
             name="novaPoshtaBranch"
             value={form.novaPoshtaBranch}
             onChange={handleChange}
-            placeholder="№ 1"
+            placeholder={t('branchPlaceholder')}
             required
             className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
           />

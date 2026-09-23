@@ -1,12 +1,12 @@
 {
   "Meta": {
-    "siteTitle": "Mariya Underwear — clothing store",
-    "siteDescription": "Mariya Underwear online store for women's clothing. Nightgowns, pajamas, robes, sets.",
+    "siteTitle": "Mariya Underwear — women's clothing store",
+    "siteDescription": "Mariya Underwear, an online store of women's clothing: nightgowns, pajamas, robes and sets.",
     "catalogTitle": "Catalog",
-    "catalogDescription": "Mariya Underwear catalog — nightgowns, pajamas, robes, sets.",
+    "catalogDescription": "The Mariya Underwear catalog: nightgowns, pajamas, robes and sets.",
     "cartTitle": "Cart",
     "productNotFound": "Product not found",
-    "productDescription": "{title} — buy at Mariya Underwear."
+    "productDescription": "{title}: buy online at Mariya Underwear."
   },
   "Common": {
     "currency": "UAH",
@@ -24,7 +24,7 @@
   },
   "Home": {
     "tagline1": "Nightgowns, loungewear, elegant dresses.",
-    "tagline2": "The new collection is already in the catalog.",
+    "tagline2": "The new collection is now in the catalog.",
     "toCatalog": "Go to catalog"
   },
   "Catalog": {
@@ -55,7 +55,7 @@
   },
   "Cart": {
     "thanks": "Thank you for your order!",
-    "thanksText": "We will contact you shortly.",
+    "thanksText": "We'll be in touch shortly.",
     "backToCatalog": "Back to catalog",
     "empty": "Your cart is empty",
     "toCatalog": "Go to catalog",
@@ -70,23 +70,26 @@
     "name": "Full name",
     "namePlaceholder": "Jane Smith",
     "phone": "Phone number",
+    "phonePlaceholder": "+380 (00) 000-00-00",
     "city": "City",
     "cityPlaceholder": "Kyiv",
-    "branch": "Nova Poshta branch no.",
+    "branch": "Nova Poshta branch number",
+    "branchPlaceholder": "e.g. 1",
     "submit": "Place order",
     "error": "Something went wrong. Please try again or contact us."
   },
   "QuickOrder": {
     "title": "Quick order",
     "thanks": "Thank you!",
-    "thanksText": "We will contact you shortly to confirm your order.",
+    "thanksText": "We'll contact you shortly to confirm your order.",
     "size": "size {size}",
     "pcs": "{count} pcs",
     "name": "Name",
     "phone": "Phone",
-    "submit": "Order",
+    "phonePlaceholder": "+380",
+    "submit": "Order now",
     "required": "Please enter your name and phone number.",
-    "error": "Something went wrong. Please try again or give us a call."
+    "error": "Something went wrong. Please try again or call us."
   },
   "NotFound": {
     "title": "Page not found",

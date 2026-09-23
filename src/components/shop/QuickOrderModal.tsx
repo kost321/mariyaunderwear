@@ -158,7 +158,7 @@ export function QuickOrderModal({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 autoComplete="tel"
-                placeholder="+380"
+                placeholder={t('phonePlaceholder')}
                 className="w-full rounded-md border px-3 py-2 text-sm"
                 required
               />

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { routing, type Locale } from '@/i18n/routing'
+import { routing, localePath, type Locale } from '@/i18n/routing'
 
 /**
  * canonical + hreflang для сторінки, яка існує на всіх мовах.
@@ -8,11 +8,11 @@ import { routing, type Locale } from '@/i18n/routing'
  */
 export function alternates(locale: Locale, path: string): Metadata['alternates'] {
   const languages: Record<string, string> = {}
-  for (const l of routing.locales) languages[l] = `/${l}${path}`
-  languages['x-default'] = `/${routing.defaultLocale}${path}`
+  for (const l of routing.locales) languages[l] = `${localePath(l)}${path}`
+  languages['x-default'] = `${localePath(routing.defaultLocale)}${path}`
 
   return {
-    canonical: `/${locale}${path}`,
+    canonical: `${localePath(locale)}${path}`,
     languages,
   }
 }

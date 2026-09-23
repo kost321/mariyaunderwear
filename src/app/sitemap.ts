@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { routing } from '@/i18n/routing'
+import { routing, localePath } from '@/i18n/routing'
 import { getAllProductSlugs } from '@/lib/queries'
 
 const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
@@ -20,10 +20,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return paths.flatMap((path) => {
     const languages = Object.fromEntries(
-      routing.locales.map((l) => [l, `${serverUrl}/${l}${path}`]),
+      routing.locales.map((l) => [l, `${serverUrl}${localePath(l)}${path}`]),
     )
     return routing.locales.map((locale) => ({
-      url: `${serverUrl}/${locale}${path}`,
+      url: `${serverUrl}${localePath(locale)}${path}`,
       alternates: { languages },
     }))
   })

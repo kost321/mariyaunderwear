@@ -69,7 +69,7 @@
 
 ## Мультимовність (uk / pl / en)
 
-- **URL:** всі сторінки фронту під мовним префіксом — `/uk/…`, `/pl/…`, `/en/…`. `src/middleware.ts` (next-intl) редіректить `/` і шляхи без префікса: cookie `NEXT_LOCALE` (вибір у перемикачі, живе рік) → мова браузера → `uk`. `/admin` і `/api` middleware не чіпає.
+- **URL:** всі сторінки фронту під мовним префіксом — `/ua/…`, `/pl/…`, `/en/…`. Українська в адресі — `/ua`, але код мови всюди `uk` (Payload, hreflang, `<html lang>`): префікси задані в `src/i18n/routing.ts`, шляхи будувати через `localePath()`. `src/middleware.ts` (next-intl) редіректить `/` і шляхи без префікса: cookie `NEXT_LOCALE` (вибір у перемикачі, живе рік) → мова браузера → українська. `/admin` і `/api` middleware не чіпає.
 - **Тексти інтерфейсу:** `src/messages/{uk,pl,en}.json`. У компонентах — `useTranslations('Ns')` / `getTranslations('Ns')`; ключі типізовані (`src/global.d.ts`), помилка в ключі = помилка TS. Новий текст → додати ключ у всі три файли.
 - **Посилання:** `Link`, `useRouter`, `usePathname` імпортувати з `@/i18n/navigation` (не з `next/link`) — вони самі додають префікс мови.
 - **Контент (Payload `localization`):** localized-поля — назва, колір, опис, характеристика, розмірна таблиця, догляд (Products), назва (Categories), alt (Media). В адмінці мова перемикається в шапці документа. Назва обов'язкова лише українською (`src/lib/localization.ts`); порожній переклад → на сайті українське значення (`fallbackLocale: 'uk'` у `lib/queries.ts`). slug спільний для всіх мов.

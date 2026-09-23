@@ -4,11 +4,11 @@ import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
-import { routing } from '@/i18n/routing'
+import { routing, localeLabels } from '@/i18n/routing'
 import { cn } from '@/lib/utils'
 
 /**
- * Перемикач мови UK | PL | EN у шапці. Веде на ту саму сторінку іншою
+ * Перемикач мови UA | PL | EN у шапці. Веде на ту саму сторінку іншою
  * мовою (slug товару спільний для всіх мов), зберігає ?category=… і
  * запам'ятовує вибір у cookie NEXT_LOCALE (це робить Link з `locale`).
  */
@@ -42,13 +42,13 @@ function LocaleLinks({ query }: { query?: Record<string, string> }) {
           hrefLang={l}
           aria-current={l === locale ? 'true' : undefined}
           className={cn(
-            'rounded px-1.5 py-1 uppercase transition-colors',
+            'rounded px-1.5 py-1 transition-colors',
             l === locale
               ? 'font-semibold text-foreground'
               : 'text-muted-foreground hover:text-foreground',
           )}
         >
-          {l}
+          {localeLabels[l]}
         </Link>
       ))}
     </div>

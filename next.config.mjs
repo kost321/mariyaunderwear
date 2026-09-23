@@ -8,6 +8,14 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 const nextConfig = {
   // Здесь можно настраивать разрешённые домены для next/image,
   // редиректы, заголовки и т.д.
+  // Українська живе на /ua (код мови uk). Якщо хтось набере /uk/… за
+  // звичкою — ведемо на /ua/…
+  async redirects() {
+    return [
+      { source: '/uk', destination: '/ua', permanent: true },
+      { source: '/uk/:path*', destination: '/ua/:path*', permanent: true },
+    ]
+  },
   images: {
     remotePatterns: [
       {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import type { CartItem } from '@/types/shop'
 
@@ -12,6 +13,10 @@ import type { CartItem } from '@/types/shop'
  * `item` формується на сторінці товару з поточного вибору (розмір, колір,
  * кількість).
  */
+
+// Службова примітка для менеджера в замовленні — завжди українською,
+// незалежно від мови сайту.
+const QUICK_ORDER_COMMENT = 'Швидке замовлення — уточнити деталі по телефону'
 export function QuickOrderModal({
   open,
   onClose,
@@ -21,6 +26,8 @@ export function QuickOrderModal({
   onClose: () => void
   item: CartItem
 }) {
+  const t = useTranslations('QuickOrder')
+  const tc = useTranslations('Common')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
@@ -55,7 +62,7 @@ export function QuickOrderModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim() || !phone.trim()) {
-      setError("Вкажіть ім'я та телефон.")
+      setError(t('required'))
       return
     }
     setLoading(true)
@@ -71,14 +78,14 @@ export function QuickOrderModal({
             phone: phone.trim(),
             city: '',
             novaPoshtaBranch: '',
-            comment: 'Швидке замовлення — уточнити деталі по телефону',
+            comment: QUICK_ORDER_COMMENT,
           },
         }),
       })
       if (!res.ok) throw new Error('bad response')
       setDone(true)
     } catch {
-      setError("Щось пішло не так. Спробуйте ще раз або зателефонуйте нам.")
+      setError(t('error'))
     } finally {
       setLoading(false)
     }
@@ -90,7 +97,7 @@ export function QuickOrderModal({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Швидке замовлення"
+      aria-label={t('title')}
     >
       <div
         className="relative w-full max-w-sm rounded-lg bg-background p-6 shadow-xl"
@@ -100,35 +107,35 @@ export function QuickOrderModal({
           type="button"
           onClick={onClose}
           className="absolute right-4 top-4 text-2xl leading-none text-muted-foreground hover:text-foreground"
-          aria-label="Закрити"
+          aria-label={tc('close')}
         >
           ×
         </button>
 
         {done ? (
           <div className="space-y-4 py-4 text-center">
-            <h2 className="text-xl font-semibold">Дякуємо!</h2>
+            <h2 className="text-xl font-semibold">{t('thanks')}</h2>
             <p className="text-sm text-muted-foreground">
-              Ми зв'яжемось з вами найближчим часом, щоб підтвердити замовлення.
+              {t('thanksText')}
             </p>
             <Button onClick={onClose} className="w-full">
-              Закрити
+              {tc('close')}
             </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <h2 className="pr-8 text-lg font-semibold">Швидке замовлення</h2>
+              <h2 className="pr-8 text-lg font-semibold">{t('title')}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {item.title}
-                {item.size ? `, розмір ${item.size}` : ''}
-                {item.color ? `, ${item.color}` : ''} — {item.quantity} шт.
+                {item.size ? `, ${t('size', { size: item.size })}` : ''}
+                {item.color ? `, ${item.color}` : ''} — {t('pcs', { count: item.quantity })}
               </p>
             </div>
 
             <div className="space-y-1">
               <label htmlFor="qo-name" className="text-sm font-medium">
-                Ім'я
+                {t('name')}
               </label>
               <input
                 id="qo-name"
@@ -143,7 +150,7 @@ export function QuickOrderModal({
 
             <div className="space-y-1">
               <label htmlFor="qo-phone" className="text-sm font-medium">
-                Телефон
+                {t('phone')}
               </label>
               <input
                 id="qo-phone"
@@ -160,7 +167,7 @@ export function QuickOrderModal({
             {error && <p className="text-sm text-destructive">{error}</p>}
 
             <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Відправляємо…' : 'Замовити'}
+              {loading ? tc('sending') : t('submit')}
             </Button>
           </form>
         )}

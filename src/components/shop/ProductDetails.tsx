@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { formatPrice, cn } from '@/lib/utils'
@@ -34,6 +35,8 @@ export function ProductDetails({
   /** Товары, вручную выбранные в админке для блока «Схожі товари». */
   relatedProducts?: Product[]
 }) {
+  const t = useTranslations('Product')
+  const tc = useTranslations('Common')
   const { addItem } = useCart()
 
   const images = product.images ?? []
@@ -52,12 +55,12 @@ export function ProductDetails({
 
   const mainImage = images[activeImage]?.image
   const mainUrl = getMediaUrl(mainImage)
-  const mainAlt = getMediaAlt(mainImage, product.title)
+  const mainAlt = getMediaAlt(mainImage, product.title ?? '')
 
   // Позиция для корзины / быстрого заказа из текущего выбора на странице.
   const selectedItem: CartItem = {
     productId: String(product.id),
-    title: product.title,
+    title: product.title ?? '',
     price: product.price,
     slug: product.slug ?? '',
     image: getMediaUrl(images[0]?.image),
@@ -91,7 +94,7 @@ export function ProductDetails({
             />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
-              немає фото
+              {tc('noPhoto')}
             </div>
           )}
         </div>
@@ -110,7 +113,7 @@ export function ProductDetails({
                     'relative aspect-square overflow-hidden rounded-md border-2',
                     i === activeImage ? 'border-primary' : 'border-transparent',
                   )}
-                  aria-label={`Изображение ${i + 1}`}
+                  aria-label={t('image', { n: i + 1 })}
                 >
                   <Image src={thumb} alt="" fill sizes="20vw" className="object-cover" />
                 </button>
@@ -124,9 +127,9 @@ export function ProductDetails({
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">{product.title}</h1>
-          <p className="mt-2 text-2xl">{formatPrice(product.price)}</p>
+          <p className="mt-2 text-2xl">{formatPrice(product.price, tc('currency'))}</p>
           {product.sku && (
-            <p className="mt-1 text-sm text-muted-foreground">Артикул: {product.sku}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('sku', { sku: product.sku })}</p>
 
           )}
         </div>
@@ -135,7 +138,7 @@ export function ProductDetails({
         {sizes.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-medium">Розмір</p>
+              <p className="text-sm font-medium">{t('size')}</p>
               <SizeChart html={product.sizeChartHtml} />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -166,12 +169,12 @@ export function ProductDetails({
         {showVariantSwitch && (
           <div className="space-y-2">
             <p className="text-sm font-medium">
-              Колір{product.colorName ? `: ${product.colorName}` : ''}
+              {t('color')}{product.colorName ? `: ${product.colorName}` : ''}
             </p>
             <div className="flex flex-wrap gap-2">
               {colorVariants.map((v) => {
                 const isCurrent = v.id === product.id
-                const label = v.colorName ?? v.title
+                const label = v.colorName ?? v.title ?? ''
                 const swatchClass = cn(
                   'block h-9 w-9 rounded-full border-2 transition-transform',
                   isCurrent
@@ -184,7 +187,7 @@ export function ProductDetails({
                   <span
                     key={v.id}
                     title={label}
-                    aria-label={`${label} (обраний)`}
+                    aria-label={t('selected', { label })}
                     aria-current="true"
                     className={swatchClass}
                     style={style}
@@ -208,7 +211,7 @@ export function ProductDetails({
         {!showVariantSwitch && colors.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium">
-              Колір{color ? `: ${color}` : ''}
+              {t('color')}{color ? `: ${color}` : ''}
             </p>
             <div className="flex flex-wrap gap-2">
               {colors.map((c) => (
@@ -238,7 +241,7 @@ export function ProductDetails({
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1}
               className="flex h-11 w-11 items-center justify-center text-lg leading-none disabled:opacity-40"
-              aria-label="Зменшити кількість"
+              aria-label={t('decrease')}
             >
               −
             </button>
@@ -252,14 +255,14 @@ export function ProductDetails({
               type="button"
               onClick={() => setQuantity((q) => q + 1)}
               className="flex h-11 w-11 items-center justify-center text-lg leading-none"
-              aria-label="Збільшити кількість"
+              aria-label={t('increase')}
             >
               +
             </button>
           </div>
 
           <Button onClick={handleAddToCart} size="lg" className="flex-1 sm:flex-none">
-            {added ? 'Додано ✓' : 'Купити'}
+            {added ? t('added') : t('buy')}
           </Button>
         </div>
 
@@ -269,15 +272,15 @@ export function ProductDetails({
           variant="outline"
           className="w-full sm:w-auto"
         >
-          Швидке замовлення
+          {t('quickOrder')}
         </Button>
 
         {/* Опис + Характеристика + Догляд — акордеон */}
         <ProductAccordion
           sections={[
-            { title: 'Опис', html: product.description },
-            { title: 'Характеристика', html: product.descriptionHtml },
-            { title: 'Догляд', html: product.careHtml },
+            { title: t('description'), html: product.description },
+            { title: t('specs'), html: product.descriptionHtml },
+            { title: t('care'), html: product.careHtml },
           ]}
         />
       </div>
@@ -292,7 +295,7 @@ export function ProductDetails({
     {/* Схожі товари — вручну обрані в адмінці */}
     {relatedProducts.length > 0 && (
       <div className="mt-12 space-y-4">
-        <h2 className="text-xl font-semibold">Схожі товари</h2>
+        <h2 className="text-xl font-semibold">{t('related')}</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {relatedProducts.map((related) => (
             <ProductCard key={related.id} product={related} />

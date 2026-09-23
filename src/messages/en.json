@@ -1,0 +1,96 @@
+{
+  "Meta": {
+    "siteTitle": "Mariya Underwear — clothing store",
+    "siteDescription": "Mariya Underwear online store for women's clothing. Nightgowns, pajamas, robes, sets.",
+    "catalogTitle": "Catalog",
+    "catalogDescription": "Mariya Underwear catalog — nightgowns, pajamas, robes, sets.",
+    "cartTitle": "Cart",
+    "productNotFound": "Product not found",
+    "productDescription": "{title} — buy at Mariya Underwear."
+  },
+  "Common": {
+    "currency": "UAH",
+    "noPhoto": "no photo",
+    "close": "Close",
+    "sending": "Sending…"
+  },
+  "Header": {
+    "catalog": "Catalog",
+    "cart": "Cart",
+    "language": "Language"
+  },
+  "Footer": {
+    "rights": "All rights reserved."
+  },
+  "Home": {
+    "tagline1": "Nightgowns, loungewear, elegant dresses.",
+    "tagline2": "The new collection is already in the catalog.",
+    "toCatalog": "Go to catalog"
+  },
+  "Catalog": {
+    "title": "Catalog",
+    "count": "{count, plural, one {# product} other {# products}}",
+    "all": "All",
+    "empty": "No products found."
+  },
+  "Product": {
+    "backToCatalog": "← Back to catalog",
+    "sku": "SKU: {sku}",
+    "size": "Size",
+    "color": "Color",
+    "selected": "{label} (selected)",
+    "image": "Image {n}",
+    "decrease": "Decrease quantity",
+    "increase": "Increase quantity",
+    "buy": "Buy",
+    "added": "Added ✓",
+    "quickOrder": "Quick order",
+    "description": "Description",
+    "specs": "Details",
+    "care": "Care",
+    "related": "Similar products"
+  },
+  "SizeChart": {
+    "title": "Size chart"
+  },
+  "Cart": {
+    "thanks": "Thank you for your order!",
+    "thanksText": "We will contact you shortly.",
+    "backToCatalog": "Back to catalog",
+    "empty": "Your cart is empty",
+    "toCatalog": "Go to catalog",
+    "yourOrder": "Your order:",
+    "color": "Color: {color}",
+    "size": "Size: {size}",
+    "decrease": "Decrease quantity",
+    "increase": "Increase quantity",
+    "remove": "Remove",
+    "sum": "Subtotal: {sum}",
+    "total": "Total: {sum}",
+    "name": "Full name",
+    "namePlaceholder": "Jane Smith",
+    "phone": "Phone number",
+    "city": "City",
+    "cityPlaceholder": "Kyiv",
+    "branch": "Nova Poshta branch no.",
+    "submit": "Place order",
+    "error": "Something went wrong. Please try again or contact us."
+  },
+  "QuickOrder": {
+    "title": "Quick order",
+    "thanks": "Thank you!",
+    "thanksText": "We will contact you shortly to confirm your order.",
+    "size": "size {size}",
+    "pcs": "{count} pcs",
+    "name": "Name",
+    "phone": "Phone",
+    "submit": "Order",
+    "required": "Please enter your name and phone number.",
+    "error": "Something went wrong. Please try again or give us a call."
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "text": "It may have been removed, or the address was mistyped.",
+    "toCatalog": "Go to catalog"
+  }
+}

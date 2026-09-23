@@ -1,4 +1,8 @@
 import { withPayload } from '@payloadcms/next/withPayload'
+import createNextIntlPlugin from 'next-intl/plugin'
+
+// Підключає src/i18n/request.ts (мова + словник для кожного запиту).
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -16,4 +20,4 @@ const nextConfig = {
 
 // withPayload оборачивает конфиг Next, чтобы корректно собрать
 // серверную часть Payload внутри Next.js (admin UI, API, бандлинг).
-export default withPayload(nextConfig)
+export default withPayload(withNextIntl(nextConfig))

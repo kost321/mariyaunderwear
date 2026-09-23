@@ -1,0 +1,96 @@
+{
+  "Meta": {
+    "siteTitle": "Mariya Underwear — sklep z odzieżą",
+    "siteDescription": "Sklep internetowy z odzieżą damską Mariya Underwear. Koszule nocne, piżamy, szlafroki, komplety.",
+    "catalogTitle": "Katalog",
+    "catalogDescription": "Katalog odzieży Mariya Underwear — koszule nocne, piżamy, szlafroki, komplety.",
+    "cartTitle": "Koszyk",
+    "productNotFound": "Nie znaleziono produktu",
+    "productDescription": "{title} — kup w sklepie Mariya Underwear."
+  },
+  "Common": {
+    "currency": "UAH",
+    "noPhoto": "brak zdjęcia",
+    "close": "Zamknij",
+    "sending": "Wysyłanie…"
+  },
+  "Header": {
+    "catalog": "Katalog",
+    "cart": "Koszyk",
+    "language": "Język"
+  },
+  "Footer": {
+    "rights": "Wszelkie prawa zastrzeżone."
+  },
+  "Home": {
+    "tagline1": "Koszule nocne, odzież domowa, eleganckie sukienki.",
+    "tagline2": "Nowa kolekcja już w katalogu.",
+    "toCatalog": "Przejdź do katalogu"
+  },
+  "Catalog": {
+    "title": "Katalog",
+    "count": "{count, plural, one {# produkt} few {# produkty} many {# produktów} other {# produktu}}",
+    "all": "Wszystkie",
+    "empty": "Nie znaleziono produktów."
+  },
+  "Product": {
+    "backToCatalog": "← Wróć do katalogu",
+    "sku": "Kod: {sku}",
+    "size": "Rozmiar",
+    "color": "Kolor",
+    "selected": "{label} (wybrany)",
+    "image": "Zdjęcie {n}",
+    "decrease": "Zmniejsz ilość",
+    "increase": "Zwiększ ilość",
+    "buy": "Kup",
+    "added": "Dodano ✓",
+    "quickOrder": "Szybkie zamówienie",
+    "description": "Opis",
+    "specs": "Charakterystyka",
+    "care": "Pielęgnacja",
+    "related": "Podobne produkty"
+  },
+  "SizeChart": {
+    "title": "Tabela rozmiarów"
+  },
+  "Cart": {
+    "thanks": "Dziękujemy za zamówienie!",
+    "thanksText": "Skontaktujemy się z Tobą wkrótce.",
+    "backToCatalog": "Wróć do katalogu",
+    "empty": "Koszyk jest pusty",
+    "toCatalog": "Przejdź do katalogu",
+    "yourOrder": "Twoje zamówienie:",
+    "color": "Kolor: {color}",
+    "size": "Rozmiar: {size}",
+    "decrease": "Zmniejsz ilość",
+    "increase": "Zwiększ ilość",
+    "remove": "Usuń",
+    "sum": "Suma: {sum}",
+    "total": "Do zapłaty: {sum}",
+    "name": "Imię i nazwisko",
+    "namePlaceholder": "Anna Kowalska",
+    "phone": "Numer telefonu",
+    "city": "Miasto",
+    "cityPlaceholder": "Kijów",
+    "branch": "Nr oddziału Nowej Poczty (Nova Poshta)",
+    "submit": "Potwierdź zamówienie",
+    "error": "Coś poszło nie tak. Spróbuj ponownie lub skontaktuj się z nami."
+  },
+  "QuickOrder": {
+    "title": "Szybkie zamówienie",
+    "thanks": "Dziękujemy!",
+    "thanksText": "Wkrótce skontaktujemy się z Tobą, aby potwierdzić zamówienie.",
+    "size": "rozmiar {size}",
+    "pcs": "{count} szt.",
+    "name": "Imię",
+    "phone": "Telefon",
+    "submit": "Zamów",
+    "required": "Podaj imię i numer telefonu.",
+    "error": "Coś poszło nie tak. Spróbuj ponownie lub zadzwoń do nas."
+  },
+  "NotFound": {
+    "title": "Nie znaleziono strony",
+    "text": "Mogła zostać usunięta lub adres został wpisany z błędem.",
+    "toCatalog": "Przejdź do katalogu"
+  }
+}

@@ -94,14 +94,14 @@ export interface Config {
   db: {
     defaultIDType: number;
   };
-  fallbackLocale: null;
+  fallbackLocale: ('false' | 'none' | 'null') | false | null | ('uk' | 'pl' | 'en') | ('uk' | 'pl' | 'en')[];
   globals: {
     settings: Setting;
   };
   globalsSelect: {
     settings: SettingsSelect<false> | SettingsSelect<true>;
   };
-  locale: null;
+  locale: 'uk' | 'pl' | 'en';
   widgets: {
     collections: CollectionsWidget;
   };
@@ -135,7 +135,10 @@ export interface UserAuthOperations {
  */
 export interface Product {
   id: number;
-  title: string;
+  /**
+   * Обов'язково українською. PL/EN — за бажанням: порожньо — на сайті буде українська назва.
+   */
+  title?: string | null;
   /**
    * Залиште порожнім — згенерується з назви.
    */
@@ -207,7 +210,10 @@ export interface Product {
  */
 export interface Category {
   id: number;
-  title: string;
+  /**
+   * Обов'язково українською. PL/EN — за бажанням: порожньо — на сайті буде українська назва.
+   */
+  title?: string | null;
   /**
    * Залиште порожнім — згенерується з назви.
    */

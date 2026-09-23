@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 /**
  * Ссылка «Розмірна таблиця» + модальное окно с HTML-таблицей размеров.
@@ -8,6 +9,8 @@ import { useEffect, useState } from 'react'
  * Без внешних зависимостей: overlay + Esc + клик по фону закрывают окно.
  */
 export function SizeChart({ html }: { html?: string | null }) {
+  const t = useTranslations('SizeChart')
+  const tc = useTranslations('Common')
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export function SizeChart({ html }: { html?: string | null }) {
         onClick={() => setOpen(true)}
         className="text-sm underline underline-offset-4 hover:text-foreground text-muted-foreground"
       >
-        Розмірна таблиця
+        {t('title')}
       </button>
 
       {open && (
@@ -43,7 +46,7 @@ export function SizeChart({ html }: { html?: string | null }) {
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
-          aria-label="Розмірна таблиця"
+          aria-label={t('title')}
         >
           <div
             className="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-background p-6 shadow-xl"
@@ -53,12 +56,12 @@ export function SizeChart({ html }: { html?: string | null }) {
               type="button"
               onClick={() => setOpen(false)}
               className="absolute right-4 top-4 text-2xl leading-none text-muted-foreground hover:text-foreground"
-              aria-label="Закрити"
+              aria-label={tc('close')}
             >
               ×
             </button>
 
-            <h2 className="mb-4 pr-8 text-lg font-semibold">Розмірна таблиця</h2>
+            <h2 className="mb-4 pr-8 text-lg font-semibold">{t('title')}</h2>
 
             <div
               className="size-chart-html text-sm [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_td]:text-center [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:px-3 [&_th]:py-2 [&_th]:text-center [&_p]:my-2 [&_strong]:font-semibold [&_img]:mx-auto"

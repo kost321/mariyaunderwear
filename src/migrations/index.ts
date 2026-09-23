@@ -4,6 +4,7 @@ import * as migration_20260909_100000_settings_global from './20260909_100000_se
 import * as migration_20260909_140000_description_to_html from './20260909_140000_description_to_html';
 import * as migration_20260917_210000_related_products from './20260917_210000_related_products';
 import * as migration_20260920_160352_care_html from './20260920_160352_care_html';
+import * as migration_20260923_120000_localization from './20260923_120000_localization';
 
 export const migrations = [
   {
@@ -35,5 +36,10 @@ export const migrations = [
     up: migration_20260920_160352_care_html.up,
     down: migration_20260920_160352_care_html.down,
     name: '20260920_160352_care_html',
+  },
+  {
+    up: migration_20260923_120000_localization.up,
+    down: migration_20260923_120000_localization.down,
+    name: '20260923_120000_localization',
   },
 ];

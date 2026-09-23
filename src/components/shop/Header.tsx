@@ -1,14 +1,17 @@
 'use client'
 
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import { ShoppingBag } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
+import { LanguageSwitcher } from '@/components/shop/LanguageSwitcher'
 
 /**
  * Шапка магазина с навигацией и счётчиком корзины.
  * Клиентский компонент, потому что читает состояние корзины.
  */
 export function Header() {
+  const t = useTranslations('Header')
   const { totalCount } = useCart()
 
   return (
@@ -20,13 +23,12 @@ export function Header() {
 
         <nav className="flex items-center gap-6 text-sm">
           <Link href="/catalog" className="hover:text-muted-foreground">
-            Каталог
-
+            {t('catalog')}
           </Link>
           <Link
             href="/cart"
             className="relative flex items-center gap-1 hover:text-muted-foreground"
-            aria-label="Кошик"
+            aria-label={t('cart')}
           >
             <ShoppingBag className="h-5 w-5" />
             {totalCount > 0 && (
@@ -35,6 +37,7 @@ export function Header() {
               </span>
             )}
           </Link>
+          <LanguageSwitcher />
         </nav>
       </div>
     </header>

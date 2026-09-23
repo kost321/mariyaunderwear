@@ -3,15 +3,22 @@ import 'server-only'
 import type { Where } from 'payload'
 import { getPayload } from './payload'
 import type { Product, Category } from '@/payload-types'
+import type { Locale } from '@/i18n/routing'
 
 /**
  * Слой доступа к данным. Все запросы товаров/категорий идут через эти
  * функции — так фронтенд не знает деталей Payload, а правила фильтрации
  * (например, only active) лежат в одном месте.
+ *
+ * Мова: localized-поля (назва, описи, alt) повертаються мовою `locale`;
+ * якщо переклад порожній — українською (fallbackLocale).
  */
 
+const FALLBACK_LOCALE = 'uk' satisfies Locale
+
 /** Получить список активных товаров (для каталога). */
-export async function getProducts(options?: {
+export async function getProducts(options: {
+  locale: Locale
   categorySlug?: string
   limit?: number
 }): Promise<Product[]> {
@@ -23,15 +30,17 @@ export async function getProducts(options?: {
   }
 
   // Опциональная фильтрация по категории через её slug.
-  if (options?.categorySlug) {
+  if (options.categorySlug) {
     where['category.slug'] = { equals: options.categorySlug }
   }
 
   const result = await payload.find({
     collection: 'products',
     where,
-    limit: options?.limit ?? 100,
+    limit: options.limit ?? 100,
     sort: '-createdAt',
+    locale: options.locale,
+    fallbackLocale: FALLBACK_LOCALE,
     // depth: 2 — подтянуть связанные media и category объектами,
     // а не просто их id.
     depth: 2,
@@ -44,7 +53,10 @@ export async function getProducts(options?: {
 }
 
 /** Получить один товар по slug (для карточки товара). */
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export async function getProductBySlug(
+  slug: string,
+  locale: Locale,
+): Promise<Product | null> {
   const payload = await getPayload()
 
   const result = await payload.find({
@@ -55,6 +67,8 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     },
     limit: 1,
     depth: 2,
+    locale,
+    fallbackLocale: FALLBACK_LOCALE,
   })
 
   return result.docs[0] ?? null
@@ -68,6 +82,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
  */
 export async function getColorVariants(
   modelId: number | string,
+  locale: Locale,
 ): Promise<Product[]> {
   if (!modelId) return []
 
@@ -82,13 +97,15 @@ export async function getColorVariants(
     limit: 20,
     sort: 'createdAt',
     depth: 1,
+    locale,
+    fallbackLocale: FALLBACK_LOCALE,
   })
 
   return result.docs
 }
 
 /** Получить все категории (для меню/фильтра). */
-export async function getCategories(): Promise<Category[]> {
+export async function getCategories(locale: Locale): Promise<Category[]> {
   const payload = await getPayload()
 
   const result = await payload.find({
@@ -96,6 +113,8 @@ export async function getCategories(): Promise<Category[]> {
     limit: 100,
     sort: 'title',
     depth: 1,
+    locale,
+    fallbackLocale: FALLBACK_LOCALE,
   })
 
   return result.docs

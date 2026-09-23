@@ -34,6 +34,19 @@ export default buildConfig({
     fallbackLanguage: 'uk',
   },
 
+  // Мови контенту (назви/описи товарів). У картці товару в адмінці —
+  // перемикач мови в шапці документа. Порожній переклад → фолбек на uk.
+  // Список мов має збігатися з src/i18n/routing.ts.
+  localization: {
+    locales: [
+      { code: 'uk', label: 'Українська' },
+      { code: 'pl', label: 'Polski' },
+      { code: 'en', label: 'English' },
+    ],
+    defaultLocale: 'uk',
+    fallback: true,
+  },
+
   // Регистрируем все коллекции.
   collections: [Products, ProductModels, Categories, Orders, Media, Users],
 

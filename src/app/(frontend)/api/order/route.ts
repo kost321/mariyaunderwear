@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { getPayload } from '@/lib/payload'
 import type { CartItem, CheckoutForm } from '@/types/shop'
+import type { Locale } from '@/i18n/routing'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+/** Товар, отриманий з locale: 'all' — localized-поля приходять як { uk, pl, en }. */
+type LocalizedProduct = {
+  title?: Partial<Record<Locale, string>>
+  colorName?: Partial<Record<Locale, string | null>>
+}
 
 export async function POST(req: NextRequest) {
   const { items, form }: { items: CartItem[]; form: CheckoutForm } = await req.json()
@@ -14,8 +21,32 @@ export async function POST(req: NextRequest) {
 
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  // Зберігаємо замовлення в БД
   const payload = await getPayload()
+
+  // Кошик зберігає назву/колір мовою, якою покупець переглядав сайт.
+  // Для адмінки й листа менеджеру беремо українські — підтягуємо товари
+  // з усіма мовами і підміняємо назву та (якщо збігається) колір.
+  const { docs } = await payload.find({
+    collection: 'products',
+    where: { id: { in: items.map((item) => Number(item.productId)) } },
+    locale: 'all',
+    depth: 0,
+    pagination: false,
+  })
+  const byId = new Map(docs.map((doc) => [String(doc.id), doc as unknown as LocalizedProduct]))
+  const ukItems = items.map((item) => {
+    const doc = byId.get(item.productId)
+    if (!doc) return item
+    const colorIsLocalized =
+      item.color && doc.colorName && Object.values(doc.colorName).includes(item.color)
+    return {
+      ...item,
+      title: doc.title?.uk || item.title,
+      color: colorIsLocalized ? doc.colorName?.uk || item.color : item.color,
+    }
+  })
+
+  // Зберігаємо замовлення в БД
   const order = await payload.create({
     collection: 'orders',
     data: {
@@ -25,7 +56,7 @@ export async function POST(req: NextRequest) {
       comment: [form.city, form.novaPoshtaBranch, form.comment].filter(Boolean).join(' | '),
       totalPrice,
       status: 'new',
-      products: items.map((item) => ({
+      products: ukItems.map((item) => ({
         product: Number(item.productId),
         titleSnapshot: item.title,
         priceSnapshot: item.price,
@@ -37,7 +68,7 @@ export async function POST(req: NextRequest) {
   })
 
   // Відправляємо email
-  const itemsHtml = items
+  const itemsHtml = ukItems
     .map(
       (item) => `
       <tr>

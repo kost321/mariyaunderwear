@@ -1,34 +1,46 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import type { Locale } from 'next-intl'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { Link } from '@/i18n/navigation'
 import { getProducts, getCategories } from '@/lib/queries'
 import { ProductCard } from '@/components/shop/ProductCard'
+import { alternates } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: 'Каталог',
-  description: 'Каталог одягу Mariya Underwear — нічні сорочки, піжами, халати, комплекти.',
+type Props = {
+  params: Promise<{ locale: Locale }>
+  searchParams: Promise<{ category?: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'Meta' })
+  return {
+    title: t('catalogTitle'),
+    description: t('catalogDescription'),
+    alternates: alternates(locale, '/catalog'),
+  }
 }
 
 // Каталог получает данные на сервере при каждом запросе.
 // searchParams.category — опциональный фильтр по slug категории.
-export default async function CatalogPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string }>
-}) {
+export default async function CatalogPage({ params, searchParams }: Props) {
+  const { locale } = await params
   const { category } = await searchParams
+  setRequestLocale(locale)
+  const t = await getTranslations('Catalog')
 
   // Параллельно тянем товары и категории из Payload (Local API).
   const [products, categories] = await Promise.all([
-    getProducts({ categorySlug: category }),
-    getCategories(),
+    getProducts({ locale, categorySlug: category }),
+    getCategories(locale),
   ])
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Каталог</h1>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="mt-1 text-muted-foreground">
-          {products.length} товарів
+          {t('count', { count: products.length })}
         </p>
       </div>
 
@@ -41,12 +53,12 @@ export default async function CatalogPage({
               !category ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
             }`}
           >
-            Всі
+            {t('all')}
           </Link>
           {categories.map((cat) => (
             <Link
               key={cat.id}
-              href={`/catalog?category=${cat.slug}`}
+              href={{ pathname: '/catalog', query: { category: cat.slug ?? '' } }}
               className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
                 category === cat.slug
                   ? 'bg-primary text-primary-foreground'
@@ -68,7 +80,7 @@ export default async function CatalogPage({
         </div>
       ) : (
         <p className="py-16 text-center text-muted-foreground">
-          Товари не знайдено.
+          {t('empty')}
         </p>
       )}
     </div>

@@ -1,5 +1,6 @@
 import Image from 'next/image'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { formatPrice } from '@/lib/utils'
@@ -9,10 +10,11 @@ import { formatPrice } from '@/lib/utils'
  * только ссылка на страницу товара.
  */
 export function ProductCard({ product }: { product: Product }) {
+  const t = useTranslations('Common')
   // Берём первое изображение из галереи.
   const firstImage = product.images?.[0]?.image
   const url = getMediaUrl(firstImage)
-  const alt = getMediaAlt(firstImage, product.title)
+  const alt = getMediaAlt(firstImage, product.title ?? '')
 
   return (
     <Link href={`/product/${product.slug}`} className="group block">
@@ -27,13 +29,13 @@ export function ProductCard({ product }: { product: Product }) {
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            немає фото
+            {t('noPhoto')}
           </div>
         )}
       </div>
       <div className="mt-3 space-y-1">
         <h3 className="text-sm font-medium leading-tight">{product.title}</h3>
-        <p className="text-sm text-muted-foreground">{formatPrice(product.price)}</p>
+        <p className="text-sm text-muted-foreground">{formatPrice(product.price, t('currency'))}</p>
       </div>
     </Link>
   )

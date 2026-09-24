@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import type { Locale } from 'next-intl'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { Link } from '@/i18n/navigation'
+import { routing, ogLocales } from '@/i18n/routing'
 import {
   getProductBySlug,
   getAllProductSlugs,
@@ -8,9 +11,10 @@ import {
 } from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
 import { ProductDetails } from '@/components/shop/ProductDetails'
+import { alternates } from '@/lib/seo'
 import type { Product } from '@/payload-types'
 
-type Params = { params: Promise<{ slug: string }> }
+type Params = { params: Promise<{ locale: Locale; slug: string }> }
 
 /**
  * ISR: сторінка статична, але не рідше ніж раз на 60 секунд Next пересобирає
@@ -20,13 +24,14 @@ type Params = { params: Promise<{ slug: string }> }
 export const revalidate = 60
 
 /**
- * SSG: заранее генерируем страницы всех активных товаров.
+ * SSG: заранее генерируем страницы всех активных товаров на всех мовах.
  * Делает страницы статичными и максимально SEO-friendly.
+ * slug спільний для всіх мов: /uk/product/x, /pl/product/x, /en/product/x.
  */
 export async function generateStaticParams() {
   try {
     const slugs = await getAllProductSlugs()
-    return slugs.map((slug) => ({ slug }))
+    return routing.locales.flatMap((locale) => slugs.map((slug) => ({ locale, slug })))
   } catch {
     // БД недоступна під час білду (наприклад, на Railway без підключеної бази)
     return []
@@ -35,25 +40,33 @@ export async function generateStaticParams() {
 
 /** Динамические SEO-метаданные на основе товара. */
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { slug } = await params
-  const product = await getProductBySlug(slug)
-  if (!product) return { title: 'Товар не знайдено' }
+  const { locale, slug } = await params
+  const t = await getTranslations({ locale, namespace: 'Meta' })
+  const product = await getProductBySlug(slug, locale)
+  if (!product) return { title: t('productNotFound') }
 
   const ogImage = getMediaUrl(product.images?.[0]?.image)
+  // title не null на практиці: обов'язковий українською + фолбек на uk.
+  const title = product.title ?? ''
 
   return {
-    title: product.title,
-    description: `${product.title} — купити в магазині Mariya Underwear.`,
+    title,
+    description: t('productDescription', { title }),
+    alternates: alternates(locale, `/product/${slug}`),
+    // openGraph сторінки повністю замінює openGraph з layout — повторюємо locale.
     openGraph: {
-      title: product.title,
+      locale: ogLocales[locale],
+      title,
       images: ogImage ? [{ url: ogImage }] : undefined,
     },
   }
 }
 
 export default async function ProductPage({ params }: Params) {
-  const { slug } = await params
-  const product = await getProductBySlug(slug)
+  const { locale, slug } = await params
+  setRequestLocale(locale)
+  const t = await getTranslations('Product')
+  const product = await getProductBySlug(slug, locale)
 
   // Если товара нет или он неактивен — 404.
   if (!product) notFound()
@@ -65,7 +78,7 @@ export default async function ProductPage({ params }: Params) {
       ? product.model.id
       : product.model
   const [colorVariants] = await Promise.all([
-    modelId ? getColorVariants(modelId) : Promise.resolve([]),
+    modelId ? getColorVariants(modelId, locale) : Promise.resolve([]),
   ])
 
   // relatedProducts — товари, вручну обрані в адмінці (relationship, hasMany).
@@ -78,7 +91,7 @@ export default async function ProductPage({ params }: Params) {
     <article className="space-y-10">
       <nav className="text-sm text-muted-foreground">
         <Link href="/catalog" className="hover:text-foreground">
-          ← Назад до каталогу
+          {t('backToCatalog')}
         </Link>
       </nav>
 

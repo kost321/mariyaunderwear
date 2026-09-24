@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { formatSlug } from '@/lib/slug'
+import { requiredInDefaultLocale } from '@/lib/localization'
 
 /**
  * Categories — категории товаров (например: «Платья», «Куртки»).
@@ -27,7 +28,12 @@ export const Categories: CollectionConfig = {
       name: 'title',
       label: 'Назва',
       type: 'text',
-      required: true,
+      localized: true,
+      // Обов'язкова лише українською — див. requiredInDefaultLocale.
+      validate: requiredInDefaultLocale,
+      admin: {
+        description: "Обов'язково українською. PL/EN — за бажанням: порожньо — на сайті буде українська назва.",
+      },
     },
     {
       name: 'slug',

@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import { Minus, Plus, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
@@ -12,7 +13,10 @@ import type { CheckoutForm } from '@/types/shop'
 type Step = 'cart' | 'success'
 
 export function CartPage() {
+  const t = useTranslations('Cart')
+  const tc = useTranslations('Common')
   const { items, totalPrice, removeItem, updateQuantity, clear } = useCart()
+  const price = (value: number) => formatPrice(value, tc('currency'))
   const [step, setStep] = useState<Step>('cart')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -40,11 +44,11 @@ export function CartPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items, form }),
       })
-      if (!res.ok) throw new Error('Помилка сервера')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       clear()
       setStep('success')
     } catch {
-      setError("Щось пішло не так. Спробуйте ще раз або зв'яжіться з нами.")
+      setError(t('error'))
     } finally {
       setLoading(false)
     }
@@ -53,10 +57,10 @@ export function CartPage() {
   if (step === 'success') {
     return (
       <div className="flex flex-col items-center gap-6 py-24 text-center">
-        <h1 className="text-3xl font-bold">Дякуємо за замовлення!</h1>
-        <p className="text-muted-foreground">Ми зв'яжемось з вами найближчим часом.</p>
+        <h1 className="text-3xl font-bold">{t('thanks')}</h1>
+        <p className="text-muted-foreground">{t('thanksText')}</p>
         <Link href="/catalog">
-          <Button>Повернутись до каталогу</Button>
+          <Button>{t('backToCatalog')}</Button>
         </Link>
       </div>
     )
@@ -65,9 +69,9 @@ export function CartPage() {
   if (!items.length) {
     return (
       <div className="flex flex-col items-center gap-6 py-24 text-center">
-        <h1 className="text-3xl font-bold">Кошик порожній</h1>
+        <h1 className="text-3xl font-bold">{t('empty')}</h1>
         <Link href="/catalog">
-          <Button>Перейти до каталогу</Button>
+          <Button>{t('toCatalog')}</Button>
         </Link>
       </div>
     )
@@ -75,7 +79,7 @@ export function CartPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <h1 className="text-2xl font-bold">Ваш замовлення:</h1>
+      <h1 className="text-2xl font-bold">{t('yourOrder')}</h1>
 
       {/* Список товарів */}
       <div className="divide-y">
@@ -88,12 +92,13 @@ export function CartPage() {
             )}
             <div className="flex-1 space-y-1">
               <p className="font-semibold leading-tight">{item.title}</p>
-              {item.color && <p className="text-sm text-muted-foreground">Колір: {item.color}</p>}
-              {item.size && <p className="text-sm text-muted-foreground">Розмір: {item.size}</p>}
+              {item.color && <p className="text-sm text-muted-foreground">{t('color', { color: item.color })}</p>}
+              {item.size && <p className="text-sm text-muted-foreground">{t('size', { size: item.size })}</p>}
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => updateQuantity(i, item.quantity - 1)}
+                aria-label={t('decrease')}
                 className="flex h-7 w-7 items-center justify-center rounded-full border"
               >
                 <Minus className="h-3 w-3" />
@@ -101,66 +106,67 @@ export function CartPage() {
               <span className="w-6 text-center text-sm">{item.quantity}</span>
               <button
                 onClick={() => updateQuantity(i, item.quantity + 1)}
+                aria-label={t('increase')}
                 className="flex h-7 w-7 items-center justify-center rounded-full border"
               >
                 <Plus className="h-3 w-3" />
               </button>
             </div>
-            <p className="w-24 text-right font-medium">{formatPrice(item.price * item.quantity)}</p>
-            <button onClick={() => removeItem(i)} className="text-muted-foreground hover:text-foreground">
+            <p className="w-24 text-right font-medium">{price(item.price * item.quantity)}</p>
+            <button onClick={() => removeItem(i)} aria-label={t('remove')} className="text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
         ))}
       </div>
 
-      <p className="text-right font-semibold">Сума: {formatPrice(totalPrice)}</p>
+      <p className="text-right font-semibold">{t('sum', { sum: price(totalPrice) })}</p>
 
       {/* Форма */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1">
-          <label className="text-sm">Ваше ім'я та прізвище</label>
+          <label className="text-sm">{t('name')}</label>
           <input
             name="customerName"
             value={form.customerName}
             onChange={handleChange}
-            placeholder="Марія Іванівна"
+            placeholder={t('namePlaceholder')}
             required
             className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm">Номер телефону</label>
+          <label className="text-sm">{t('phone')}</label>
           <input
             name="phone"
             value={form.phone}
             onChange={handleChange}
-            placeholder="+380 (00) 000-00-00"
+            placeholder={t('phonePlaceholder')}
             required
             className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm">Місто</label>
+          <label className="text-sm">{t('city')}</label>
           <input
             name="city"
             value={form.city}
             onChange={handleChange}
-            placeholder="Київ"
+            placeholder={t('cityPlaceholder')}
             required
             className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm">№ відділення нової пошти</label>
+          <label className="text-sm">{t('branch')}</label>
           <input
             name="novaPoshtaBranch"
             value={form.novaPoshtaBranch}
             onChange={handleChange}
-            placeholder="№ 1"
+            placeholder={t('branchPlaceholder')}
             required
             className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
           />
@@ -169,9 +175,9 @@ export function CartPage() {
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <div className="pt-2 text-right">
-          <p className="mb-4 font-semibold">Підсумкова сума: {formatPrice(totalPrice)}</p>
+          <p className="mb-4 font-semibold">{t('total', { sum: price(totalPrice) })}</p>
           <Button type="submit" size="lg" className="w-full" disabled={loading}>
-            {loading ? 'Відправляємо...' : 'Підтвердити замовлення'}
+            {loading ? tc('sending') : t('submit')}
           </Button>
         </div>
       </form>

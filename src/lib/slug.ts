@@ -10,6 +10,8 @@ const translitMap: Record<string, string> = {
   п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts',
   ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu',
   я: 'ya',
+  // українські літери
+  і: 'i', ї: 'yi', є: 'ye', ґ: 'g',
 }
 
 export function slugify(input: string): string {

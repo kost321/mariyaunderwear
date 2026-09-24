@@ -146,6 +146,10 @@ export interface Product {
    * Може повторюватися — напр. у різних кольорів однієї моделі однаковий артикул.
    */
   sku?: string | null;
+  /**
+   * Внутрішнє поле для адмінки. Не показується на сайті.
+   */
+  wholesalePrice?: number | null;
   category: number | Category;
   /**
    * Оберіть модель, щоб зв'язати цей колір з іншими кольорами того самого товару. Порожньо — товар без варіантів кольору. Моделі створюються у розділі «Каталог → Моделі».
@@ -184,6 +188,10 @@ export interface Product {
   sizes?:
     | {
         value: string;
+        /**
+         * Заповнюється імпортом із Торгсофт.
+         */
+        stock?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -410,6 +418,7 @@ export interface ProductsSelect<T extends boolean = true> {
   active?: T;
   price?: T;
   sku?: T;
+  wholesalePrice?: T;
   category?: T;
   model?: T;
   colorName?: T;
@@ -428,6 +437,7 @@ export interface ProductsSelect<T extends boolean = true> {
     | T
     | {
         value?: T;
+        stock?: T;
         id?: T;
       };
   colors?:

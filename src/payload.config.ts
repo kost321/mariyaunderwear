@@ -16,6 +16,7 @@ import { ProductModels } from './collections/ProductModels'
 import { Products } from './collections/Products'
 import { Orders } from './collections/Orders'
 import { Settings } from './globals/Settings'
+import { torgsoftImportHandler } from './lib/torgsoftImportEndpoint'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -26,6 +27,15 @@ export default buildConfig({
     user: Users.slug,
     meta: {
       titleSuffix: '— Mariya Underwear',
+    },
+    components: {
+      views: {
+        torgsoftImport: {
+          Component: '/src/admin/torgsoft-import/TorgsoftImportView#TorgsoftImportView',
+          path: '/torgsoft-import',
+        },
+      },
+      afterNavLinks: ['/src/admin/torgsoft-import/TorgsoftNavLink#TorgsoftNavLink'],
     },
   },
 
@@ -39,6 +49,15 @@ export default buildConfig({
 
   // Глобальні налаштування магазину.
   globals: [Settings],
+
+  // Кастомні API-ендпоінти (обслуговуються через /app/(payload)/api/[...slug]).
+  endpoints: [
+    {
+      path: '/torgsoft-import',
+      method: 'post',
+      handler: torgsoftImportHandler,
+    },
+  ],
 
   // Редактор richText по умолчанию (для описаний товаров).
   editor: lexicalEditor(),

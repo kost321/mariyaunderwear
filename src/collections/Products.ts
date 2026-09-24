@@ -85,6 +85,23 @@ export const Products: CollectionConfig = {
       },
     },
     {
+      name: 'wholesalePrice',
+      label: 'Оптова ціна, ₴',
+      type: 'number',
+      min: 0,
+      admin: {
+        step: 1,
+        position: 'sidebar',
+        description: 'Внутрішнє поле для адмінки. Не показується на сайті.',
+      },
+      access: {
+        // Публічний фронт читає товари без авторизації (access.read колекції
+        // дозволяє всім) — цим обмежуємо саме це поле тільки залогіненим
+        // адмінам CMS, щоб оптова ціна ніколи не потрапила в публічний API.
+        read: ({ req }) => Boolean(req.user),
+      },
+    },
+    {
       name: 'category',
       label: 'Категорія',
       type: 'relationship',
@@ -219,6 +236,15 @@ export const Products: CollectionConfig = {
           label: 'Розмір',
           type: 'text',
           required: true,
+        },
+        {
+          name: 'stock',
+          label: 'Залишок (шт.)',
+          type: 'number',
+          min: 0,
+          admin: {
+            description: 'Заповнюється імпортом із Торгсофт.',
+          },
         },
       ],
     },

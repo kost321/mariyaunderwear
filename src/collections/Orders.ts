@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { sendSms } from '@/lib/turbosms'
 
 /**
  * Orders — заказы покупателей.
@@ -51,6 +52,23 @@ export const Orders: CollectionConfig = {
           )
         }
         return data
+      },
+    ],
+    afterChange: [
+      // SMS покупцю — лише коли адмін переводить замовлення в статус «В обробці».
+      // Помилка TurboSMS не блокує збереження замовлення (лише пишеться в лог).
+      async ({ doc, previousDoc, operation }) => {
+        if (
+          operation === 'update' &&
+          doc.status === 'processing' &&
+          previousDoc?.status !== 'processing'
+        ) {
+          await sendSms(
+            doc.phone,
+            `Ваше замовлення №${doc.id} прийнято в обробку. Дякуємо за покупку!`,
+          )
+        }
+        return doc
       },
     ],
   },

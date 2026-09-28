@@ -5,6 +5,7 @@ import * as migration_20260909_140000_description_to_html from './20260909_14000
 import * as migration_20260917_210000_related_products from './20260917_210000_related_products';
 import * as migration_20260920_160352_care_html from './20260920_160352_care_html';
 import * as migration_20260924_180000_sizes_stock_wholesale_price from './20260924_180000_sizes_stock_wholesale_price';
+import * as migration_20260928_120000_products_images_cascade from './20260928_120000_products_images_cascade';
 
 export const migrations = [
   {
@@ -41,5 +42,10 @@ export const migrations = [
     up: migration_20260924_180000_sizes_stock_wholesale_price.up,
     down: migration_20260924_180000_sizes_stock_wholesale_price.down,
     name: '20260924_180000_sizes_stock_wholesale_price',
+  },
+  {
+    up: migration_20260928_120000_products_images_cascade.up,
+    down: migration_20260928_120000_products_images_cascade.down,
+    name: '20260928_120000_products_images_cascade',
   },
 ];

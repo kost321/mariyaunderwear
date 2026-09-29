@@ -1,0 +1,14 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="To Top">
+<g clip-path="url(#clip0_0_4)">
+<path id="icon-1" d="M38 30L32 24L26 30M32 24L32 40" stroke="black" stroke-width="1.25"/>
+<rect id="border" y="64" width="64" height="1" fill="black"/>
+</g>
+<rect x="0.5" y="0.5" width="63" height="63" rx="31.5" stroke="black"/>
+</g>
+<defs>
+<clipPath id="clip0_0_4">
+<rect width="64" height="64" rx="32" fill="white"/>
+</clipPath>
+</defs>
+</svg>

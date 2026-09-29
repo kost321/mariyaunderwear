@@ -5,20 +5,21 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
+    /* Палітра з макета: ink #403834, brown #6e5c4d, cream #f6f0ee */
+    --foreground: 0 10% 23%;
+    --primary: 20 10% 23%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 15 33% 95%;
+    --secondary-foreground: 27 18% 37%;
+    --muted: 15 33% 95%;
+    --muted-foreground: 27 18% 37%;
+    --accent: 15 33% 95%;
+    --accent-foreground: 20 10% 23%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 9%;
+    --border: 27 22% 77%;
+    --input: 27 22% 77%;
+    --ring: 27 18% 37%;
     --radius: 0.5rem;
   }
 }

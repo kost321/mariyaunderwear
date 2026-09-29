@@ -1,7 +1,15 @@
 import type { Metadata } from 'next'
+import { Bitter, Great_Vibes, Inter } from 'next/font/google'
 import { CartProvider } from '@/hooks/useCart'
 import { Header } from '@/components/shop/Header'
+import { Footer } from '@/components/shop/Footer'
+import { getCategories } from '@/lib/queries'
 import './globals.css'
+
+// Шрифти макета (Aleo, Almarai, Alex Brush) не мають кирилиці — беремо найближчі з нею.
+const sans = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-sans' })
+const serif = Bitter({ subsets: ['latin', 'cyrillic'], variable: '--font-serif' })
+const script = Great_Vibes({ subsets: ['latin', 'cyrillic'], weight: '400', variable: '--font-script' })
 
 const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
@@ -20,20 +28,23 @@ export const metadata: Metadata = {
   },
 }
 
-export default function FrontendLayout({
+export default async function FrontendLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Категорії для бокового меню; якщо БД недоступна — меню без них, сайт не падає
+  const categories = (await getCategories().catch(() => [])).flatMap((c) =>
+    c.slug ? [{ slug: c.slug, title: c.title }] : [],
+  )
+
   return (
-    <html lang="uk">
-      <body className="min-h-screen bg-background">
+    <html lang="uk" className={`${sans.variable} ${serif.variable} ${script.variable}`}>
+      <body className="flex min-h-screen flex-col bg-background font-sans">
         <CartProvider>
-          <Header />
-          <main className="container py-8">{children}</main>
-          <footer className="border-t py-8 text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Mariya Underwear. Всі права захищені.
-          </footer>
+          <Header categories={categories} />
+          <main className="container flex-1 py-8">{children}</main>
+          <Footer />
         </CartProvider>
       </body>
     </html>

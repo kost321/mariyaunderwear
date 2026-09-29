@@ -8,8 +8,9 @@ import { HeroSection, type HeroImage } from '@/components/shop/home/HeroSection'
 import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import { CollectionTabs } from '@/components/shop/home/CollectionTabs'
 
-// Головна збирається з товарів, тож оновлюємо її раз на хвилину (ISR)
-export const revalidate = 60
+// Головна збирається з товарів, тож рендеримо її на кожен запит: під час білду
+// на Railway БД недоступна (postgres.railway.internal є лише в рантаймі)
+export const dynamic = 'force-dynamic'
 
 function toImage(product: Product): HeroImage | null {
   const media = product.images?.[0]?.image
@@ -86,19 +87,20 @@ export default async function HomePage() {
           </p>
         </div>
 
-        {approachImages.length > 0 && (
-          <div className="mt-16 grid grid-cols-2 items-start gap-4 lg:mt-[140px] lg:grid-cols-4 lg:gap-9">
-            {approachImages.map((image, i) => (
-              <Link
-                key={image.url}
-                href={image.href}
-                className={`relative block aspect-[317/419] overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40 ${APPROACH_OFFSETS[i]} ${i % 2 ? 'mt-10' : ''}`}
-              >
+        {/* Чотири фото сходинками; без фото — заглушки, як у макеті */}
+        <div className="mt-16 grid grid-cols-2 items-start gap-4 lg:mt-[140px] lg:grid-cols-4 lg:gap-9">
+          {APPROACH_OFFSETS.map((offset, i) => {
+            const image = approachImages[i]
+            const className = `relative block aspect-[317/419] overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40 ${offset} ${i % 2 ? 'mt-10' : ''}`
+            return image ? (
+              <Link key={i} href={image.href} className={className}>
                 <Image src={image.url} alt={image.alt} fill sizes="(max-width: 1024px) 50vw, 317px" className="object-cover" />
               </Link>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div key={i} aria-hidden className={className} />
+            )
+          })}
+        </div>
       </section>
     </div>
   )

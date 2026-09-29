@@ -7,12 +7,13 @@ import { ArrowButton } from './ArrowButton'
 
 export type HeroImage = { url: string; alt: string; href: string }
 
-function Photo({ image, sizes, className }: { image: HeroImage; sizes: string; className?: string }) {
+const frame = 'relative block overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40'
+
+/** Фото товару або порожня заглушка, як у макеті, якщо фото немає. */
+function Photo({ image, sizes, className }: { image?: HeroImage; sizes: string; className?: string }) {
+  if (!image) return <div aria-hidden className={`${frame} ${className ?? ''}`} />
   return (
-    <Link
-      href={image.href}
-      className={`relative block overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40 ${className ?? ''}`}
-    >
+    <Link href={image.href} className={`${frame} ${className ?? ''}`}>
       <Image src={image.url} alt={image.alt} fill sizes={sizes} className="object-cover" />
     </Link>
   )
@@ -25,8 +26,9 @@ function Photo({ image, sizes, className }: { image: HeroImage; sizes: string; c
 export function HeroSection({ images }: { images: HeroImage[] }) {
   const [offset, setOffset] = useState(0)
   const count = images.length
-  // Чотири фото поточного «кадру»: 0–1 малі зліва, 2–3 великі справа
-  const at = (i: number) => images[(offset + i) % count]
+  // Чотири слоти поточного «кадру»: 0–1 малі зліва, 2–3 великі справа.
+  // Якщо фото менше чотирьох — решта слотів лишаються заглушками.
+  const at = (i: number) => (i < count ? images[(offset + i) % count] : undefined)
   const canScroll = count > 4
 
   return (
@@ -54,12 +56,10 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
           2026
         </p>
 
-        {count > 0 && (
-          <div className="mt-auto hidden grid-cols-2 gap-9 pt-10 lg:grid">
-            <Photo image={at(0)} sizes="171px" className="h-[185px]" />
-            {count > 1 && <Photo image={at(1)} sizes="171px" className="h-[185px]" />}
-          </div>
-        )}
+        <div className="mt-auto hidden grid-cols-2 gap-9 pt-10 lg:grid">
+          <Photo image={at(0)} sizes="171px" className="h-[185px]" />
+          <Photo image={at(1)} sizes="171px" className="h-[185px]" />
+        </div>
 
         <div className="mt-8 flex items-center justify-between lg:mt-[61px]">
           <Link
@@ -79,17 +79,15 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
       </div>
 
       {/* Десктоп: два великі фото */}
-      {count > 2 && <Photo image={at(2)} sizes="351px" className="hidden h-[606px] lg:block" />}
-      {count > 3 && <Photo image={at(3)} sizes="351px" className="hidden h-[606px] lg:block" />}
+      <Photo image={at(2)} sizes="351px" className="hidden h-[606px] lg:block" />
+      <Photo image={at(3)} sizes="351px" className="hidden h-[606px] lg:block" />
 
       {/* Мобілка: горизонтальна стрічка фото */}
-      {count > 0 && (
-        <div className="-mx-[var(--gutter)] flex snap-x snap-mandatory gap-3 overflow-x-auto px-[var(--gutter)] pb-2 [scrollbar-width:none] lg:hidden">
-          {images.map((image) => (
-            <Photo key={image.href + image.url} image={image} sizes="45vw" className="aspect-[3/5] w-[45vw] shrink-0 snap-start" />
-          ))}
-        </div>
-      )}
+      <div className="-mx-[var(--gutter)] flex snap-x snap-mandatory gap-3 overflow-x-auto px-[var(--gutter)] pb-2 [scrollbar-width:none] lg:hidden">
+        {(count ? images : [undefined, undefined, undefined]).map((image, i) => (
+          <Photo key={i} image={image} sizes="45vw" className="aspect-[3/5] w-[45vw] shrink-0 snap-start" />
+        ))}
+      </div>
     </section>
   )
 }

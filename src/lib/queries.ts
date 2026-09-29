@@ -13,6 +13,8 @@ import type { Product, Category } from '@/payload-types'
 /** Получить список активных товаров (для каталога). */
 export async function getProducts(options?: {
   categorySlug?: string
+  /** Пошук за назвою (без урахування регістру). */
+  q?: string
   limit?: number
 }): Promise<Product[]> {
   const payload = await getPayload()
@@ -25,6 +27,10 @@ export async function getProducts(options?: {
   // Опциональная фильтрация по категории через её slug.
   if (options?.categorySlug) {
     where['category.slug'] = { equals: options.categorySlug }
+  }
+
+  if (options?.q?.trim()) {
+    where.title = { like: options.q.trim() }
   }
 
   const result = await payload.find({

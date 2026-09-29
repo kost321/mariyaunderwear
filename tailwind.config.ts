@@ -9,10 +9,8 @@ const config: Config = {
   theme: {
     container: {
       center: true,
-      padding: {
-        DEFAULT: '1.125rem',
-        lg: '3.125rem',
-      },
+      // --gutter: 18px на мобілці → 50px на 1280 (як у макеті), див. globals.css
+      padding: 'var(--gutter)',
       screens: {
         '2xl': '1280px',
       },
@@ -29,7 +27,7 @@ const config: Config = {
         'ink-text': '#403434',
         brown: '#6e5c4d',
         sand: '#d3c3b6',
-        cream: '#f6f0ee',
+        cream: '#f3ebe8',
         pink: '#f2afc6',
         placeholder: '#b6ada3',
         border: 'hsl(var(--border))',

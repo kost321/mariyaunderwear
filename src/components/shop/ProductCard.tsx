@@ -1,39 +1,68 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { Plus } from 'lucide-react'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
-import { formatPrice } from '@/lib/utils'
+import { cn, formatPrice } from '@/lib/utils'
 
 /**
- * Карточка товара в сетке каталога. Server Component — без интерактива,
- * только ссылка на страницу товара.
+ * Карточка товара: фото с круглой кнопкой «+», над названием — категория
+ * и цвет, справа цена. Server Component — только ссылка на страницу товара.
  */
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({
+  product,
+  sizes = '(max-width: 768px) 50vw, 33vw',
+  className,
+}: {
+  product: Product
+  sizes?: string
+  className?: string
+}) {
   // Берём первое изображение из галереи.
   const firstImage = product.images?.[0]?.image
   const url = getMediaUrl(firstImage)
   const alt = getMediaAlt(firstImage, product.title)
+  const category = typeof product.category === 'object' ? product.category.title : null
+
+  // Кольори всередині картки (colors[]) або колір варіанта моделі (colorHex)
+  const swatch = product.colors?.[0]?.hex ?? product.colorHex
+  const extraColors = (product.colors?.length ?? 0) - 1
 
   return (
-    <Link href={`/product/${product.slug}`} className="group block">
-      <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted">
+    <Link href={`/product/${product.slug}`} className={cn('group block', className)}>
+      <div className="relative aspect-[3/4] overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40">
         {url ? (
           <Image
             src={url}
             alt={alt}
             fill
-            sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes={sizes}
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            немає фото
-          </div>
+          <div className="flex h-full items-center justify-center text-sm text-brown/60">немає фото</div>
         )}
+        <span className="absolute bottom-3 left-1/2 flex h-[34px] w-[34px] -translate-x-1/2 items-center justify-center rounded-full bg-brown/50 text-ink transition-colors group-hover:bg-ink group-hover:text-white">
+          <Plus className="h-4 w-4" strokeWidth={1.25} />
+        </span>
       </div>
-      <div className="mt-3 space-y-1">
-        <h3 className="text-sm font-medium leading-tight">{product.title}</h3>
-        <p className="text-sm text-muted-foreground">{formatPrice(product.price)}</p>
+
+      <div className="mt-3 flex items-end justify-between gap-3 pr-2">
+        <div className="min-w-0">
+          {(category || swatch) && (
+            <div className="flex items-center gap-4 text-xs text-brown/50">
+              {category && <span className="truncate">{category}</span>}
+              {swatch && (
+                <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-light text-black/65">
+                  <span className="h-3 w-3 border border-brown/30" style={{ backgroundColor: swatch }} />
+                  {extraColors > 0 && `+${extraColors}`}
+                </span>
+              )}
+            </div>
+          )}
+          <h3 className="mt-1 font-serif text-base leading-[19px] text-ink">{product.title}</h3>
+        </div>
+        <p className="shrink-0 whitespace-nowrap font-serif text-base leading-[19px] text-ink/50">{formatPrice(product.price)}</p>
       </div>
     </Link>
   )

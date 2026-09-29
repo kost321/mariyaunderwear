@@ -9,17 +9,17 @@ export const metadata: Metadata = {
 }
 
 // Каталог получает данные на сервере при каждом запросе.
-// searchParams.category — опциональный фильтр по slug категории.
+// searchParams.category — опциональный фильтр по slug категории, q — пошук за назвою.
 export default async function CatalogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>
+  searchParams: Promise<{ category?: string; q?: string }>
 }) {
-  const { category } = await searchParams
+  const { category, q } = await searchParams
 
   // Параллельно тянем товары и категории из Payload (Local API).
   const [products, categories] = await Promise.all([
-    getProducts({ categorySlug: category }),
+    getProducts({ categorySlug: category, q }),
     getCategories(),
   ])
 
@@ -28,6 +28,7 @@ export default async function CatalogPage({
       <div>
         <h1 className="text-3xl font-bold">Каталог</h1>
         <p className="mt-1 text-muted-foreground">
+          {q ? `Пошук «${q}»: ` : ''}
           {products.length} товарів
         </p>
       </div>

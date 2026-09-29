@@ -21,6 +21,7 @@
     --input: 27 22% 77%;
     --ring: 27 18% 37%;
     --radius: 0.5rem;
+    --gutter: clamp(1.125rem, 4vw, 3.125rem);
   }
 }
 

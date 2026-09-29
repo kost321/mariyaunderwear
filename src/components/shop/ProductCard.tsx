@@ -47,7 +47,8 @@ export function ProductCard({
         </span>
       </div>
 
-      <div className="mt-3 flex items-end justify-between gap-3 pr-2">
+      {/* На вузьких картках ціна під назвою, з sm — праворуч */}
+      <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3 sm:pr-2">
         <div className="min-w-0">
           {(category || swatch) && (
             <div className="flex items-center gap-4 text-xs text-brown/50">
@@ -60,9 +61,9 @@ export function ProductCard({
               )}
             </div>
           )}
-          <h3 className="mt-1 font-serif text-base leading-[19px] text-ink">{product.title}</h3>
+          <h3 className="mt-1 font-serif text-sm leading-[17px] text-ink sm:text-base sm:leading-[19px]">{product.title}</h3>
         </div>
-        <p className="shrink-0 whitespace-nowrap font-serif text-base leading-[19px] text-ink/50">{formatPrice(product.price)}</p>
+        <p className="shrink-0 whitespace-nowrap font-serif text-sm leading-[17px] text-ink/50 sm:text-base sm:leading-[19px]">{formatPrice(product.price)}</p>
       </div>
     </Link>
   )

@@ -8,8 +8,9 @@ import { HeroSection, type HeroImage } from '@/components/shop/home/HeroSection'
 import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import { CollectionTabs } from '@/components/shop/home/CollectionTabs'
 
-// Головна збирається з товарів, тож оновлюємо її раз на хвилину (ISR)
-export const revalidate = 60
+// Головна збирається з товарів, тож рендеримо її на кожен запит: під час білду
+// на Railway БД недоступна (postgres.railway.internal є лише в рантаймі)
+export const dynamic = 'force-dynamic'
 
 function toImage(product: Product): HeroImage | null {
   const media = product.images?.[0]?.image

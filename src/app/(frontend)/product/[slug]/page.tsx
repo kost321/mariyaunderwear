@@ -9,8 +9,8 @@ import {
 } from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
 import { ProductDetails } from '@/components/shop/ProductDetails'
+import { ProductDescription } from '@/components/shop/ProductDescription'
 import { ProductCard } from '@/components/shop/ProductCard'
-import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import type { Product } from '@/payload-types'
 
 type Params = { params: Promise<{ slug: string }> }
@@ -78,7 +78,8 @@ export default async function ProductPage({ params }: Params) {
   )
 
   return (
-    <article>
+    // pb-20 — місце під закріплену кнопку «Додати в кошик» на мобілці
+    <article className="pb-20 lg:pb-0">
       <nav className="mb-6 hidden lg:block">
         <Link href="/catalog" aria-label="Назад до каталогу" className="inline-block transition-opacity hover:opacity-70">
           <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="w-[61px]" />
@@ -87,19 +88,29 @@ export default async function ProductPage({ params }: Params) {
 
       <ProductDetails product={product} colorVariants={colorVariants} />
 
-      {/* Схожі товари — вручну обрані в адмінці; у стилі «Новинок тижня» з головної */}
+      {/* Опис, склад і догляд — під галереєю на всю ширину блоку, як у макеті */}
+      <div className="mx-auto mt-12 lg:mt-[100px] lg:max-w-[911px]">
+        <ProductDescription
+          sections={[
+            { html: product.description },
+            // «Характеристики:» уже є в самому тексті з адмінки — свій заголовок не додаємо
+            { html: product.descriptionHtml },
+            { title: 'Рекомендації щодо прання', html: product.careHtml },
+          ]}
+        />
+      </div>
+
+      {/* «З цим товаром часто купують» — товари, вручну обрані в адмінці */}
       {relatedProducts.length > 0 && (
-        <section className="mt-16 lg:mt-[150px]">
-          <h2 className="mb-6 font-serif text-[32px] uppercase leading-[34px] tracking-[2px] text-black lg:text-5xl lg:leading-10">
-            Схожі
-            <br />
-            товари
+        <section className="mt-16 lg:mt-[100px]">
+          <h2 className="border-b border-brown/40 pb-5 font-serif text-xl uppercase leading-10 tracking-[2px] text-brown">
+            З цим товаром часто купують
           </h2>
-          <ProductSlider>
+          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-3 lg:gap-x-[41px] lg:gap-y-12">
             {relatedProducts.map((related) => (
-              <ProductCard key={related.id} product={related} sizes="304px" />
+              <ProductCard key={related.id} product={related} />
             ))}
-          </ProductSlider>
+          </div>
         </section>
       )}
     </article>

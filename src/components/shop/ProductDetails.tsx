@@ -7,7 +7,6 @@ import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { formatPrice, cn } from '@/lib/utils'
 import { SizeChart } from '@/components/shop/SizeChart'
-import { ProductAccordion } from '@/components/shop/ProductAccordion'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
 import { useCart } from '@/hooks/useCart'
 import type { CartItem } from '@/types/shop'
@@ -18,7 +17,7 @@ const photoFrame = 'relative overflow-hidden rounded-card border border-[#d9d9d9
  * Интерактивная часть карточки товара (макет Figma «Product»):
  *  - галерея: большое фото + колонка миниатюр (на мобилке — лента под фото);
  *  - карточка в рамке: название, цена, цвет, размер, «Додати в кошик»;
- *  - быстрый заказ и аккордеон с описанием.
+ *  - быстрый заказ. Описание — под галереей (ProductDescription в page.tsx).
  *
  * Данные приходят пропсом из серверного page.tsx, поэтому этот
  * клиентский компонент сам ничего не запрашивает.
@@ -127,7 +126,7 @@ export function ProductDetails({
       </div>
 
       {/* КАРТКА ТОВАРУ: на десктопі в рамці, як у макеті */}
-      <div className="mt-8 pb-20 lg:mt-0 lg:w-[340px] lg:border lg:border-brown lg:px-10 lg:pb-3 lg:pt-14">
+      <div className="mt-8 lg:mt-0 lg:w-[340px] lg:border lg:border-brown lg:px-10 lg:pb-3 lg:pt-14">
         <h1 className="font-serif text-sm uppercase leading-[17px] tracking-[1px] text-ink">{product.title}</h1>
         <p className="mt-3 text-sm tracking-[1px] text-brown">{formatPrice(product.price)}</p>
         {product.sku && <p className="mt-6 text-xs tracking-[1px] text-brown/50">Артикул: {product.sku}</p>}
@@ -239,16 +238,6 @@ export function ProductDetails({
         >
           Купити в 1 клік
         </button>
-
-        <div className="mt-6">
-          <ProductAccordion
-            sections={[
-              { title: 'Опис', html: product.description },
-              { title: 'Характеристика', html: product.descriptionHtml },
-              { title: 'Догляд', html: product.careHtml },
-            ]}
-          />
-        </div>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-30 bg-white/95 p-2 backdrop-blur lg:hidden">

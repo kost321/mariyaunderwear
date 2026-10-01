@@ -28,16 +28,16 @@ export function ProductAccordion({ sections }: { sections: Section[] }) {
   }
 
   return (
-    <div className="divide-y rounded-lg border">
+    <div className="border-t border-dashed border-[#c9c9c9]">
       {visible.map((section, i) => {
         const isOpen = open.has(i)
         return (
-          <div key={section.title}>
+          <div key={section.title} className="border-b border-dashed border-[#c9c9c9]">
             <button
               type="button"
               onClick={() => toggle(i)}
               aria-expanded={isOpen}
-              className="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left text-sm font-medium hover:bg-accent"
+              className="flex w-full items-center justify-between gap-4 py-3.5 text-left text-xs tracking-[2px] text-ink"
             >
               {section.title}
               <span
@@ -53,7 +53,7 @@ export function ProductAccordion({ sections }: { sections: Section[] }) {
 
             {isOpen && (
               <div
-                className="prose-shop px-4 pb-4 pt-0 text-sm [&_a]:underline [&_li]:my-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_strong]:font-semibold [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:px-3 [&_th]:py-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
+                className="prose-shop pb-4 pt-0 text-xs leading-[18px] tracking-[0.5px] text-brown [&_a]:underline [&_li]:my-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_strong]:font-semibold [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:px-3 [&_th]:py-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
                 dangerouslySetInnerHTML={{ __html: section.html as string }}
               />
             )}

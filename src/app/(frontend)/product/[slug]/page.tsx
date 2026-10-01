@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   getProductBySlug,
@@ -8,6 +9,8 @@ import {
 } from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
 import { ProductDetails } from '@/components/shop/ProductDetails'
+import { ProductCard } from '@/components/shop/ProductCard'
+import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import type { Product } from '@/payload-types'
 
 type Params = { params: Promise<{ slug: string }> }
@@ -75,18 +78,30 @@ export default async function ProductPage({ params }: Params) {
   )
 
   return (
-    <article className="space-y-10">
-      <nav className="text-sm text-muted-foreground">
-        <Link href="/catalog" className="hover:text-foreground">
-          ← Назад до каталогу
+    <article>
+      <nav className="mb-6 hidden lg:block">
+        <Link href="/catalog" aria-label="Назад до каталогу" className="inline-block transition-opacity hover:opacity-70">
+          <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="w-[61px]" />
         </Link>
       </nav>
 
-      <ProductDetails
-        product={product}
-        colorVariants={colorVariants}
-        relatedProducts={relatedProducts}
-      />
+      <ProductDetails product={product} colorVariants={colorVariants} />
+
+      {/* Схожі товари — вручну обрані в адмінці; у стилі «Новинок тижня» з головної */}
+      {relatedProducts.length > 0 && (
+        <section className="mt-16 lg:mt-[150px]">
+          <h2 className="mb-6 font-serif text-[32px] uppercase leading-[34px] tracking-[2px] text-black lg:text-5xl lg:leading-10">
+            Схожі
+            <br />
+            товари
+          </h2>
+          <ProductSlider>
+            {relatedProducts.map((related) => (
+              <ProductCard key={related.id} product={related} sizes="304px" />
+            ))}
+          </ProductSlider>
+        </section>
+      )}
     </article>
   )
 }

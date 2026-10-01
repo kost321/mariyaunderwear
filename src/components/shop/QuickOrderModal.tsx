@@ -86,14 +86,14 @@ export function QuickOrderModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label="Швидке замовлення"
     >
       <div
-        className="relative w-full max-w-sm rounded-lg bg-background p-6 shadow-xl"
+        className="relative w-full max-w-sm rounded-card bg-white p-8 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -107,18 +107,18 @@ export function QuickOrderModal({
 
         {done ? (
           <div className="space-y-4 py-4 text-center">
-            <h2 className="text-xl font-semibold">Дякуємо!</h2>
+            <h2 className="font-serif text-xl uppercase tracking-[1px] text-ink">Дякуємо!</h2>
             <p className="text-sm text-muted-foreground">
               Ми зв'яжемось з вами найближчим часом, щоб підтвердити замовлення.
             </p>
-            <Button onClick={onClose} className="w-full">
+            <Button onClick={onClose} className="h-11 w-full rounded-card bg-ink">
               Закрити
             </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <h2 className="pr-8 text-lg font-semibold">Швидке замовлення</h2>
+              <h2 className="pr-8 font-serif text-lg uppercase tracking-[1px] text-ink">Швидке замовлення</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {item.title}
                 {item.size ? `, розмір ${item.size}` : ''}
@@ -136,7 +136,7 @@ export function QuickOrderModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="name"
-                className="w-full rounded-md border px-3 py-2 text-sm"
+                className="h-11 w-full border border-[#a3a3a3] px-4 text-sm text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none"
                 required
               />
             </div>
@@ -152,14 +152,14 @@ export function QuickOrderModal({
                 onChange={(e) => setPhone(e.target.value)}
                 autoComplete="tel"
                 placeholder="+380"
-                className="w-full rounded-md border px-3 py-2 text-sm"
+                className="h-11 w-full border border-[#a3a3a3] px-4 text-sm text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none"
                 required
               />
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={loading} className="h-11 w-full rounded-card bg-ink uppercase tracking-[1px]">
               {loading ? 'Відправляємо…' : 'Замовити'}
             </Button>
           </form>

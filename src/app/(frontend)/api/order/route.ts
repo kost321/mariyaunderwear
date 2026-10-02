@@ -34,6 +34,18 @@ function str(value: unknown, max: number): string | undefined {
   return value.trim()
 }
 
+/**
+ * Отримувачі листа про нове замовлення: ORDER_NOTIFY_EMAIL (одна адреса або
+ * кілька через кому). Якщо змінна не задана — запасна адреса власниці.
+ */
+function notifyRecipients(): string[] {
+  const list = (process.env.ORDER_NOTIFY_EMAIL ?? '')
+    .split(',')
+    .map((email) => email.trim())
+    .filter(Boolean)
+  return list.length > 0 ? list : ['itsmariainthecity@gmail.com']
+}
+
 /** Екранує текст від покупця перед вставкою в HTML листа. */
 function esc(value: unknown): string {
   return String(value ?? '')
@@ -217,7 +229,7 @@ export async function POST(req: NextRequest) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     const { error } = await resend.emails.send({
     from: 'Mariya Underwear <orders@mariyaunderwear.com>',
-    to: 'itsmariainthecity@gmail.com',
+    to: notifyRecipients(),
     subject: `Нове замовлення #${order.id} — ${String(form.customerName).replace(/[\r\n]+/g, ' ')}`,
     html: `
       <h2>Нове замовлення #${order.id}</h2>

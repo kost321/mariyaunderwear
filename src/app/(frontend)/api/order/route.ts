@@ -125,6 +125,10 @@ export async function POST(req: NextRequest) {
   })
   const productsById = new Map(found.docs.map((p) => [p.id, p]))
 
+  // Скільки штук кожного розміру вже в замовленні (одна позиція може
+  // повторюватись у кошику з різним кольором).
+  const requested = new Map<string, number>()
+
   const items: CartItem[] = []
   for (const raw of rawItems) {
     const product = productsById.get(Number(raw.productId))
@@ -135,6 +139,30 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       )
     }
+
+    // Розмір має існувати у товару, а кількість не перевищувати залишок.
+    // Порожній stock = залишок невідомий (товар додано вручну) — не обмежуємо.
+    if (product.sizes?.length) {
+      const sizeRow = product.sizes.find((s) => s.value === raw.size)
+      if (!sizeRow) {
+        return NextResponse.json(
+          { error: `Розміру немає в наявності: ${product.title}` },
+          { status: 400 },
+        )
+      }
+      const key = `${product.id}:${sizeRow.value}`
+      const total = (requested.get(key) ?? 0) + quantity
+      requested.set(key, total)
+      if (typeof sizeRow.stock === 'number' && total > sizeRow.stock) {
+        return NextResponse.json(
+          {
+            error: `Недостатньо в наявності: ${product.title}, розмір ${sizeRow.value} (залишилось ${sizeRow.stock} шт.)`,
+          },
+          { status: 400 },
+        )
+      }
+    }
+
     items.push({
       productId: String(product.id),
       title: product.title,

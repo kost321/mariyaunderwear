@@ -3,7 +3,36 @@ import { Resend } from 'resend'
 import { getPayload } from '@/lib/payload'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Ліміт замовлень з однієї IP-адреси (у пам'яті процесу — для одного
+// інстансу Railway достатньо).
+const RATE_LIMIT = 5
+const RATE_WINDOW_MS = 10 * 60 * 1000
+const hits = new Map<string, number[]>()
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const recent = (hits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
+  if (recent.length >= RATE_LIMIT) {
+    hits.set(ip, recent)
+    return true
+  }
+  recent.push(now)
+  hits.set(ip, recent)
+  // Не даємо мапі рости безмежно.
+  if (hits.size > 5000) {
+    for (const [key, times] of hits) {
+      if (times.every((t) => now - t >= RATE_WINDOW_MS)) hits.delete(key)
+    }
+  }
+  return false
+}
+
+/** Рядок із обмеженням довжини; undefined, якщо значення невалідне. */
+function str(value: unknown, max: number): string | undefined {
+  if (value === undefined || value === null || value === '') return ''
+  if (typeof value !== 'string' || value.length > max) return undefined
+  return value.trim()
+}
 
 /** Екранує текст від покупця перед вставкою в HTML листа. */
 function esc(value: unknown): string {
@@ -15,11 +44,68 @@ function esc(value: unknown): string {
     .replace(/'/g, '&#39;')
 }
 
-export async function POST(req: NextRequest) {
-  const { items: rawItems, form }: { items: CartItem[]; form: CheckoutForm } = await req.json()
+const BAD_REQUEST = () => NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
 
-  if (!Array.isArray(rawItems) || !rawItems.length || !form?.customerName || !form?.phone) {
-    return NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
+export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: 'Забагато спроб. Спробуйте пізніше.' }, { status: 429 })
+  }
+
+  let body: { items?: CartItem[]; form?: Partial<CheckoutForm> }
+  try {
+    body = await req.json()
+  } catch {
+    return BAD_REQUEST()
+  }
+
+  const rawItems = body?.items
+  const rawForm = body?.form
+  if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > 50 || !rawForm) {
+    return BAD_REQUEST()
+  }
+
+  const customerName = str(rawForm.customerName, 100)
+  const phone = str(rawForm.phone, 30)
+  const city = str(rawForm.city, 100)
+  const novaPoshtaBranch = str(rawForm.novaPoshtaBranch, 100)
+  const email = str(rawForm.email, 120)
+  const comment = str(rawForm.comment, 1000)
+  if (
+    !customerName ||
+    !phone ||
+    city === undefined ||
+    novaPoshtaBranch === undefined ||
+    email === undefined ||
+    comment === undefined
+  ) {
+    return BAD_REQUEST()
+  }
+  // Телефон: 10–15 цифр, інші символи — лише звичайні роздільники.
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length < 10 || digits.length > 15 || !/^[\d\s+()-]+$/.test(phone)) {
+    return BAD_REQUEST()
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return BAD_REQUEST()
+  }
+  const form: CheckoutForm = {
+    customerName,
+    phone,
+    city,
+    novaPoshtaBranch,
+    email: email || undefined,
+    comment,
+  }
+
+  for (const item of rawItems) {
+    if (
+      !item ||
+      str(item.size, 50) === undefined ||
+      str(item.color, 50) === undefined
+    ) {
+      return BAD_REQUEST()
+    }
   }
 
   const payload = await getPayload()
@@ -97,7 +183,11 @@ export async function POST(req: NextRequest) {
     )
     .join('')
 
-  await resend.emails.send({
+  // Замовлення вже збережене: збій листа не має ламати відповідь покупцю
+  // (інакше він повторить замовлення й створить дубль).
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    const { error } = await resend.emails.send({
     from: 'Mariya Underwear <orders@mariyaunderwear.com>',
     to: 'itsmariainthecity@gmail.com',
     subject: `Нове замовлення #${order.id} — ${String(form.customerName).replace(/[\r\n]+/g, ' ')}`,
@@ -127,7 +217,11 @@ export async function POST(req: NextRequest) {
         </tfoot>
       </table>
     `,
-  })
+    })
+    if (error) console.error('[order] Resend відхилив лист:', order.id, error)
+  } catch (err) {
+    console.error('[order] Не вдалося надіслати лист:', order.id, err)
+  }
 
   return NextResponse.json({ success: true, orderId: order.id })
 }

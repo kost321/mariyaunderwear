@@ -36,6 +36,27 @@ export async function generateStaticParams() {
   }
 }
 
+const serverUrl = (process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
+
+/** HTML-опис → простий текст (для meta description і JSON-LD). */
+function toPlainText(html?: string | null): string {
+  return (html ?? '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function truncate(text: string, max: number): string {
+  if (text.length <= max) return text
+  return `${text.slice(0, max).replace(/\s+\S*$/, '')}…`
+}
+
 /** Динамические SEO-метаданные на основе товара. */
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
@@ -44,11 +65,19 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   const ogImage = getMediaUrl(product.images?.[0]?.image)
 
+  const plain = toPlainText(product.description)
+  const description = plain
+    ? truncate(plain, 155)
+    : `${product.title} — купити в магазині Mariya Underwear.`
+
   return {
     title: product.title,
-    description: `${product.title} — купити в магазині Mariya Underwear.`,
+    description,
+    alternates: { canonical: `/product/${slug}` },
     openGraph: {
       title: product.title,
+      description,
+      url: `/product/${slug}`,
       images: ogImage ? [{ url: ogImage }] : undefined,
     },
   }
@@ -77,9 +106,40 @@ export default async function ProductPage({ params }: Params) {
     (item): item is Product => typeof item === 'object' && item !== null,
   )
 
+  // Структуровані дані для Google (ціна, наявність, фото в пошуковій видачі).
+  // Закінчився, якщо в усіх розмірів залишок явно 0; порожній залишок = невідомий.
+  const sizes = product.sizes ?? []
+  const outOfStock = sizes.length > 0 && sizes.every((size) => size.stock === 0)
+  const imageUrls = (product.images ?? [])
+    .map((item) => getMediaUrl(item.image))
+    .filter((url): url is string => Boolean(url))
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    ...(imageUrls.length > 0 && { image: imageUrls }),
+    ...(product.sku && { sku: product.sku }),
+    ...(toPlainText(product.description) && {
+      description: truncate(toPlainText(product.description), 500),
+    }),
+    brand: { '@type': 'Brand', name: 'Mariya Underwear' },
+    offers: {
+      '@type': 'Offer',
+      url: `${serverUrl}/product/${slug}`,
+      priceCurrency: 'UAH',
+      price: product.price,
+      availability: outOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+    },
+  }
+
   return (
     // pb-20 — місце під закріплену кнопку «Додати в кошик» на мобілці
     <article className="pb-20 lg:pb-0">
+      {/* «<» екрануємо, щоб текст товару не міг закрити тег script */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
       <nav className="mb-6 hidden lg:block">
         <Link href="/catalog" aria-label="Назад до каталогу" className="inline-block transition-opacity hover:opacity-70">
           <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="w-[61px]" />

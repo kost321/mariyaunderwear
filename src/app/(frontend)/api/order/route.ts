@@ -6,16 +6,53 @@ import type { CartItem, CheckoutForm } from '@/types/shop'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: NextRequest) {
-  const { items, form }: { items: CartItem[]; form: CheckoutForm } = await req.json()
+  const { items: rawItems, form }: { items: CartItem[]; form: CheckoutForm } = await req.json()
 
-  if (!items?.length || !form?.customerName || !form?.phone) {
+  if (!Array.isArray(rawItems) || !rawItems.length || !form?.customerName || !form?.phone) {
     return NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
+  }
+
+  const payload = await getPayload()
+
+  // Ціну й назву беремо з БД, а не з кошика: клієнту довіряємо лише
+  // productId, розмір, колір і кількість.
+  const ids = [...new Set(rawItems.map((item) => Number(item?.productId)))]
+  if (ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+    return NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
+  }
+  const found = await payload.find({
+    collection: 'products',
+    where: { id: { in: ids }, active: { equals: true } },
+    limit: ids.length,
+    depth: 0,
+    pagination: false,
+  })
+  const productsById = new Map(found.docs.map((p) => [p.id, p]))
+
+  const items: CartItem[] = []
+  for (const raw of rawItems) {
+    const product = productsById.get(Number(raw.productId))
+    const quantity = Number(raw.quantity)
+    if (!product || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+      return NextResponse.json(
+        { error: 'Товар недоступний або невірна кількість' },
+        { status: 400 },
+      )
+    }
+    items.push({
+      productId: String(product.id),
+      title: product.title,
+      price: product.price,
+      slug: product.slug ?? '',
+      size: raw.size,
+      color: raw.color,
+      quantity,
+    })
   }
 
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   // Зберігаємо замовлення в БД
-  const payload = await getPayload()
   const order = await payload.create({
     collection: 'orders',
     data: {

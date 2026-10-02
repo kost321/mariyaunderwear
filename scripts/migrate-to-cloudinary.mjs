@@ -2,7 +2,8 @@
  * Міграція локальних фото з public/media/ у Cloudinary.
  * Оновлює URL в базі даних через Payload API.
  *
- * Запуск: ADMIN_PASSWORD=123123 node scripts/migrate-to-cloudinary.mjs
+ * Запуск: ADMIN_EMAIL=… ADMIN_PASSWORD=… CLOUDINARY_CLOUD_NAME=… CLOUDINARY_API_KEY=… \
+ *         CLOUDINARY_API_SECRET=… node scripts/migrate-to-cloudinary.mjs
  */
 
 import fs from 'fs'
@@ -13,13 +14,19 @@ import { v2 as cloudinary } from 'cloudinary'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const MEDIA_DIR = path.join(__dirname, '../public/media')
 const PAYLOAD_URL = process.env.PAYLOAD_URL || 'http://localhost:3000'
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'kostyannn1996@gmail.com'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || ''
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''
 
+const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env
+if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+  console.error('[ERROR]  Задайте CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY і CLOUDINARY_API_SECRET')
+  process.exit(1)
+}
+
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dzbov07se',
-  api_key: process.env.CLOUDINARY_API_KEY || '499113254224165',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'WhrHGkaE0E8iDM0JcJGH92cF1mQ',
+  cloud_name: CLOUDINARY_CLOUD_NAME,
+  api_key: CLOUDINARY_API_KEY,
+  api_secret: CLOUDINARY_API_SECRET,
 })
 
 function log(msg) { console.log(`[migrate] ${msg}`) }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { getPayload } from '@/lib/payload'
+import { sendSms } from '@/lib/turbosms'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 
 // Ліміт замовлень з однієї IP-адреси (у пам'яті процесу — для одного
@@ -250,6 +251,10 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[order] Не вдалося надіслати лист:', order.id, err)
   }
+
+  // SMS покупцю одразу після підтвердження замовлення. sendSms не кидає
+  // помилок (збій лише пишеться в лог) — замовлення вже збережене.
+  await sendSms(form.phone, `Замовлення №${order.id} прийнято. Дякуємо! Mariya Underwear`)
 
   return NextResponse.json({ success: true, orderId: order.id })
 }

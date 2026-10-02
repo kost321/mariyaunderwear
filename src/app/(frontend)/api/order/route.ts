@@ -5,6 +5,16 @@ import type { CartItem, CheckoutForm } from '@/types/shop'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+/** Екранує текст від покупця перед вставкою в HTML листа. */
+function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export async function POST(req: NextRequest) {
   const { items: rawItems, form }: { items: CartItem[]; form: CheckoutForm } = await req.json()
 
@@ -78,9 +88,9 @@ export async function POST(req: NextRequest) {
     .map(
       (item) => `
       <tr>
-        <td style="padding:8px;border-bottom:1px solid #eee">${item.title}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee">${item.size ?? '—'}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee">${item.color ?? '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.title)}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.size ?? '—')}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.color ?? '—')}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${item.price * item.quantity} грн.</td>
       </tr>`,
@@ -90,14 +100,14 @@ export async function POST(req: NextRequest) {
   await resend.emails.send({
     from: 'Mariya Underwear <orders@mariyaunderwear.com>',
     to: 'itsmariainthecity@gmail.com',
-    subject: `Нове замовлення #${order.id} — ${form.customerName}`,
+    subject: `Нове замовлення #${order.id} — ${String(form.customerName).replace(/[\r\n]+/g, ' ')}`,
     html: `
       <h2>Нове замовлення #${order.id}</h2>
-      <p><b>Ім'я:</b> ${form.customerName}</p>
-      <p><b>Телефон:</b> ${form.phone}</p>
-      <p><b>Місто:</b> ${form.city}</p>
-      <p><b>Відділення НП:</b> ${form.novaPoshtaBranch}</p>
-      ${form.comment ? `<p><b>Коментар:</b> ${form.comment}</p>` : ''}
+      <p><b>Ім'я:</b> ${esc(form.customerName)}</p>
+      <p><b>Телефон:</b> ${esc(form.phone)}</p>
+      <p><b>Місто:</b> ${esc(form.city)}</p>
+      <p><b>Відділення НП:</b> ${esc(form.novaPoshtaBranch)}</p>
+      ${form.comment ? `<p><b>Коментар:</b> ${esc(form.comment)}</p>` : ''}
       <table style="width:100%;border-collapse:collapse;margin-top:16px">
         <thead>
           <tr style="background:#f5f5f5">

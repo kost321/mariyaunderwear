@@ -40,11 +40,19 @@ export function ProductDetails({
   const showVariantSwitch = colorVariants.length > 1
 
   const [activeImage, setActiveImage] = useState(0)
-  const [size, setSize] = useState<string | undefined>(sizes[0]?.value)
+  // stock === 0 — розмір закінчився; порожнє значення = залишок невідомий.
+  const soldOut = (s: { stock?: number | null }) => s.stock === 0
+  const allSoldOut = sizes.length > 0 && sizes.every(soldOut)
+  const [size, setSize] = useState<string | undefined>(
+    (sizes.find((s) => !soldOut(s)) ?? sizes[0])?.value,
+  )
   const [color, setColor] = useState<string | undefined>(colors[0]?.name)
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
+
+  const selectedStock = sizes.find((s) => s.value === size)?.stock
+  const maxQuantity = typeof selectedStock === 'number' && selectedStock > 0 ? selectedStock : 99
 
   const mainImage = images[activeImage]?.image
   const mainUrl = getMediaUrl(mainImage)
@@ -64,7 +72,13 @@ export function ProductDetails({
     quantity,
   }
 
+  function handleSelectSize(value: string, stock?: number | null) {
+    setSize(value)
+    if (typeof stock === 'number' && stock > 0) setQuantity((q) => Math.min(q, stock))
+  }
+
   function handleAddToCart() {
+    if (allSoldOut) return
     addItem(selectedItem)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
@@ -82,12 +96,13 @@ export function ProductDetails({
     <button
       type="button"
       onClick={handleAddToCart}
+      disabled={allSoldOut}
       className={cn(
-        'h-10 w-full rounded-card bg-cream/70 text-xs uppercase tracking-[1px] text-brown transition-colors hover:bg-cream',
+        'h-10 w-full rounded-card bg-cream/70 text-xs uppercase tracking-[1px] text-brown transition-colors hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-cream/70',
         className,
       )}
     >
-      {added ? 'Додано ✓' : 'Додати в кошик'}
+      {allSoldOut ? 'Немає в наявності' : added ? 'Додано ✓' : 'Додати в кошик'}
     </button>
   )
 
@@ -184,11 +199,17 @@ export function ProductDetails({
                 <button
                   key={s.id ?? s.value}
                   type="button"
-                  onClick={() => setSize(s.value)}
+                  onClick={() => handleSelectSize(s.value, s.stock)}
+                  disabled={soldOut(s)}
                   aria-pressed={size === s.value}
+                  title={soldOut(s) ? 'Немає в наявності' : undefined}
                   className={cn(
                     'flex h-9 min-w-[35px] items-center justify-center border px-1.5 text-[10px] transition-colors',
-                    size === s.value ? 'border-ink bg-ink text-white' : 'border-[#a3a3a3] text-brown hover:border-ink',
+                    soldOut(s)
+                      ? 'cursor-not-allowed border-[#d4d4d4] text-brown/40 line-through'
+                      : size === s.value
+                        ? 'border-ink bg-ink text-white'
+                        : 'border-[#a3a3a3] text-brown hover:border-ink',
                   )}
                 >
                   {s.value}
@@ -220,8 +241,9 @@ export function ProductDetails({
             </span>
             <button
               type="button"
-              onClick={() => setQuantity((q) => q + 1)}
-              className="flex h-8 w-8 items-center justify-center"
+              onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+              disabled={quantity >= maxQuantity}
+              className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
               aria-label="Збільшити кількість"
             >
               +
@@ -234,7 +256,8 @@ export function ProductDetails({
         <button
           type="button"
           onClick={() => setQuickOpen(true)}
-          className="mt-2 h-10 w-full rounded-card border border-brown/40 text-xs uppercase tracking-[1px] text-brown transition-colors hover:border-brown"
+          disabled={allSoldOut}
+          className="mt-2 h-10 w-full rounded-card border border-brown/40 text-xs uppercase tracking-[1px] text-brown transition-colors hover:border-brown disabled:cursor-not-allowed disabled:opacity-50"
         >
           Купити в 1 клік
         </button>

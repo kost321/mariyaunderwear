@@ -177,11 +177,18 @@ export function CartPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items, form: { ...form, customerName: `${firstName.trim()} ${lastName.trim()}`.trim() } }),
       })
-      if (!res.ok) throw new Error('Помилка сервера')
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(res.status === 400 && data?.error ? data.error : '')
+      }
       clear()
       goTo('success')
-    } catch {
-      setError("Щось пішло не так. Спробуйте ще раз або зв'яжіться з нами.")
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message
+          ? e.message
+          : "Щось пішло не так. Спробуйте ще раз або зв'яжіться з нами.",
+      )
     } finally {
       setLoading(false)
     }

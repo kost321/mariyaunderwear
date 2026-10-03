@@ -28,8 +28,9 @@ export const Orders: CollectionConfig = {
     plural: 'Замовлення',
   },
   access: {
-    // Создание заказа доступно публично (покупатель не залогинен).
-    create: () => true,
+    // Замовлення створює лише серверний роут /api/order (Local API,
+    // overrideAccess), тож публічний REST/GraphQL створення закритий.
+    create: ({ req }) => Boolean(req.user),
     // Просматривать/менять заказы может только администратор CMS.
     read: ({ req }) => Boolean(req.user),
     update: ({ req }) => Boolean(req.user),

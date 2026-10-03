@@ -75,10 +75,17 @@ export function QuickOrderModal({
           },
         }),
       })
-      if (!res.ok) throw new Error('bad response')
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(res.status === 400 && data?.error ? data.error : '')
+      }
       setDone(true)
-    } catch {
-      setError("Щось пішло не так. Спробуйте ще раз або зателефонуйте нам.")
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message
+          ? e.message
+          : "Щось пішло не так. Спробуйте ще раз або зателефонуйте нам.",
+      )
     } finally {
       setLoading(false)
     }

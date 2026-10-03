@@ -1,0 +1,61 @@
+name: Backup
+
+# Щоночі робить дамп бази з Railway, шифрує його і зберігає як артефакт на 30 днів.
+# Потрібні секрети репозиторію: DATABASE_PUBLIC_URL і BACKUP_PASSPHRASE.
+# Відновлення: docs/BACKUP.md
+on:
+  schedule:
+    - cron: '0 2 * * *' # 02:00 UTC щодня
+  workflow_dispatch: # ручний запуск з вкладки Actions
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Dump database
+        env:
+          DATABASE_PUBLIC_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p backup
+          # Версія pg_dump не має бути старшою за сервер Railway (зараз PostgreSQL 18).
+          docker run --rm -e DATABASE_PUBLIC_URL -v "$PWD/backup:/backup" postgres:18-alpine \
+            sh -c 'pg_dump "$DATABASE_PUBLIC_URL" -Fc --no-owner -f /backup/db.dump'
+
+      - name: Verify dump
+        run: |
+          set -euo pipefail
+          size=$(stat -c%s backup/db.dump)
+          echo "Dump size: $size bytes"
+          # Порожній або обірваний дамп — помилка, а не «успішний» бекап.
+          # Повний дамп бази цього магазину зараз важить ~80 КБ, тож поріг низький.
+          if [ "$size" -lt 20000 ]; then
+            echo "Dump is suspiciously small" >&2
+            exit 1
+          fi
+          docker run --rm -v "$PWD/backup:/backup" postgres:18-alpine \
+            pg_restore --list /backup/db.dump > /dev/null
+
+      - name: Encrypt dump
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          # У дампі телефони та імена покупців — у відкритому вигляді не зберігаємо.
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            -o "backup/olga-$(date -u +%F).dump.gpg" backup/db.dump
+          rm backup/db.dump
+          ls -lh backup
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup/*.gpg
+          retention-days: 30
+          if-no-files-found: error

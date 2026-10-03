@@ -3,13 +3,121 @@ import { Resend } from 'resend'
 import { getPayload } from '@/lib/payload'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Ліміт замовлень з однієї IP-адреси (у пам'яті процесу — для одного
+// інстансу Railway достатньо).
+const RATE_LIMIT = 5
+const RATE_WINDOW_MS = 10 * 60 * 1000
+const hits = new Map<string, number[]>()
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const recent = (hits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
+  if (recent.length >= RATE_LIMIT) {
+    hits.set(ip, recent)
+    return true
+  }
+  recent.push(now)
+  hits.set(ip, recent)
+  // Не даємо мапі рости безмежно.
+  if (hits.size > 5000) {
+    for (const [key, times] of hits) {
+      if (times.every((t) => now - t >= RATE_WINDOW_MS)) hits.delete(key)
+    }
+  }
+  return false
+}
+
+/** Рядок із обмеженням довжини; undefined, якщо значення невалідне. */
+function str(value: unknown, max: number): string | undefined {
+  if (value === undefined || value === null || value === '') return ''
+  if (typeof value !== 'string' || value.length > max) return undefined
+  return value.trim()
+}
+
+/**
+ * Отримувачі листа про нове замовлення: ORDER_NOTIFY_EMAIL (одна адреса або
+ * кілька через кому). Якщо змінна не задана — запасна адреса власниці.
+ */
+function notifyRecipients(): string[] {
+  const list = (process.env.ORDER_NOTIFY_EMAIL ?? '')
+    .split(',')
+    .map((email) => email.trim())
+    .filter(Boolean)
+  return list.length > 0 ? list : ['itsmariainthecity@gmail.com']
+}
+
+/** Екранує текст від покупця перед вставкою в HTML листа. */
+function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const BAD_REQUEST = () => NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
 
 export async function POST(req: NextRequest) {
-  const { items: rawItems, form }: { items: CartItem[]; form: CheckoutForm } = await req.json()
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: 'Забагато спроб. Спробуйте пізніше.' }, { status: 429 })
+  }
 
-  if (!Array.isArray(rawItems) || !rawItems.length || !form?.customerName || !form?.phone) {
-    return NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
+  let body: { items?: CartItem[]; form?: Partial<CheckoutForm> }
+  try {
+    body = await req.json()
+  } catch {
+    return BAD_REQUEST()
+  }
+
+  const rawItems = body?.items
+  const rawForm = body?.form
+  if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > 50 || !rawForm) {
+    return BAD_REQUEST()
+  }
+
+  const customerName = str(rawForm.customerName, 100)
+  const phone = str(rawForm.phone, 30)
+  const city = str(rawForm.city, 100)
+  const novaPoshtaBranch = str(rawForm.novaPoshtaBranch, 100)
+  const email = str(rawForm.email, 120)
+  const comment = str(rawForm.comment, 1000)
+  if (
+    !customerName ||
+    !phone ||
+    city === undefined ||
+    novaPoshtaBranch === undefined ||
+    email === undefined ||
+    comment === undefined
+  ) {
+    return BAD_REQUEST()
+  }
+  // Телефон: 10–15 цифр, інші символи — лише звичайні роздільники.
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length < 10 || digits.length > 15 || !/^[\d\s+()-]+$/.test(phone)) {
+    return BAD_REQUEST()
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return BAD_REQUEST()
+  }
+  const form: CheckoutForm = {
+    customerName,
+    phone,
+    city,
+    novaPoshtaBranch,
+    email: email || undefined,
+    comment,
+  }
+
+  for (const item of rawItems) {
+    if (
+      !item ||
+      str(item.size, 50) === undefined ||
+      str(item.color, 50) === undefined
+    ) {
+      return BAD_REQUEST()
+    }
   }
 
   const payload = await getPayload()
@@ -29,6 +137,10 @@ export async function POST(req: NextRequest) {
   })
   const productsById = new Map(found.docs.map((p) => [p.id, p]))
 
+  // Скільки штук кожного розміру вже в замовленні (одна позиція може
+  // повторюватись у кошику з різним кольором).
+  const requested = new Map<string, number>()
+
   const items: CartItem[] = []
   for (const raw of rawItems) {
     const product = productsById.get(Number(raw.productId))
@@ -39,6 +151,30 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       )
     }
+
+    // Розмір має існувати у товару, а кількість не перевищувати залишок.
+    // Порожній stock = залишок невідомий (товар додано вручну) — не обмежуємо.
+    if (product.sizes?.length) {
+      const sizeRow = product.sizes.find((s) => s.value === raw.size)
+      if (!sizeRow) {
+        return NextResponse.json(
+          { error: `Розміру немає в наявності: ${product.title}` },
+          { status: 400 },
+        )
+      }
+      const key = `${product.id}:${sizeRow.value}`
+      const total = (requested.get(key) ?? 0) + quantity
+      requested.set(key, total)
+      if (typeof sizeRow.stock === 'number' && total > sizeRow.stock) {
+        return NextResponse.json(
+          {
+            error: `Недостатньо в наявності: ${product.title}, розмір ${sizeRow.value} (залишилось ${sizeRow.stock} шт.)`,
+          },
+          { status: 400 },
+        )
+      }
+    }
+
     items.push({
       productId: String(product.id),
       title: product.title,
@@ -78,26 +214,30 @@ export async function POST(req: NextRequest) {
     .map(
       (item) => `
       <tr>
-        <td style="padding:8px;border-bottom:1px solid #eee">${item.title}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee">${item.size ?? '—'}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee">${item.color ?? '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.title)}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.size ?? '—')}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.color ?? '—')}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${item.price * item.quantity} грн.</td>
       </tr>`,
     )
     .join('')
 
-  await resend.emails.send({
+  // Замовлення вже збережене: збій листа не має ламати відповідь покупцю
+  // (інакше він повторить замовлення й створить дубль).
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    const { error } = await resend.emails.send({
     from: 'Mariya Underwear <orders@mariyaunderwear.com>',
-    to: 'itsmariainthecity@gmail.com',
-    subject: `Нове замовлення #${order.id} — ${form.customerName}`,
+    to: notifyRecipients(),
+    subject: `Нове замовлення #${order.id} — ${String(form.customerName).replace(/[\r\n]+/g, ' ')}`,
     html: `
       <h2>Нове замовлення #${order.id}</h2>
-      <p><b>Ім'я:</b> ${form.customerName}</p>
-      <p><b>Телефон:</b> ${form.phone}</p>
-      <p><b>Місто:</b> ${form.city}</p>
-      <p><b>Відділення НП:</b> ${form.novaPoshtaBranch}</p>
-      ${form.comment ? `<p><b>Коментар:</b> ${form.comment}</p>` : ''}
+      <p><b>Ім'я:</b> ${esc(form.customerName)}</p>
+      <p><b>Телефон:</b> ${esc(form.phone)}</p>
+      <p><b>Місто:</b> ${esc(form.city)}</p>
+      <p><b>Відділення НП:</b> ${esc(form.novaPoshtaBranch)}</p>
+      ${form.comment ? `<p><b>Коментар:</b> ${esc(form.comment)}</p>` : ''}
       <table style="width:100%;border-collapse:collapse;margin-top:16px">
         <thead>
           <tr style="background:#f5f5f5">
@@ -117,7 +257,11 @@ export async function POST(req: NextRequest) {
         </tfoot>
       </table>
     `,
-  })
+    })
+    if (error) console.error('[order] Resend відхилив лист:', order.id, error)
+  } catch (err) {
+    console.error('[order] Не вдалося надіслати лист:', order.id, err)
+  }
 
   return NextResponse.json({ success: true, orderId: order.id })
 }

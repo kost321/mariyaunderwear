@@ -22,6 +22,7 @@ Next.js 15 storefront and Payload CMS 3 admin run as a **single application**, b
 | Media | Cloudinary via a custom storage adapter, `sharp` for image sizes |
 | Email | Resend (order notifications) |
 | Deploy | Railway: migrations run automatically before start |
+| Ops | Nightly database backup via GitHub Actions ([restore guide](docs/BACKUP.md)) |
 
 ## Features
 
@@ -31,12 +32,14 @@ Next.js 15 storefront and Payload CMS 3 admin run as a **single application**, b
 - Product page with gallery, size and color selection, size chart, care info and related products ("frequently bought together")
 - Color variants: each color is its own product card (own slug, photos, SEO), grouped under a shared *Product Model* to power the color switcher
 - Cart with localStorage persistence, checkout with delivery details (city / Nova Poshta branch), and a quick-order modal
-- SEO: `generateMetadata` and `generateStaticParams` for product pages
+- **Stock-aware ordering:** sizes with no stock are disabled, quantity is capped at the available stock, and the same check is repeated on the server
+- **SEO:** `sitemap.xml`, `robots.txt`, JSON-LD `Product` markup, canonical URLs, `generateMetadata` and `generateStaticParams` for product pages
 
 **Orders**
 - Orders are created through a server endpoint that **trusts the client only for product ID, size, color and quantity**. Titles and prices are always re-read from the database, so a tampered cart can't change what the customer pays.
 - Each order line stores a **snapshot** of title and price, so order history stays correct after products are edited
-- Email notification to the store owner via Resend
+- Request validation and **rate limiting** on the order endpoint; public order creation through the CMS API is closed
+- Email notification via Resend to recipients from `ORDER_NOTIFY_EMAIL`. Customer fields are escaped, and a failed email never breaks order creation
 
 **Admin and integrations**
 - **Torgsoft import:** a custom admin view that accepts an Excel/CSV export from the Torgsoft POS/accounting system and syncs retail prices, wholesale prices and per-size stock into products. Products are matched by SKU and color, and the import returns a detailed report: updated, not found, ambiguous and skipped rows.
@@ -97,7 +100,7 @@ npm run dev               # http://localhost:3000, admin at /admin
 ## Roadmap
 
 - [ ] Finish remaining storefront pages and polish mobile layouts
-- [ ] Sitemap, robots.txt, Open Graph metadata
+- [ ] Open Graph metadata
 - [ ] Telegram notifications for new orders
 
 ---

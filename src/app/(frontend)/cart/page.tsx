@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   title: 'Кошик',
 }
 
-// Не пререндеримо на білді: layout тягне категорії меню з БД, а на Railway
-// під час білду вона недоступна — меню залишилось би порожнім
+// Not prerendered at build time: the layout pulls menu categories from the DB, and on Railway
+// it is unavailable during the build, so the menu would stay empty
 export const dynamic = 'force-dynamic'
 
 export default function Cart() {

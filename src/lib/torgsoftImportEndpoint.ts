@@ -2,9 +2,9 @@ import type { PayloadHandler } from 'payload'
 import { parseTorgsoftFile, runTorgsoftImport } from './torgsoftImport'
 
 /**
- * POST /api/torgsoft-import — приймає файл (multipart/form-data, поле
- * "file"), оновлює товари, повертає підсумок. Доступно тільки залогіненим
- * адмінам CMS (той самий паттерн, що й access у колекціях).
+ * POST /api/torgsoft-import: accepts a file (multipart/form-data, field
+ * "file"), updates products, returns a summary. Available only to logged-in
+ * CMS admins (same pattern as access in the collections).
  */
 export const torgsoftImportHandler: PayloadHandler = async (req) => {
   if (!req.user) {

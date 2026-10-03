@@ -13,8 +13,8 @@ export const NAV_LINKS = [
 ]
 
 /**
- * Шапка магазина: навигация слева (на мобилке — бургер), логотип по центру, корзина справа.
- * Клиентский компонент, потому что читает состояние корзины и открывает меню.
+ * Store header: navigation on the left (burger on mobile), logo in the center, cart on the right.
+ * Client component because it reads the cart state and opens the menu.
  */
 export function Header({ categories }: { categories: MenuCategory[] }) {
   const { totalCount } = useCart()

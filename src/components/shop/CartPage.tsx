@@ -10,7 +10,7 @@ import type { CartItem, CheckoutForm } from '@/types/shop'
 
 type Step = 'cart' | 'checkout' | 'success'
 
-// Вкладки оформлення з макета: Information → Shipping → Payment
+// Checkout tabs from the design: Information → Shipping → Payment
 const CHECKOUT_STEPS = [
   { id: 'info', label: 'Інформація' },
   { id: 'shipping', label: 'Доставка' },
@@ -24,7 +24,7 @@ const pill =
 const field =
   'h-11 w-full border border-[#b6ada3] px-5 text-xs text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none'
 
-/** Порожній кошик / подяка: заголовок + кнопка в каталог. */
+/** Empty cart / thank-you: heading + button to the catalog. */
 function Message({ title, text }: { title: string; text?: string }) {
   return (
     <div className="flex flex-col items-center gap-5 py-24 text-center">
@@ -37,7 +37,7 @@ function Message({ title, text }: { title: string; text?: string }) {
   )
 }
 
-/** Кнопка «далі» зі стрілкою, як «Shipping →» у макеті. */
+/** "Next" button with an arrow, like "Shipping →" in the design. */
 function NextButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
   return (
     <div className="mt-6 flex justify-end">
@@ -53,7 +53,7 @@ function NextButton({ children, disabled }: { children: React.ReactNode; disable
   )
 }
 
-/** Блок «Підсумок»: сума, доставка, разом. */
+/** "Summary" block: subtotal, delivery, total. */
 function Totals({ total, large }: { total: number; large?: boolean }) {
   return (
     <>
@@ -75,7 +75,7 @@ function Totals({ total, large }: { total: number; large?: boolean }) {
   )
 }
 
-/** Позиція в кошику: велике фото, справа — прибрати, розмір, колір, кількість. */
+/** Cart line: large photo; on the right remove, size, color, quantity. */
 function BagItem({
   item,
   onRemove,
@@ -135,7 +135,7 @@ export function CartPage() {
   const { items, totalCount, totalPrice, removeItem, updateQuantity, clear } = useCart()
   const [step, setStep] = useState<Step>('cart')
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('info')
-  // Найдальший пройдений крок — на нього й назад можна перейти вкладкою
+  // Furthest step reached; you can also go back to it via the tab
   const [reached, setReached] = useState(0)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -200,7 +200,7 @@ export function CartPage() {
 
   if (!items.length) return <Message title="Кошик порожній" />
 
-  // КРОК 1 — кошик
+  // STEP 1: cart
   if (step === 'cart') {
     return (
       <div className="lg:grid lg:grid-cols-[712px_306px] lg:justify-between lg:pt-[60px]">
@@ -229,7 +229,7 @@ export function CartPage() {
     )
   }
 
-  // КРОК 2 — оформлення
+  // STEP 2: checkout
   return (
     <div className="lg:grid lg:grid-cols-[468px_406px] lg:justify-between">
       <section>
@@ -238,7 +238,7 @@ export function CartPage() {
         </button>
         <h1 className="mt-10 font-serif text-[32px] uppercase tracking-[2px] text-ink">Оформлення</h1>
 
-        {/* Вкладки кроків: пройдені можна відкрити знову, наступні — лише кнопкою */}
+        {/* Step tabs: completed ones can be reopened, the next ones only via the button */}
         <nav aria-label="Кроки оформлення" className="mt-8 flex gap-11 text-sm uppercase sm:text-base">
           {CHECKOUT_STEPS.map((s, i) => {
             const current = s.id === checkoutStep

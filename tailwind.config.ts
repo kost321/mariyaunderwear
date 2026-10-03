@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     container: {
       center: true,
-      // --gutter: 18px на мобілці → 50px на 1280 (як у макеті), див. globals.css
+      // --gutter: 18px on mobile → 50px at 1280 (as in the design), see globals.css
       padding: 'var(--gutter)',
       screens: {
         '2xl': '1280px',
@@ -22,7 +22,7 @@ const config: Config = {
         script: ['var(--font-script)', 'cursive'],
       },
       colors: {
-        // Палітра з макета Figma
+        // Palette from the Figma design
         ink: '#403834',
         'ink-text': '#403434',
         brown: '#6e5c4d',

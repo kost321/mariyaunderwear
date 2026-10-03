@@ -7,7 +7,7 @@ const INFO_LINKS = [
   { href: '/cart', label: 'Кошик' },
 ]
 
-/** Список посилань через «/», як у макеті. */
+/** List of links separated by "/", as in the design. */
 function SlashList({ items }: { items: { href: string; label: string }[] }) {
   return (
     <ul className="flex flex-col gap-2 text-xs font-medium uppercase tracking-[-0.24px] text-sand">

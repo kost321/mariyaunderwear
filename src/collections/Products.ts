@@ -2,18 +2,18 @@ import type { CollectionConfig } from 'payload'
 import { formatSlug } from '@/lib/slug'
 
 /**
- * Products — товары магазина.
+ * Products: store products.
  *
- * Поля по ТЗ: title, slug, description, price, images, category,
+ * Fields per the spec: title, slug, description, price, images, category,
  * sizes, colors, sku, active.
  *
- * Решения по моделированию:
- *  - images: массив upload-полей -> галерея изображений.
- *  - sizes: массив строк (S/M/L или 42/44). Хранятся как подколлекция
- *    строк — клиент добавляет нужные значения в админке.
- *  - colors: массив объектов {name, hex} -> можно показать кружок цвета.
- *  - category: relationship на коллекцию categories.
- *  - active: чекбокс — показывать ли товар в каталоге.
+ * Modeling decisions:
+ *  - images: an array of upload fields -> image gallery.
+ *  - sizes: an array of strings (S/M/L or 42/44), stored as a sub-collection
+ *    of rows; the client adds the values they need in the admin.
+ *  - colors: an array of {name, hex} objects -> a color swatch can be shown.
+ *  - category: a relationship to the categories collection.
+ *  - active: a checkbox: whether to show the product in the catalog.
  */
 export const Products: CollectionConfig = {
   slug: 'products',
@@ -27,8 +27,8 @@ export const Products: CollectionConfig = {
     plural: 'Товари',
   },
   access: {
-    // Читать можно публично, но в запросах фронта мы дополнительно
-    // фильтруем по active=true.
+    // Public read is allowed, but frontend queries additionally
+    // filter by active=true.
     read: () => true,
     create: ({ req }) => Boolean(req.user),
     update: ({ req }) => Boolean(req.user),
@@ -95,9 +95,9 @@ export const Products: CollectionConfig = {
         description: 'Внутрішнє поле для адмінки. Не показується на сайті.',
       },
       access: {
-        // Публічний фронт читає товари без авторизації (access.read колекції
-        // дозволяє всім) — цим обмежуємо саме це поле тільки залогіненим
-        // адмінам CMS, щоб оптова ціна ніколи не потрапила в публічний API.
+        // The public frontend reads products without authentication (the collection's
+        // access.read allows everyone), so this field is restricted to logged-in
+        // CMS admins, so the wholesale price never reaches the public API.
         read: ({ req }) => Boolean(req.user),
       },
     },

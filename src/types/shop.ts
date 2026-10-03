@@ -1,25 +1,25 @@
 /**
- * UI-типы магазина, не зависящие от схемы Payload.
- * Типы товаров/категорий берём из сгенерированного payload-types.ts.
+ * UI types for the store, independent of the Payload schema.
+ * Product/category types come from the generated payload-types.ts.
  */
 
-/** Позиция в корзине (хранится в localStorage на клиенте). */
+/** Cart line (stored in localStorage on the client). */
 export interface CartItem {
-  /** id товара в Payload */
+  /** id of the product in Payload */
   productId: string
-  /** Снимок названия и цены на момент добавления */
+  /** Snapshot of title and price at the time of adding */
   title: string
   price: number
-  /** URL первого изображения для превью в корзине */
+  /** URL of the first image for the cart preview */
   image?: string
   slug: string
-  /** Выбранные покупателем варианты */
+  /** Variants selected by the customer */
   size?: string
   color?: string
   quantity: number
 }
 
-/** Данные, которые покупатель вводит при оформлении заказа. */
+/** Data the customer enters at checkout. */
 export interface CheckoutForm {
   customerName: string
   phone: string

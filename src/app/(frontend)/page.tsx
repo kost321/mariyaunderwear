@@ -8,8 +8,8 @@ import { HeroSection, type HeroImage } from '@/components/shop/home/HeroSection'
 import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import { CollectionTabs } from '@/components/shop/home/CollectionTabs'
 
-// Головна збирається з товарів, тож рендеримо її на кожен запит: під час білду
-// на Railway БД недоступна (postgres.railway.internal є лише в рантаймі)
+// The home page is built from products, so it is rendered on every request: during the build
+// on Railway the DB is unavailable (postgres.railway.internal exists only at runtime)
 export const dynamic = 'force-dynamic'
 
 function toImage(product: Product): HeroImage | null {
@@ -19,7 +19,7 @@ function toImage(product: Product): HeroImage | null {
   return { url, alt: getMediaAlt(media, product.title), href: `/product/${product.slug}` }
 }
 
-// Сходинки фото в блоці «Наш підхід» — зсуви по вертикалі з макета
+// Staggered photos in the "Our approach" block: vertical offsets from the design
 const APPROACH_OFFSETS = ['lg:mt-0', 'lg:mt-[73px]', 'lg:mt-0', 'lg:mt-[103px]']
 
 export default async function HomePage() {
@@ -30,7 +30,7 @@ export default async function HomePage() {
   const approachImages = withImages.slice(8, 12).map(toImage).filter((i): i is HeroImage => i !== null)
   const newest = products.slice(0, 12)
 
-  // У табах лише категорії, в яких є товари
+  // Tabs only include categories that have products
   const usedCategoryIds = new Set(products.map((p) => (typeof p.category === 'object' ? p.category.id : p.category)))
   const tabs = categories.filter((c) => usedCategoryIds.has(c.id)).map((c) => ({ id: c.id, title: c.title }))
 
@@ -87,7 +87,7 @@ export default async function HomePage() {
           </p>
         </div>
 
-        {/* Чотири фото сходинками; без фото — заглушки, як у макеті */}
+        {/* Four photos in a staircase; placeholders when there are no photos, as in the design */}
         <div className="mt-16 grid grid-cols-2 items-start gap-4 lg:mt-[140px] lg:grid-cols-4 lg:gap-9">
           {APPROACH_OFFSETS.map((offset, i) => {
             const image = approachImages[i]

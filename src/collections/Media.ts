@@ -1,14 +1,14 @@
 import type { CollectionConfig } from 'payload'
 
 /**
- * Media — загруженные изображения (фото товаров, картинки категорий).
- * upload: {...} включает файловые загрузки. Payload:
- *  - сохраняет оригинал в папку staticDir (public/media);
- *  - генерирует превью указанных размеров через sharp;
- *  - отдаёт файлы по URL /media/<имя>.
+ * Media: uploaded images (product photos, category pictures).
+ * upload: {...} enables file uploads. Payload:
+ *  - stores the original in the staticDir folder (public/media);
+ *  - generates previews of the given sizes via sharp;
+ *  - serves files at the URL /media/<name>.
  *
- * На товарах и категориях мы ссылаемся на Media через relationship —
- * это переиспользуемая медиатека.
+ * Products and categories reference Media through a relationship,
+ * so it works as a reusable media library.
  */
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -20,7 +20,7 @@ export const Media: CollectionConfig = {
     plural: 'Медіа',
   },
   access: {
-    // Картинки магазина должны быть видны всем посетителям сайта.
+    // Store images must be visible to all site visitors.
     read: () => true,
     create: ({ req }) => Boolean(req.user),
     update: ({ req }) => Boolean(req.user),

@@ -6,7 +6,7 @@ import { ChevronRight } from 'lucide-react'
 import type { CatalogFacets, CatalogParams } from '@/lib/catalog'
 import { cn } from '@/lib/utils'
 
-/** Оновлює query-параметри каталогу без прокрутки сторінки. */
+/** Updates the catalog query params without scrolling the page. */
 function useUpdateParams() {
   const router = useRouter()
   const pathname = usePathname()
@@ -55,7 +55,7 @@ function Section({
   )
 }
 
-/** Ліва панель фільтрів: розмір, колір, ціна. На мобілці розгортається кнопкою. */
+/** Left filter panel: size, color, price. On mobile it expands with a button. */
 export function FilterPanel({ params, facets }: { params: CatalogParams; facets: CatalogFacets }) {
   const { update, pending } = useUpdateParams()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -186,7 +186,7 @@ const SORT_OPTIONS: { value: CatalogParams['sort']; label: string }[] = [
   { value: 'price-desc', label: 'Від дорогих' },
 ]
 
-/** Сортування у стилі макета: «Сортування(-)» і варіанти під ним. */
+/** Sorting in the design's style: "Sort(-)" and the options under it. */
 export function SortSelect({ value }: { value: CatalogParams['sort'] }) {
   const { update } = useUpdateParams()
   return (

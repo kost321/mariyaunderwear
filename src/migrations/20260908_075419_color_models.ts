@@ -1,11 +1,11 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 /**
- * Цветовые варианты товара через коллекцию «Моделі».
+ * Product color variants via the "Models" collection.
  *
- * - product_models — новая коллекция (модель = «Халат Перлинний ранок»).
- * - products.model_id — relationship на модель; связывает карточки цветов.
- * - products.color_name / color_hex — подпись и цвет кружка в переключателе.
+ * - product_models: a new collection (model = "Pearl Morning robe").
+ * - products.model_id: a relationship to the model; links the color cards.
+ * - products.color_name / color_hex: the label and swatch color in the switcher.
  */
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`

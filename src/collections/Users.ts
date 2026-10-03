@@ -1,11 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
 /**
- * Users — администраторы магазина.
- * auth: true превращает коллекцию в аутентифицируемую:
- * Payload сам добавляет поля email/password, логин в /admin,
- * сброс пароля и т.д. Это пользователи CMS, а НЕ покупатели
- * (покупатели у нас оформляют заказ без регистрации).
+ * Users: store administrators.
+ * auth: true turns the collection into an authenticated one:
+ * Payload adds email/password fields, login at /admin,
+ * password reset, etc. These are CMS users, NOT customers
+ * (customers place orders without registering).
  */
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -19,7 +19,7 @@ export const Users: CollectionConfig = {
     plural: 'Користувачі',
   },
   access: {
-    // Доступ к данным имеют только залогиненные пользователи CMS.
+    // Only logged-in CMS users can access the data.
     read: ({ req }) => Boolean(req.user),
     create: ({ req }) => Boolean(req.user),
     update: ({ req }) => Boolean(req.user),
@@ -31,6 +31,6 @@ export const Users: CollectionConfig = {
       label: "Ім'я",
       type: 'text',
     },
-    // Поля email и password добавляются автоматически благодаря auth: true.
+    // The email and password fields are added automatically thanks to auth: true.
   ],
 }

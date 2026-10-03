@@ -1,8 +1,8 @@
 import type { Product } from '@/payload-types'
 
 /**
- * Фільтри каталогу. Товарів небагато, тож фільтруємо в пам'яті після
- * вибірки з Payload — так простіше рахувати фасети (які розміри/кольори є).
+ * Catalog filters. There are not many products, so we filter in memory after
+ * fetching from Payload, which makes it simpler to compute facets (which sizes/colors exist).
  */
 
 export type CatalogSort = 'new' | 'price-asc' | 'price-desc'
@@ -40,10 +40,10 @@ export function parseCatalogParams(raw: RawParams): CatalogParams {
   }
 }
 
-// Порядок розмірів у фільтрі; решта (напр. 75B) — після, за алфавітом
+// Order of sizes in the filter; the rest (e.g. 75B) come after, alphabetically
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL']
 
-/** «M/L» → ["M", "L"]; кирилична «М» → латинська. */
+/** "M/L" → ["M", "L"]; Cyrillic "М" → Latin. */
 function sizeTokens(value: string): string[] {
   return value
     .replace(/М/g, 'M')
@@ -73,7 +73,7 @@ export function filterProducts(products: Product[], params: CatalogParams): Prod
 
   if (params.sort === 'price-asc') result.sort((a, b) => a.price - b.price)
   if (params.sort === 'price-desc') result.sort((a, b) => b.price - a.price)
-  // 'new' — порядок з getProducts (-createdAt)
+  // 'new': order from getProducts (-createdAt)
   return result
 }
 
@@ -84,7 +84,7 @@ export type CatalogFacets = {
   priceMax: number
 }
 
-/** Які значення фільтрів взагалі є серед товарів. */
+/** Which filter values exist among the products at all. */
 export function getFacets(products: Product[]): CatalogFacets {
   const sizes = new Set<string>()
   const colors = new Map<string, string | null>()

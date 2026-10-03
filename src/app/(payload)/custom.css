@@ -1,10 +1,10 @@
-/* Убираем синий цвет ссылок в навигации и хлебных крошках */
+/* Remove the blue link color in navigation and breadcrumbs */
 * a,
 a {
   color: inherit !important;
 }
 
-/* Кнопки — графитовый акцент */
+/* Buttons: graphite accent */
 .btn--style-primary {
   background-color: #1a1a1a !important;
   border-color: #1a1a1a !important;

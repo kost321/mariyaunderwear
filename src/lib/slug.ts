@@ -1,7 +1,7 @@
 import type { FieldHook } from 'payload'
 
 /**
- * Транслитерация кириллицы + приведение к URL-безопасному виду.
+ * Cyrillic transliteration + normalization to a URL-safe form.
  * "Зимняя куртка" -> "zimnyaya-kurtka"
  */
 const translitMap: Record<string, string> = {
@@ -18,13 +18,13 @@ export function slugify(input: string): string {
     .split('')
     .map((char) => translitMap[char] ?? char)
     .join('')
-    .replace(/[^a-z0-9]+/g, '-') // всё кроме [a-z0-9] -> дефис
-    .replace(/^-+|-+$/g, '') // убрать дефисы по краям
+    .replace(/[^a-z0-9]+/g, '-') // .replace(/[^a-z0-9]+/g, '-') // everything except [a-z0-9] -> hyphen
+    .replace(/^-+|-+$/g, '') // .replace(/^-+|-+$/g, '') // strip hyphens at the edges
 }
 
 /**
- * FieldHook для поля slug: если оно пустое, генерируем из исходного
- * поля (по умолчанию title). Если задано вручную — нормализуем.
+ * FieldHook for the slug field: if it is empty, generate it from the source
+ * field (title by default). If set manually, normalize it.
  */
 export const formatSlug =
   (fallbackField = 'title'): FieldHook =>

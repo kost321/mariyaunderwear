@@ -9,7 +9,7 @@ export type HeroImage = { url: string; alt: string; href: string }
 
 const frame = 'relative block overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40'
 
-/** Фото товару або порожня заглушка, як у макеті, якщо фото немає. */
+/** Product photo or an empty placeholder, as in the design, if there is no photo. */
 function Photo({ image, sizes, className }: { image?: HeroImage; sizes: string; className?: string }) {
   if (!image) return <div aria-hidden className={`${frame} ${className ?? ''}`} />
   return (
@@ -20,14 +20,14 @@ function Photo({ image, sizes, className }: { image?: HeroImage; sizes: string; 
 }
 
 /**
- * Перший екран головної: пошук, «Нова колекція», 2 малих + 2 великих фото
- * і стрілки, що гортають фото по колу.
+ * First screen of the home page: search, "New collection", 2 small + 2 large photos
+ * and arrows that cycle through the photos.
  */
 export function HeroSection({ images }: { images: HeroImage[] }) {
   const [offset, setOffset] = useState(0)
   const count = images.length
-  // Чотири слоти поточного «кадру»: 0–1 малі зліва, 2–3 великі справа.
-  // Якщо фото менше чотирьох — решта слотів лишаються заглушками.
+  // Four slots of the current "frame": 0-1 small on the left, 2-3 large on the right.
+  // If there are fewer than four photos, the remaining slots stay placeholders.
   const at = (i: number) => (i < count ? images[(offset + i) % count] : undefined)
   const canScroll = count > 4
 
@@ -78,11 +78,11 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
         </div>
       </div>
 
-      {/* Десктоп: два великі фото */}
+      {/* Desktop: two large photos */}
       <Photo image={at(2)} sizes="351px" className="hidden h-[606px] lg:block" />
       <Photo image={at(3)} sizes="351px" className="hidden h-[606px] lg:block" />
 
-      {/* Мобілка: горизонтальна стрічка фото */}
+      {/* Mobile: a horizontal strip of photos */}
       <div className="-mx-[var(--gutter)] flex snap-x snap-mandatory gap-3 overflow-x-auto px-[var(--gutter)] pb-2 [scrollbar-width:none] lg:hidden">
         {(count ? images : [undefined, undefined, undefined]).map((image, i) => (
           <Photo key={i} image={image} sizes="45vw" className="aspect-[3/5] w-[45vw] shrink-0 snap-start" />

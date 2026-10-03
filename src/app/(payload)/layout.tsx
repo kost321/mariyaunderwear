@@ -1,6 +1,6 @@
 /* THIS FILE WAS GENERATED FOR PAYLOAD ADMIN.
- * Он подключает провайдеры и стили админки Payload.
- * Не редактируйте логику без необходимости. */
+ * It wires up the Payload admin providers and styles.
+ * Do not edit the logic unless necessary. */
 import type { ServerFunctionClient } from 'payload'
 
 import config from '@payload-config'

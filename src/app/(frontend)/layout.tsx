@@ -6,14 +6,14 @@ import { Footer } from '@/components/shop/Footer'
 import { getCategories } from '@/lib/queries'
 import './globals.css'
 
-// Шрифти макета (Aleo, Almarai, Alex Brush) не мають кирилиці — беремо найближчі з нею.
+// The design fonts (Aleo, Almarai, Alex Brush) have no Cyrillic, so the closest ones with Cyrillic are used.
 const sans = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-sans' })
 const serif = Bitter({ subsets: ['latin', 'cyrillic'], variable: '--font-serif' })
 const script = Great_Vibes({ subsets: ['latin', 'cyrillic'], weight: '400', variable: '--font-script' })
 
 const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
-// Базовые SEO-метаданные для всего сайта (SEO-friendly требование ТЗ).
+// Base SEO metadata for the whole site (SEO-friendly requirement from the spec).
 export const metadata: Metadata = {
   metadataBase: new URL(serverUrl),
   title: {
@@ -33,7 +33,7 @@ export default async function FrontendLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Категорії для бокового меню; якщо БД недоступна — меню без них, сайт не падає
+  // Categories for the side menu; if the DB is unavailable the menu renders without them and the site does not crash
   const categories = (await getCategories().catch(() => [])).flatMap((c) =>
     c.slug ? [{ slug: c.slug, title: c.title }] : [],
   )

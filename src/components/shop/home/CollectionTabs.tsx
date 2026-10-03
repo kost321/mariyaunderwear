@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils'
 const PAGE = 6
 
 /**
- * Секція «Колекція»: таби категорій + сітка карток і «Більше».
- * Картки рендеряться на сервері й приходять готовими вузлами — тут лише фільтр.
+ * "Collection" section: category tabs + a grid of cards and "More".
+ * Cards are rendered on the server and arrive as ready nodes; only the filter lives here.
  */
 export function CollectionTabs({
   tabs,

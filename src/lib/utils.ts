@@ -2,19 +2,19 @@ import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
 /**
- * cn — стандартная утилита shadcn/ui.
- * Объединяет классы и корректно разрешает конфликты Tailwind
- * (например, "px-2" + "px-4" => "px-4").
+ * cn: the standard shadcn/ui utility.
+ * Merges classes and correctly resolves Tailwind conflicts
+ * (for example, "px-2" + "px-4" => "px-4").
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
 /**
- * Ціна у гривнях: "1 799 грн".
- * Форматуємо вручну (розряди через нерозривний пробіл, суфікс «грн») —
- * Intl.NumberFormat зі style: 'currency' дає різний результат залежно від
- * ICU-локалі середовища (Node vs браузер) і ламає гідратацію.
+ * Price in hryvnias: "1 799 грн".
+ * Formatted manually (thousands separated by a non-breaking space, suffix "грн"):
+ * Intl.NumberFormat with style: 'currency' gives different results depending on the
+ * ICU locale of the environment (Node vs browser) and breaks hydration.
  */
 export function formatPrice(value: number): string {
   const digits = Math.round(value)

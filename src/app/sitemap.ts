@@ -3,14 +3,14 @@ import { getPayload } from '@/lib/payload'
 
 const base = (process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
 
-// Карта сайту читає БД на кожен запит, а не під час білду: на білді
-// (Railway) бази може не бути, і тоді в sitemap назавжди лишились би
-// самі статичні адреси.
+// The sitemap reads the DB on every request, not at build time: during the build
+// (Railway) the DB may be missing, and the sitemap would then permanently contain
+// only the static URLs.
 export const dynamic = 'force-dynamic'
 
 /**
- * /sitemap.xml: головна, каталог, категорії та всі активні товари.
- * Якщо БД недоступна — віддаємо лише статичні адреси, а не падаємо.
+ * /sitemap.xml: home, catalog, categories and all active products.
+ * If the DB is unavailable, return only the static URLs instead of crashing.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [

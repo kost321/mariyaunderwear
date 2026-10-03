@@ -1,13 +1,13 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 /**
- * products.care_html — нове текстове поле «Догляд» (HTML), як
- * sizeChartHtml/descriptionHtml. Показується в акордеоні «Догляд»
- * на сторінці товару, порожнє — секція не показується.
+ * products.care_html: a new text field "Care" (HTML), like
+ * sizeChartHtml/descriptionHtml. Shown in the "Care" accordion
+ * on the product page; if empty, the section is not shown.
  *
- * Написано вручну (не через migrate:create) — автогенератор порівнює
- * зі старим снапшотом і намагається зайво перестворити наявні колонки
- * (див. 20260917_210000_related_products.ts). Idempotent (IF NOT EXISTS).
+ * Written by hand (not via migrate:create): the generator compares against
+ * the old snapshot and tries to needlessly recreate existing columns
+ * (see 20260917_210000_related_products.ts). Idempotent (IF NOT EXISTS).
  */
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`

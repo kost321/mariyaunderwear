@@ -1,9 +1,9 @@
 import type { GlobalConfig } from 'payload'
 
 /**
- * Settings — глобальні налаштування магазину (один запис, не колекція).
- * Поки що тут лише текст «Доставка та оплата», спільний для всіх товарів —
- * показується в акордеоні на сторінці кожного товару.
+ * Settings: global store settings (a single record, not a collection).
+ * For now it only holds the "Delivery and payment" text shared by all products,
+ * shown in the accordion on every product page.
  */
 export const Settings: GlobalConfig = {
   slug: 'settings',

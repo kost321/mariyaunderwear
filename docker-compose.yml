@@ -8,10 +8,10 @@ services:
       POSTGRES_PASSWORD: olga
       POSTGRES_DB: olga_shop
     ports:
-      # Хост:Контейнер. На хосте используем 5432.
+      # Host:Container. Port 5432 is used on the host.
       - '5432:5432'
     volumes:
-      # Данные БД сохраняются между перезапусками контейнера.
+      # Database data persists across container restarts.
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U olga -d olga_shop']

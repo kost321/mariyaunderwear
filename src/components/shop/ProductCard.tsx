@@ -6,8 +6,8 @@ import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { cn, formatPrice } from '@/lib/utils'
 
 /**
- * Карточка товара: фото с круглой кнопкой «+», над названием — категория
- * и цвет, справа цена. Server Component — только ссылка на страницу товара.
+ * Product card: photo with a round "+" button, category and color above
+ * the title, price on the right. Server Component, just a link to the product page.
  */
 export function ProductCard({
   product,
@@ -18,13 +18,13 @@ export function ProductCard({
   sizes?: string
   className?: string
 }) {
-  // Берём первое изображение из галереи.
+  // Take the first image from the gallery.
   const firstImage = product.images?.[0]?.image
   const url = getMediaUrl(firstImage)
   const alt = getMediaAlt(firstImage, product.title)
   const category = typeof product.category === 'object' ? product.category.title : null
 
-  // Кольори всередині картки (colors[]) або колір варіанта моделі (colorHex)
+  // Colors inside the card (colors[]) or the model variant color (colorHex)
   const swatch = product.colors?.[0]?.hex ?? product.colorHex
   const extraColors = (product.colors?.length ?? 0) - 1
 
@@ -47,7 +47,7 @@ export function ProductCard({
         </span>
       </div>
 
-      {/* На вузьких картках ціна під назвою, з sm — праворуч */}
+      {/* On narrow cards the price goes under the title, from sm it goes to the right */}
       <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3 sm:pr-2">
         <div className="min-w-0">
           {(category || swatch) && (

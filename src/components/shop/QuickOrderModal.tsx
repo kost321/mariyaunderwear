@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button'
 import type { CartItem } from '@/types/shop'
 
 /**
- * «Швидке замовлення» — модалка з мінімальною формою (ім'я + телефон).
- * Відправляє замовлення на цей товар одразу через /api/order, минаючи
- * кошик і сторінку checkout. Менеджер передзвонює для уточнення деталей.
+ * "Quick order": a modal with a minimal form (name + phone).
+ * Sends an order for this product straight through /api/order, bypassing
+ * the cart and the checkout page. A manager calls back to confirm the details.
  *
- * `item` формується на сторінці товару з поточного вибору (розмір, колір,
- * кількість).
+ * `item` is built on the product page from the current selection (size, color,
+ * quantity).
  */
 export function QuickOrderModal({
   open,
@@ -27,7 +27,7 @@ export function QuickOrderModal({
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
 
-  // Esc + блокування прокрутки фону, поки відкрито.
+  // Esc + lock background scrolling while open.
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -40,7 +40,7 @@ export function QuickOrderModal({
     }
   }, [open, onClose])
 
-  // Скидаємо стан при кожному відкритті.
+  // Reset the state on every open.
   useEffect(() => {
     if (open) {
       setName('')

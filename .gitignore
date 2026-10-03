@@ -9,7 +9,7 @@ next-env.d.ts
 # production
 /build
 
-# payload generated types тепер у репо (потрібні для білду)
+# Payload generated types are now committed (needed for the build)
 # /src/payload-types.ts
 
 # env
@@ -31,5 +31,5 @@ yarn-error.log*
 # docker volumes
 /postgres-data
 
-# Сировина для разових імпортів товарів — не потрібна в репо
+# Raw data for one-off product imports, not needed in the repo
 scripts/data/

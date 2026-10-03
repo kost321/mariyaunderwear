@@ -1,7 +1,7 @@
 {
   "name": "olga-shop",
   "version": "1.0.0",
-  "description": "Интернет-магазин одежды на Next.js 15 + Payload CMS 3",
+  "description": "E-commerce store for a lingerie brand on Next.js 15 + Payload CMS 3",
   "license": "MIT",
   "type": "module",
   "scripts": {

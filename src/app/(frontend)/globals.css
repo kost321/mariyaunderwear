@@ -5,7 +5,7 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    /* Палітра з макета: ink #403834, brown #6e5c4d, cream #f6f0ee */
+    /* Palette from the design: ink #403834, brown #6e5c4d, cream #f6f0ee */
     --foreground: 0 10% 23%;
     --primary: 20 10% 23%;
     --primary-foreground: 0 0% 100%;

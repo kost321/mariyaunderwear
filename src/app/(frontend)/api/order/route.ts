@@ -3,8 +3,8 @@ import { Resend } from 'resend'
 import { getPayload } from '@/lib/payload'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 
-// Ліміт замовлень з однієї IP-адреси (у пам'яті процесу — для одного
-// інстансу Railway достатньо).
+// Limit on orders per IP address (kept in process memory, which is
+// enough for a single Railway instance).
 const RATE_LIMIT = 5
 const RATE_WINDOW_MS = 10 * 60 * 1000
 const hits = new Map<string, number[]>()
@@ -18,7 +18,7 @@ function isRateLimited(ip: string): boolean {
   }
   recent.push(now)
   hits.set(ip, recent)
-  // Не даємо мапі рости безмежно.
+  // Do not let the map grow without bound.
   if (hits.size > 5000) {
     for (const [key, times] of hits) {
       if (times.every((t) => now - t >= RATE_WINDOW_MS)) hits.delete(key)
@@ -27,7 +27,7 @@ function isRateLimited(ip: string): boolean {
   return false
 }
 
-/** Рядок із обмеженням довжини; undefined, якщо значення невалідне. */
+/** A string with a length limit; undefined if the value is invalid. */
 function str(value: unknown, max: number): string | undefined {
   if (value === undefined || value === null || value === '') return ''
   if (typeof value !== 'string' || value.length > max) return undefined
@@ -35,8 +35,8 @@ function str(value: unknown, max: number): string | undefined {
 }
 
 /**
- * Отримувачі листа про нове замовлення: ORDER_NOTIFY_EMAIL (одна адреса або
- * кілька через кому). Якщо змінна не задана — запасна адреса власниці.
+ * Recipients of the new-order email: ORDER_NOTIFY_EMAIL (one address or
+ * several separated by commas). If the variable is unset, the owner's fallback address.
  */
 function notifyRecipients(): string[] {
   const list = (process.env.ORDER_NOTIFY_EMAIL ?? '')
@@ -46,7 +46,7 @@ function notifyRecipients(): string[] {
   return list.length > 0 ? list : ['itsmariainthecity@gmail.com']
 }
 
-/** Екранує текст від покупця перед вставкою в HTML листа. */
+/** Escapes customer-supplied text before inserting it into the email HTML. */
 function esc(value: unknown): string {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
   ) {
     return BAD_REQUEST()
   }
-  // Телефон: 10–15 цифр, інші символи — лише звичайні роздільники.
+  // Phone: 10-15 digits, other characters only as ordinary separators.
   const digits = phone.replace(/\D/g, '')
   if (digits.length < 10 || digits.length > 15 || !/^[\d\s+()-]+$/.test(phone)) {
     return BAD_REQUEST()
@@ -122,8 +122,8 @@ export async function POST(req: NextRequest) {
 
   const payload = await getPayload()
 
-  // Ціну й назву беремо з БД, а не з кошика: клієнту довіряємо лише
-  // productId, розмір, колір і кількість.
+  // Price and title come from the DB, not from the cart: the client is trusted only
+  // for productId, size, color and quantity.
   const ids = [...new Set(rawItems.map((item) => Number(item?.productId)))]
   if (ids.some((id) => !Number.isInteger(id) || id <= 0)) {
     return NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
@@ -137,8 +137,8 @@ export async function POST(req: NextRequest) {
   })
   const productsById = new Map(found.docs.map((p) => [p.id, p]))
 
-  // Скільки штук кожного розміру вже в замовленні (одна позиція може
-  // повторюватись у кошику з різним кольором).
+  // How many units of each size are already in the order (one product can
+  // appear in the cart several times with different colors).
   const requested = new Map<string, number>()
 
   const items: CartItem[] = []
@@ -152,8 +152,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Розмір має існувати у товару, а кількість не перевищувати залишок.
-    // Порожній stock = залишок невідомий (товар додано вручну) — не обмежуємо.
+    // The size must exist on the product and the quantity must not exceed stock.
+    // Empty stock = unknown (product added by hand), so no limit.
     if (product.sizes?.length) {
       const sizeRow = product.sizes.find((s) => s.value === raw.size)
       if (!sizeRow) {
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
 
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  // Зберігаємо замовлення в БД
+  // Save the order to the DB
   const order = await payload.create({
     collection: 'orders',
     data: {
@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Відправляємо email
+  // Send the email
   const itemsHtml = items
     .map(
       (item) => `
@@ -223,8 +223,8 @@ export async function POST(req: NextRequest) {
     )
     .join('')
 
-  // Замовлення вже збережене: збій листа не має ламати відповідь покупцю
-  // (інакше він повторить замовлення й створить дубль).
+  // The order is already saved: an email failure must not break the response to the customer
+  // (otherwise they would retry and create a duplicate).
   try {
     const resend = new Resend(process.env.RESEND_API_KEY)
     const { error } = await resend.emails.send({

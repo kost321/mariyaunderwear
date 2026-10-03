@@ -1,12 +1,12 @@
 name: Backup
 
-# Щоночі робить дамп бази з Railway, шифрує його і зберігає як артефакт на 30 днів.
-# Потрібні секрети репозиторію: DATABASE_PUBLIC_URL і BACKUP_PASSPHRASE.
-# Відновлення: docs/BACKUP.md
+# Dumps the Railway database every night, encrypts it and stores it as an artifact for 30 days.
+# Required repository secrets: DATABASE_PUBLIC_URL and BACKUP_PASSPHRASE.
+# Restore: docs/BACKUP.md
 on:
   schedule:
-    - cron: '0 2 * * *' # 02:00 UTC щодня
-  workflow_dispatch: # ручний запуск з вкладки Actions
+    - cron: '0 2 * * *' # 02:00 UTC daily
+  workflow_dispatch: # manual run from the Actions tab
 
 permissions:
   contents: read
@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p backup
-          # Версія pg_dump не має бути старшою за сервер Railway (зараз PostgreSQL 18).
+          # pg_dump must not be older than the Railway server (currently PostgreSQL 18).
           docker run --rm -e DATABASE_PUBLIC_URL -v "$PWD/backup:/backup" postgres:18-alpine \
             sh -c 'pg_dump "$DATABASE_PUBLIC_URL" -Fc --no-owner -f /backup/db.dump'
 
@@ -31,8 +31,8 @@ jobs:
           set -euo pipefail
           size=$(stat -c%s backup/db.dump)
           echo "Dump size: $size bytes"
-          # Порожній або обірваний дамп — помилка, а не «успішний» бекап.
-          # Повний дамп бази цього магазину зараз важить ~80 КБ, тож поріг низький.
+          # An empty or truncated dump is an error, not a "successful" backup.
+          # A full dump of this shop's database is currently ~80 KB, so the threshold is low.
           if [ "$size" -lt 20000 ]; then
             echo "Dump is suspiciously small" >&2
             exit 1
@@ -45,7 +45,7 @@ jobs:
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
           set -euo pipefail
-          # У дампі телефони та імена покупців — у відкритому вигляді не зберігаємо.
+          # The dump contains customer phones and names, so it is never stored unencrypted.
           printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
             --passphrase-fd 0 --symmetric --cipher-algo AES256 \
             -o "backup/olga-$(date -u +%F).dump.gpg" backup/db.dump

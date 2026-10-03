@@ -1,14 +1,14 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 /**
- * products_sizes.stock — залишок на складі для конкретного розміру,
- * заповнюється імпортом із Торгсофт. products.wholesale_price — оптова
- * ціна, адмінське поле (не показується на сайті — обмежено field-level
- * access.read у Products.ts).
+ * products_sizes.stock: stock in the warehouse for a specific size,
+ * filled by the Torgsoft import. products.wholesale_price: the wholesale
+ * price, an admin field (not shown on the site; restricted by field-level
+ * access.read in Products.ts).
  *
- * Написано вручну (не через migrate:create), ідемпотентно (IF NOT EXISTS).
- * ПЕРЕД ЗАСТОСУВАННЯМ У ПРОД: звірити фактичну назву дочірньої таблиці
- * масиву sizes (products_sizes) і тип колонок проти реальної прод-схеми.
+ * Written by hand (not via migrate:create), idempotent (IF NOT EXISTS).
+ * BEFORE APPLYING TO PROD: check the actual name of the child table of the
+ * sizes array (products_sizes) and the column types against the real prod schema.
  */
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`

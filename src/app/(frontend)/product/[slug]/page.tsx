@@ -16,29 +16,29 @@ import type { Product } from '@/payload-types'
 type Params = { params: Promise<{ slug: string }> }
 
 /**
- * ISR: сторінка статична, але не рідше ніж раз на 60 секунд Next пересобирає
- * її з актуальними даними з БД. Правки в адмінці (ціна, кольори, варіанти
- * моделі) підхоплюються без ручного редеплою.
+ * ISR: the page is static, but at least once every 60 seconds Next rebuilds
+ * it with fresh data from the DB. Admin edits (price, colors, model
+ * variants) are picked up without a manual redeploy.
  */
 export const revalidate = 60
 
 /**
- * SSG: заранее генерируем страницы всех активных товаров.
- * Делает страницы статичными и максимально SEO-friendly.
+ * SSG: pre-generate pages for all active products.
+ * Makes the pages static and as SEO-friendly as possible.
  */
 export async function generateStaticParams() {
   try {
     const slugs = await getAllProductSlugs()
     return slugs.map((slug) => ({ slug }))
   } catch {
-    // БД недоступна під час білду (наприклад, на Railway без підключеної бази)
+    // DB is unavailable during the build (for example on Railway without a connected database)
     return []
   }
 }
 
 const serverUrl = (process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
 
-/** HTML-опис → простий текст (для meta description і JSON-LD). */
+/** HTML description → plain text (for meta description and JSON-LD). */
 function toPlainText(html?: string | null): string {
   return (html ?? '')
     .replace(/<[^>]*>/g, ' ')
@@ -57,7 +57,7 @@ function truncate(text: string, max: number): string {
   return `${text.slice(0, max).replace(/\s+\S*$/, '')}…`
 }
 
-/** Динамические SEO-метаданные на основе товара. */
+/** Dynamic SEO metadata based on the product. */
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
   const product = await getProductBySlug(slug)
@@ -87,11 +87,11 @@ export default async function ProductPage({ params }: Params) {
   const { slug } = await params
   const product = await getProductBySlug(slug)
 
-  // Если товара нет или он неактивен — 404.
+  // If the product does not exist or is inactive, return 404.
   if (!product) notFound()
 
-  // Другие цветовые варианты этой же модели (каждый — отдельная карточка).
-  // product.model приходит объектом (depth: 2) или числом — берём id.
+  // Other color variants of the same model (each one is a separate card).
+  // product.model arrives as an object (depth: 2) or a number; take the id.
   const modelId =
     typeof product.model === 'object' && product.model !== null
       ? product.model.id
@@ -100,14 +100,14 @@ export default async function ProductPage({ params }: Params) {
     modelId ? getColorVariants(modelId) : Promise.resolve([]),
   ])
 
-  // relatedProducts — товари, вручну обрані в адмінці (relationship, hasMany).
-  // Payload с depth: 2 повертає їх повними об'єктами, а не просто id.
+  // relatedProducts: products hand-picked in the admin (relationship, hasMany).
+  // With depth: 2 Payload returns them as full objects, not just ids.
   const relatedProducts = (product.relatedProducts ?? []).filter(
     (item): item is Product => typeof item === 'object' && item !== null,
   )
 
-  // Структуровані дані для Google (ціна, наявність, фото в пошуковій видачі).
-  // Закінчився, якщо в усіх розмірів залишок явно 0; порожній залишок = невідомий.
+  // Structured data for Google (price, availability, photos in search results).
+  // Out of stock if every size has an explicit stock of 0; empty stock = unknown.
   const sizes = product.sizes ?? []
   const outOfStock = sizes.length > 0 && sizes.every((size) => size.stock === 0)
   const imageUrls = (product.images ?? [])
@@ -133,9 +133,9 @@ export default async function ProductPage({ params }: Params) {
   }
 
   return (
-    // pb-20 — місце під закріплену кнопку «Додати в кошик» на мобілці
+    // pb-20 leaves room for the fixed "Add to cart" button on mobile
     <article className="pb-20 lg:pb-0">
-      {/* «<» екрануємо, щоб текст товару не міг закрити тег script */}
+      {/* Escape "<" so the product text cannot close the script tag */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
@@ -148,19 +148,19 @@ export default async function ProductPage({ params }: Params) {
 
       <ProductDetails product={product} colorVariants={colorVariants} />
 
-      {/* Опис, склад і догляд — під галереєю на всю ширину блоку, як у макеті */}
+      {/* Description, composition and care: under the gallery at full block width, as in the design */}
       <div className="mx-auto mt-12 lg:mt-[100px] lg:max-w-[911px]">
         <ProductDescription
           sections={[
             { html: product.description },
-            // «Характеристики:» уже є в самому тексті з адмінки — свій заголовок не додаємо
+            // "Характеристики:" is already in the admin text itself, so we do not add our own heading
             { html: product.descriptionHtml },
             { title: 'Рекомендації щодо прання', html: product.careHtml },
           ]}
         />
       </div>
 
-      {/* «З цим товаром часто купують» — товари, вручну обрані в адмінці */}
+      {/* "Frequently bought together": products hand-picked in the admin */}
       {relatedProducts.length > 0 && (
         <section className="mt-16 lg:mt-[100px]">
           <h2 className="border-b border-brown/40 pb-5 font-serif text-xl uppercase leading-10 tracking-[2px] text-brown">

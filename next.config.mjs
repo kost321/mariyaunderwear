@@ -2,8 +2,7 @@ import { withPayload } from '@payloadcms/next/withPayload'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Здесь можно настраивать разрешённые домены для next/image,
-  // редиректы, заголовки и т.д.
+  // Allowed next/image domains, redirects, headers, etc. are configured here.
   images: {
     remotePatterns: [
       {
@@ -14,6 +13,6 @@ const nextConfig = {
   },
 }
 
-// withPayload оборачивает конфиг Next, чтобы корректно собрать
-// серверную часть Payload внутри Next.js (admin UI, API, бандлинг).
+// withPayload wraps the Next config so the Payload server part
+// (admin UI, API, bundling) builds correctly inside Next.js.
 export default withPayload(nextConfig)

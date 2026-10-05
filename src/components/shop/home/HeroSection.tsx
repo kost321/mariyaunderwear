@@ -14,7 +14,7 @@ function Photo({ image, sizes, className }: { image?: HeroImage; sizes: string; 
   if (!image) return <div aria-hidden className={`${frame} ${className ?? ''}`} />
   return (
     <Link href={image.href} className={`${frame} ${className ?? ''}`}>
-      <Image src={image.url} alt={image.alt} fill quality={85} sizes={sizes} className="object-cover" />
+      <Image src={image.url} alt={image.alt} fill quality={90} sizes={sizes} className="object-cover" />
     </Link>
   )
 }
@@ -57,8 +57,8 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
         </p>
 
         <div className="mt-auto hidden grid-cols-2 gap-9 pt-10 lg:grid">
-          <Photo image={at(0)} sizes="171px" className="h-[185px]" />
-          <Photo image={at(1)} sizes="171px" className="h-[185px]" />
+          <Photo image={at(0)} sizes="540px" className="h-[185px]" />
+          <Photo image={at(1)} sizes="540px" className="h-[185px]" />
         </div>
 
         <div className="mt-8 flex items-center justify-between lg:mt-[61px]">
@@ -85,7 +85,7 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
       {/* Mobile: a horizontal strip of photos */}
       <div className="-mx-[var(--gutter)] flex snap-x snap-mandatory gap-3 overflow-x-auto px-[var(--gutter)] pb-2 [scrollbar-width:none] lg:hidden">
         {(count ? images : [undefined, undefined, undefined]).map((image, i) => (
-          <Photo key={i} image={image} sizes="45vw" className="aspect-[3/5] w-[45vw] shrink-0 snap-start" />
+          <Photo key={i} image={image} sizes="90vw" className="aspect-[3/5] w-[45vw] shrink-0 snap-start" />
         ))}
       </div>
     </section>

@@ -14,7 +14,7 @@ function Photo({ image, sizes, className }: { image?: HeroImage; sizes: string; 
   if (!image) return <div aria-hidden className={`${frame} ${className ?? ''}`} />
   return (
     <Link href={image.href} className={`${frame} ${className ?? ''}`}>
-      <Image src={image.url} alt={image.alt} fill sizes={sizes} className="object-cover" />
+      <Image src={image.url} alt={image.alt} fill quality={85} sizes={sizes} className="object-cover" />
     </Link>
   )
 }
@@ -79,8 +79,8 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
       </div>
 
       {/* Desktop: two large photos */}
-      <Photo image={at(2)} sizes="351px" className="hidden h-[606px] lg:block" />
-      <Photo image={at(3)} sizes="351px" className="hidden h-[606px] lg:block" />
+      <Photo image={at(2)} sizes="800px" className="hidden h-[606px] lg:block" />
+      <Photo image={at(3)} sizes="800px" className="hidden h-[606px] lg:block" />
 
       {/* Mobile: a horizontal strip of photos */}
       <div className="-mx-[var(--gutter)] flex snap-x snap-mandatory gap-3 overflow-x-auto px-[var(--gutter)] pb-2 [scrollbar-width:none] lg:hidden">

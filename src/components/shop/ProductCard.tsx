@@ -37,6 +37,7 @@ export function ProductCard({
             alt={alt}
             fill
             sizes={sizes}
+            quality={85}
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

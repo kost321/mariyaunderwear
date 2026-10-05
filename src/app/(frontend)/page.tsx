@@ -53,7 +53,7 @@ export default async function HomePage() {
           </div>
           <ProductSlider>
             {newest.map((p) => (
-              <ProductCard key={p.id} product={p} sizes="304px" />
+              <ProductCard key={p.id} product={p} sizes="540px" />
             ))}
           </ProductSlider>
         </section>
@@ -94,7 +94,7 @@ export default async function HomePage() {
             const className = `relative block aspect-[317/419] overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40 ${offset} ${i % 2 ? 'mt-10' : ''}`
             return image ? (
               <Link key={i} href={image.href} className={className}>
-                <Image src={image.url} alt={image.alt} fill sizes="(max-width: 1024px) 50vw, 317px" className="object-cover" />
+                <Image src={image.url} alt={image.alt} fill quality={85} sizes="(max-width: 1024px) 50vw, 317px" className="object-cover" />
               </Link>
             ) : (
               <div key={i} aria-hidden className={className} />

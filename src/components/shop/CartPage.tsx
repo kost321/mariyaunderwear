@@ -89,7 +89,7 @@ function BagItem({
     <div>
       <div className="flex gap-4">
         <Link href={`/product/${item.slug}`} className={cn(photo, 'aspect-[265/313] flex-1')}>
-          {item.image && <Image src={item.image} alt={item.title} fill sizes="(max-width: 1024px) 70vw, 265px" className="object-cover" />}
+          {item.image && <Image src={item.image} alt={item.title} fill quality={85} sizes="(max-width: 1024px) 70vw, 265px" className="object-cover" />}
         </Link>
         <div className="flex w-[25px] flex-col items-center gap-6 text-sm text-ink">
           <button type="button" onClick={onRemove} aria-label={`Прибрати ${item.title}`} className="text-brown/70 hover:text-ink">
@@ -340,7 +340,7 @@ export function CartPage() {
           {items.map((item) => (
             <li key={`${item.productId}-${item.size}-${item.color}`} className="flex gap-3">
               <div className={cn(photo, 'h-[133px] w-[113px] shrink-0')}>
-                {item.image && <Image src={item.image} alt={item.title} fill sizes="113px" className="object-cover" />}
+                {item.image && <Image src={item.image} alt={item.title} fill quality={85} sizes="113px" className="object-cover" />}
               </div>
               <div className="flex min-w-0 flex-1 flex-col">
                 <div className="flex items-start justify-between gap-2">

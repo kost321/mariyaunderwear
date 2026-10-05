@@ -112,7 +112,7 @@ export function ProductDetails({
       <div className="flex flex-col gap-4 lg:flex-row lg:gap-10 lg:pt-[30px]">
         <div className="relative -mx-[var(--gutter)] aspect-[3/4] overflow-hidden rounded-b-card border-b border-[#d9d9d9] bg-placeholder/40 lg:mx-0 lg:w-[367px] lg:rounded-card lg:border">
 
-          {mainUrl && <Image src={mainUrl} alt={mainAlt} fill priority sizes="(max-width: 1024px) 100vw, 367px" className="object-cover" />}
+          {mainUrl && <Image src={mainUrl} alt={mainAlt} fill priority quality={85} sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" />}
         </div>
 
         {images.length > 1 && (
@@ -132,7 +132,7 @@ export function ProductDetails({
                   aria-label={`Фото ${i + 1}`}
                   aria-current={i === activeImage}
                 >
-                  {thumb && <Image src={thumb} alt="" fill sizes="64px" className="object-cover" />}
+                  {thumb && <Image src={thumb} alt="" fill quality={85} sizes="64px" className="object-cover" />}
                 </button>
               )
             })}

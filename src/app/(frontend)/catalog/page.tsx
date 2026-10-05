@@ -101,7 +101,7 @@ export default async function CatalogPage({
         {products.length > 0 ? (
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:gap-x-10 lg:gap-y-12">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} sizes="(max-width: 768px) 50vw, 265px" />
+              <ProductCard key={product.id} product={product} sizes="(max-width: 768px) 80vw, 540px" />
             ))}
           </div>
         ) : (

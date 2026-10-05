@@ -7,6 +7,7 @@ import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { formatPrice, cn } from '@/lib/utils'
 import { SizeChart } from '@/components/shop/SizeChart'
+import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
 import { useCart } from '@/hooks/useCart'
 import type { CartItem } from '@/types/shop'
@@ -50,6 +51,7 @@ export function ProductDetails({
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   const selectedStock = sizes.find((s) => s.value === size)?.stock
   const maxQuantity = typeof selectedStock === 'number' && selectedStock > 0 ? selectedStock : 99
@@ -57,6 +59,12 @@ export function ProductDetails({
   const mainImage = images[activeImage]?.image
   const mainUrl = getMediaUrl(mainImage)
   const mainAlt = getMediaAlt(mainImage, product.title)
+
+  // Photos for the full-screen viewer (skip entries without a file).
+  const lightboxPhotos = images.flatMap((item) => {
+    const url = getMediaUrl(item.image)
+    return url ? [{ url, alt: getMediaAlt(item.image, product.title) }] : []
+  })
 
   // Cart / quick-order line built from the current selection on the page.
   const selectedItem: CartItem = {
@@ -112,7 +120,16 @@ export function ProductDetails({
       <div className="flex flex-col gap-4 lg:flex-row lg:gap-10 lg:pt-[30px]">
         <div className="relative -mx-[var(--gutter)] aspect-[3/4] overflow-hidden rounded-b-card border-b border-[#d9d9d9] bg-placeholder/40 lg:mx-0 lg:w-[367px] lg:rounded-card lg:border">
 
-          {mainUrl && <Image src={mainUrl} alt={mainAlt} fill priority quality={90} sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" />}
+          {mainUrl && (
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="absolute inset-0 cursor-zoom-in"
+              aria-label="Збільшити фото"
+            >
+              <Image src={mainUrl} alt={mainAlt} fill priority quality={90} sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" />
+            </button>
+          )}
         </div>
 
         {images.length > 1 && (
@@ -267,6 +284,14 @@ export function ProductDetails({
         {addButton('h-[57px] rounded-none')}
       </div>
 
+      {lightboxOpen && (
+        <PhotoLightbox
+          photos={lightboxPhotos}
+          index={Math.min(activeImage, lightboxPhotos.length - 1)}
+          onChange={setActiveImage}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
       <QuickOrderModal open={quickOpen} onClose={() => setQuickOpen(false)} item={selectedItem} />
     </div>
   )

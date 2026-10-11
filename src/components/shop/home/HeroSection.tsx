@@ -14,7 +14,7 @@ function Photo({ image, sizes, className }: { image?: HeroImage; sizes: string; 
   if (!image) return <div aria-hidden className={`${frame} ${className ?? ''}`} />
   return (
     <Link href={image.href} className={`${frame} ${className ?? ''}`}>
-      <Image src={image.url} alt={image.alt} fill quality={90} sizes={sizes} className="object-cover" />
+      <Image src={image.url} alt={image.alt} fill priority quality={90} sizes={sizes} className="object-cover" />
     </Link>
   )
 }

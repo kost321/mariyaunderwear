@@ -234,7 +234,7 @@ export function CartPage() {
     <div className="lg:grid lg:grid-cols-[468px_406px] lg:justify-between">
       <section>
         <button type="button" onClick={() => goTo('cart')} aria-label="Назад до кошика" className="transition-opacity hover:opacity-70">
-          <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="w-[61px]" />
+          <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="h-[14px] w-[61px]" />
         </button>
         <h1 className="mt-10 font-serif text-[32px] uppercase tracking-[2px] text-ink">Оформлення</h1>
 

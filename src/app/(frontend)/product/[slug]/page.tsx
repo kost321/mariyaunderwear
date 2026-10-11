@@ -142,7 +142,7 @@ export default async function ProductPage({ params }: Params) {
       />
       <nav className="mb-6 hidden lg:block">
         <Link href="/catalog" aria-label="Назад до каталогу" className="inline-block transition-opacity hover:opacity-70">
-          <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="w-[61px]" />
+          <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="h-[14px] w-[61px]" />
         </Link>
       </nav>
 

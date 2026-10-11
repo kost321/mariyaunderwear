@@ -55,14 +55,20 @@ function Section({
   )
 }
 
-/** Left filter panel: size, color, price. On mobile it expands with a button. */
+const STOCK_OPTIONS = [
+  { value: 'in', label: 'В наявності' },
+  { value: 'out', label: 'Немає в наявності' },
+] as const
+
+/** Left filter panel: size, availability, color, price. On mobile it expands with a button. */
 export function FilterPanel({ params, facets }: { params: CatalogParams; facets: CatalogFacets }) {
   const { update, pending } = useUpdateParams()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [min, setMin] = useState(params.min?.toString() ?? '')
   const [max, setMax] = useState(params.max?.toString() ?? '')
 
-  const activeCount = params.sizes.length + params.colors.length + (params.min || params.max ? 1 : 0)
+  const activeCount =
+    params.sizes.length + params.colors.length + (params.stock ? 1 : 0) + (params.min || params.max ? 1 : 0)
 
   return (
     <aside className={cn('transition-opacity', pending && 'opacity-60')}>
@@ -105,6 +111,25 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
             </div>
           </div>
         )}
+
+        <Section title="Наявність" defaultOpen={Boolean(params.stock)}>
+          <ul className="flex flex-col gap-3">
+            {STOCK_OPTIONS.map((option) => (
+              <li key={option.value}>
+                <label className="flex cursor-pointer items-center gap-3 text-xs tracking-[2px] text-ink">
+                  <input
+                    type="checkbox"
+                    checked={params.stock === option.value}
+                    onChange={() => update({ stock: params.stock === option.value ? undefined : option.value })}
+                    className="h-[22px] w-[22px] shrink-0 appearance-none border border-[#a3a3a3] bg-white checked:border-ink checked:bg-ink"
+                  />
+                  {option.label}
+                  <span className="text-brown/50">({facets.stock[option.value]})</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </Section>
 
         {facets.colors.length > 0 && (
           <Section title="Колір" defaultOpen={params.colors.length > 0}>
@@ -168,7 +193,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
             onClick={() => {
               setMin('')
               setMax('')
-              update({ size: undefined, color: undefined, min: undefined, max: undefined })
+              update({ size: undefined, color: undefined, stock: undefined, min: undefined, max: undefined })
             }}
             className="mt-4 text-xs tracking-[1px] text-brown/60 underline-offset-4 hover:underline"
           >

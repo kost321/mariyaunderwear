@@ -90,7 +90,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 - **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `RichText`, `ScrollToTop`.
 - **`shop/catalog/`**: `CatalogFilters`.
-- **`shop/home/`**: `HeroSection`, `CollectionTabs`, `ProductSlider`, `ArrowButton`.
+- **`shop/home/`**: `HeroSection`, `ProductSlider`, `ArrowButton`.
 - **`ui/button.tsx`**: base button with style variants (CVA).
 
 ## Hooks `src/hooks/`

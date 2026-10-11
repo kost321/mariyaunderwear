@@ -1,15 +1,19 @@
 import type { Metadata } from 'next'
-import { Bitter, Great_Vibes, Inter } from 'next/font/google'
+import { Aleo, Great_Vibes, Inter, Podkova } from 'next/font/google'
 import { CartProvider } from '@/hooks/useCart'
 import { Header } from '@/components/shop/Header'
 import { Footer } from '@/components/shop/Footer'
 import { getCategories } from '@/lib/queries'
 import './globals.css'
 
-// The design fonts (Aleo, Almarai, Alex Brush) have no Cyrillic, so the closest ones with Cyrillic are used.
+// Body text: the design font (Almarai) has no Cyrillic, so Inter is used. Script: Great Vibes instead of Alex Brush.
 const sans = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-sans' })
-const serif = Bitter({ subsets: ['latin', 'cyrillic'], variable: '--font-serif' })
 const script = Great_Vibes({ subsets: ['latin', 'cyrillic'], weight: '400', variable: '--font-script' })
+// Serif text (headings, product names, prices) per the design "Typograpy" page: Podkova for Ukrainian,
+// Aleo for English. `font-serif` picks one by <html lang> (globals.css). Aleo has no Cyrillic and is not
+// preloaded, so Ukrainian pages never download it.
+const serifUk = Podkova({ subsets: ['latin', 'cyrillic'], variable: '--font-serif-uk' })
+const serifEn = Aleo({ subsets: ['latin'], variable: '--font-serif-en', preload: false })
 
 const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
@@ -39,7 +43,7 @@ export default async function FrontendLayout({
   )
 
   return (
-    <html lang="uk" className={`${sans.variable} ${serif.variable} ${script.variable}`}>
+    <html lang="uk" className={`${sans.variable} ${script.variable} ${serifUk.variable} ${serifEn.variable}`}>
       <body className="flex min-h-screen flex-col bg-background font-sans">
         <CartProvider>
           <Header categories={categories} />

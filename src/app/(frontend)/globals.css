@@ -33,3 +33,23 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+@layer base {
+  /* Language-dependent serif font: Ukrainian (default) — Podkova, English — Aleo. */
+  :root {
+    --font-serif: var(--font-serif-uk);
+  }
+  html[lang='en'] {
+    --font-serif: var(--font-serif-en);
+  }
+}
+
+@layer components {
+  /* Section heading from the design: Podkova 55px (uk) / Aleo 48px (en), 2px letter spacing, uppercase. */
+  .heading-section {
+    @apply font-serif text-[32px] uppercase leading-[34px] tracking-[2px] lg:text-[55px] lg:leading-10;
+  }
+  html[lang='en'] .heading-section {
+    @apply text-[28px] lg:text-[48px];
+  }
+}

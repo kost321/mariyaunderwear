@@ -48,32 +48,27 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
             width={164}
             height={53}
             priority
-            className="h-[34px] w-auto mix-blend-darken lg:h-[53px]"
+            className="h-[34px] w-[105px] mix-blend-darken lg:h-[53px] lg:w-[164px]"
           />
         </Link>
 
         <Link
           href="/cart"
           aria-label={totalCount > 0 ? `Кошик, товарів: ${totalCount}` : 'Кошик'}
-          className="group flex items-center justify-self-end"
+          className="relative justify-self-end"
         >
-          <span className="hidden h-[50px] items-center rounded-[22px] bg-ink pl-5 pr-7 text-xs font-medium tracking-[2px] text-white lg:flex">
-            Кошик
-          </span>
-          <span className="relative lg:-ml-3">
-            <Image
-              src="/brand/bag.svg"
-              alt=""
-              width={50}
-              height={50}
-              className="h-10 w-10 lg:h-[50px] lg:w-[50px]"
-            />
-            {totalCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-pink px-1 text-[11px] font-medium text-ink">
-                {totalCount}
-              </span>
-            )}
-          </span>
+          <Image
+            src="/brand/bag.svg"
+            alt=""
+            width={50}
+            height={50}
+            className="h-10 w-10 lg:h-[50px] lg:w-[50px]"
+          />
+          {totalCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-pink px-1 text-[11px] font-medium text-ink">
+              {totalCount}
+            </span>
+          )}
         </Link>
       </div>
 
@@ -86,3 +81,4 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
     </header>
   )
 }
+

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { getPayload } from '@/lib/payload'
 import type { CartItem, CheckoutForm } from '@/types/shop'
+import { isSizeAvailable } from '@/lib/stock'
 
 // Limit on orders per IP address (kept in process memory, which is
 // enough for a single Railway instance).
@@ -152,27 +153,25 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // The size must exist on the product and the quantity must not exceed stock.
-    // Empty stock = unknown (product added by hand), so no limit.
-    if (product.sizes?.length) {
-      const sizeRow = product.sizes.find((s) => s.value === raw.size)
-      if (!sizeRow) {
-        return NextResponse.json(
-          { error: `Розміру немає в наявності: ${product.title}` },
-          { status: 400 },
-        )
-      }
-      const key = `${product.id}:${sizeRow.value}`
-      const total = (requested.get(key) ?? 0) + quantity
-      requested.set(key, total)
-      if (typeof sizeRow.stock === 'number' && total > sizeRow.stock) {
-        return NextResponse.json(
-          {
-            error: `Недостатньо в наявності: ${product.title}, розмір ${sizeRow.value} (залишилось ${sizeRow.stock} шт.)`,
-          },
-          { status: 400 },
-        )
-      }
+    // The size must exist on the product, be in stock (lib/stock: empty stock = not in stock)
+    // and the quantity must not exceed the stock.
+    const sizeRow = product.sizes?.find((s) => s.value === raw.size)
+    if (!sizeRow || !isSizeAvailable(sizeRow)) {
+      return NextResponse.json(
+        { error: `Немає в наявності: ${product.title}${raw.size ? `, розмір ${raw.size}` : ''}` },
+        { status: 400 },
+      )
+    }
+    const key = `${product.id}:${sizeRow.value}`
+    const total = (requested.get(key) ?? 0) + quantity
+    requested.set(key, total)
+    if (total > (sizeRow.stock ?? 0)) {
+      return NextResponse.json(
+        {
+          error: `Недостатньо в наявності: ${product.title}, розмір ${sizeRow.value} (залишилось ${sizeRow.stock} шт.)`,
+        },
+        { status: 400 },
+      )
     }
 
     items.push({

@@ -12,6 +12,7 @@ import { ProductDetails } from '@/components/shop/ProductDetails'
 import { ProductDescription } from '@/components/shop/ProductDescription'
 import { ProductCard } from '@/components/shop/ProductCard'
 import type { Product } from '@/payload-types'
+import { isProductInStock } from '@/lib/stock'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -107,9 +108,8 @@ export default async function ProductPage({ params }: Params) {
   )
 
   // Structured data for Google (price, availability, photos in search results).
-  // Out of stock if every size has an explicit stock of 0; empty stock = unknown.
-  const sizes = product.sizes ?? []
-  const outOfStock = sizes.length > 0 && sizes.every((size) => size.stock === 0)
+  // Same rule as the page and the order API (lib/stock): empty stock = not in stock.
+  const outOfStock = !isProductInStock(product.sizes)
   const imageUrls = (product.images ?? [])
     .map((item) => getMediaUrl(item.image))
     .filter((url): url is string => Boolean(url))

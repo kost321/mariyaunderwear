@@ -243,7 +243,8 @@ export const Products: CollectionConfig = {
           type: 'number',
           min: 0,
           admin: {
-            description: 'Заповнюється імпортом із Торгсофт.',
+            description:
+              'Заповнюється імпортом із Торгсофт. Порожньо або 0 — розміру немає в наявності (на сайті закреслений).',
           },
         },
       ],

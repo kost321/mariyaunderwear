@@ -1,4 +1,5 @@
 import type { Product } from '@/payload-types'
+import { isProductInStock, isSizeAvailable } from '@/lib/stock'
 
 /**
  * Catalog filters. There are not many products, so we filter in memory after
@@ -60,19 +61,10 @@ function productSizes(p: Product): string[] {
   return (p.sizes ?? []).flatMap((s) => sizeTokens(s.value))
 }
 
-// Same rule as the product page: stock === 0 means sold out, an empty value means unknown (orderable).
-const sizeAvailable = (s: { stock?: number | null }) => s.stock !== 0
-
-/**
- * Whether the product can be ordered; if `sizes` are given, in at least one of them.
- * A product without sizes is orderable (the product page lets you add it to the cart).
- */
+/** Whether the product can be ordered (lib/stock); if `sizes` are given, in at least one of them. */
 function inStock(p: Product, sizes: string[] = []): boolean {
-  const entries = p.sizes ?? []
-  if (!entries.length) return !sizes.length
-  return entries.some(
-    (s) => sizeAvailable(s) && (!sizes.length || sizeTokens(s.value).some((t) => sizes.includes(t))),
-  )
+  if (!sizes.length) return isProductInStock(p.sizes)
+  return (p.sizes ?? []).some((s) => isSizeAvailable(s) && sizeTokens(s.value).some((t) => sizes.includes(t)))
 }
 
 function productColors(p: Product): string[] {

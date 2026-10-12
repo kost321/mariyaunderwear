@@ -10,6 +10,7 @@ import { SizeChart } from '@/components/shop/SizeChart'
 import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
 import { useCart } from '@/hooks/useCart'
+import { isProductInStock, isSizeAvailable } from '@/lib/stock'
 import type { CartItem } from '@/types/shop'
 
 const photoFrame = 'relative overflow-hidden rounded-card border border-[#d9d9d9] bg-placeholder/40'
@@ -41,9 +42,9 @@ export function ProductDetails({
   const showVariantSwitch = colorVariants.length > 1
 
   const [activeImage, setActiveImage] = useState(0)
-  // stock === 0 means the size is sold out; empty value = stock unknown.
-  const soldOut = (s: { stock?: number | null }) => s.stock === 0
-  const allSoldOut = sizes.length > 0 && sizes.every(soldOut)
+  // A size without a positive stock (0 or empty) is sold out and crossed out (lib/stock).
+  const soldOut = (s: { stock?: number | null }) => !isSizeAvailable(s)
+  const allSoldOut = !isProductInStock(sizes)
   const [size, setSize] = useState<string | undefined>(
     (sizes.find((s) => !soldOut(s)) ?? sizes[0])?.value,
   )
@@ -54,7 +55,7 @@ export function ProductDetails({
   const [lightboxOpen, setLightboxOpen] = useState(false)
 
   const selectedStock = sizes.find((s) => s.value === size)?.stock
-  const maxQuantity = typeof selectedStock === 'number' && selectedStock > 0 ? selectedStock : 99
+  const maxQuantity = typeof selectedStock === 'number' && selectedStock > 0 ? selectedStock : 1
 
   const mainImage = images[activeImage]?.image
   const mainUrl = getMediaUrl(mainImage)

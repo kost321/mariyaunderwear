@@ -7,33 +7,31 @@ import { Link } from '@/i18n/navigation'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { formatPrice, cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { SizeChart } from '@/components/shop/SizeChart'
-import { ProductAccordion } from '@/components/shop/ProductAccordion'
+import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
-import { ProductCard } from '@/components/shop/ProductCard'
 import { useCart } from '@/hooks/useCart'
+import { isProductInStock, isSizeAvailable } from '@/lib/stock'
 import type { CartItem } from '@/types/shop'
 
+const photoFrame = 'relative overflow-hidden rounded-card border border-[#d9d9d9] bg-placeholder/40'
+
 /**
- * Интерактивная часть карточки товара:
- *  - галерея с выбором активного изображения;
- *  - выбор размера и цвета;
- *  - добавление в корзину.
+ * Interactive part of the product card (Figma design "Product"):
+ *  - gallery: large photo + a column of thumbnails (a strip under the photo on mobile);
+ *  - framed card: title, price, color, size, "Add to cart";
+ *  - quick order. The description sits under the gallery (ProductDescription in page.tsx).
  *
- * Данные приходят пропсом из серверного page.tsx, поэтому этот
- * клиентский компонент сам ничего не запрашивает.
+ * Data arrives as props from the server page.tsx, so this
+ * client component does not fetch anything itself.
  */
 export function ProductDetails({
   product,
   colorVariants = [],
-  relatedProducts = [],
 }: {
   product: Product
-  /** Другие цветовые карточки той же модели (связаны полем model). */
+  /** Other color cards of the same model (linked by the model field). */
   colorVariants?: Product[]
-  /** Товары, вручную выбранные в админке для блока «Схожі товари». */
-  relatedProducts?: Product[]
 }) {
   const t = useTranslations('Product')
   const tc = useTranslations('Common')
@@ -43,21 +41,36 @@ export function ProductDetails({
   const sizes = product.sizes ?? []
   const colors = product.colors ?? []
 
-  // Показываем переключатель-ссылки только если у модели есть хотя бы 2 цвета-карточки.
+  // Show the switcher links only if the model has at least 2 color cards.
   const showVariantSwitch = colorVariants.length > 1
 
   const [activeImage, setActiveImage] = useState(0)
-  const [size, setSize] = useState<string | undefined>(sizes[0]?.value)
+  // A size without a positive stock (0 or empty) is sold out and crossed out (lib/stock).
+  const soldOut = (s: { stock?: number | null }) => !isSizeAvailable(s)
+  const allSoldOut = !isProductInStock(sizes)
+  const [size, setSize] = useState<string | undefined>(
+    (sizes.find((s) => !soldOut(s)) ?? sizes[0])?.value,
+  )
   const [color, setColor] = useState<string | undefined>(colors[0]?.name)
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  const selectedStock = sizes.find((s) => s.value === size)?.stock
+  const maxQuantity = typeof selectedStock === 'number' && selectedStock > 0 ? selectedStock : 1
 
   const mainImage = images[activeImage]?.image
   const mainUrl = getMediaUrl(mainImage)
   const mainAlt = getMediaAlt(mainImage, product.title ?? '')
 
-  // Позиция для корзины / быстрого заказа из текущего выбора на странице.
+  // Photos for the full-screen viewer (skip entries without a file).
+  const lightboxPhotos = images.flatMap((item) => {
+    const url = getMediaUrl(item.image)
+    return url ? [{ url, alt: getMediaAlt(item.image, product.title ?? '') }] : []
+  })
+
+  // Cart / quick-order line built from the current selection on the page.
   const selectedItem: CartItem = {
     productId: String(product.id),
     title: product.title ?? '',
@@ -65,57 +78,82 @@ export function ProductDetails({
     slug: product.slug ?? '',
     image: getMediaUrl(images[0]?.image),
     size,
-    // Если модель разбита на цветовые карточки — цвет берём из карточки,
-    // иначе из старого массива colors (выбор внутри страницы).
+    // If the model is split into color cards, the color comes from the card,
+    // otherwise from the legacy colors array (selection within the page).
     color: showVariantSwitch ? (product.colorName ?? undefined) : color,
     quantity,
   }
 
+  function handleSelectSize(value: string, stock?: number | null) {
+    setSize(value)
+    if (typeof stock === 'number' && stock > 0) setQuantity((q) => Math.min(q, stock))
+  }
+
   function handleAddToCart() {
+    if (allSoldOut) return
     addItem(selectedItem)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }
 
+  const swatchClass = (active: boolean) =>
+    cn(
+      'block h-9 w-9 rounded-full border transition-transform',
+      active ? 'border-ink ring-1 ring-ink ring-offset-2' : 'border-brown/30 hover:scale-105',
+    )
+
+  const label = 'text-xs tracking-[2px] text-ink'
+
+  const addButton = (className?: string) => (
+    <button
+      type="button"
+      onClick={handleAddToCart}
+      disabled={allSoldOut}
+      className={cn(
+        'h-10 w-full rounded-card bg-cream/70 text-xs uppercase tracking-[1px] text-brown transition-colors hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-cream/70',
+        className,
+      )}
+    >
+      {allSoldOut ? t('outOfStock') : added ? t('added') : t('addToCart')}
+    </button>
+  )
+
   return (
-    <>
-    <div className="grid gap-8 md:grid-cols-2">
-      {/* ГАЛЕРЕЯ */}
-      <div className="space-y-4">
-        <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted">
-          {mainUrl ? (
-            <Image
-              src={mainUrl}
-              alt={mainAlt}
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
-              {tc('noPhoto')}
-            </div>
+    <div className="lg:flex lg:items-start lg:justify-center lg:gap-[100px]">
+      {/* GALLERY: full-width photo on mobile, thumbnails as a strip under it */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:gap-10 lg:pt-[30px]">
+        <div className="relative -mx-[var(--gutter)] aspect-[3/4] overflow-hidden rounded-b-card border-b border-[#d9d9d9] bg-placeholder/40 lg:mx-0 lg:w-[367px] lg:rounded-card lg:border">
+
+          {mainUrl && (
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="absolute inset-0 cursor-zoom-in"
+              aria-label={t('zoom')}
+            >
+              <Image src={mainUrl} alt={mainAlt} fill priority quality={90} sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" />
+            </button>
           )}
         </div>
 
-        {/* Миниатюры */}
         {images.length > 1 && (
-          <div className="grid grid-cols-5 gap-2">
+          <div className="-mx-[var(--gutter)] flex gap-3 overflow-x-auto px-[var(--gutter)] [scrollbar-width:none] lg:mx-0 lg:max-h-[438px] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-0">
             {images.map((item, i) => {
               const thumb = getMediaUrl(item.image)
-              if (!thumb) return null
               return (
                 <button
                   key={item.id ?? i}
+                  type="button"
                   onClick={() => setActiveImage(i)}
                   className={cn(
-                    'relative aspect-square overflow-hidden rounded-md border-2',
-                    i === activeImage ? 'border-primary' : 'border-transparent',
+                    photoFrame,
+                    'h-[78px] w-16 shrink-0 transition-opacity',
+                    i === activeImage ? 'opacity-100' : 'opacity-50 hover:opacity-80',
                   )}
                   aria-label={t('image', { n: i + 1 })}
+                  aria-current={i === activeImage}
                 >
-                  <Image src={thumb} alt="" fill sizes="20vw" className="object-cover" />
+                  {thumb && <Image src={thumb} alt="" fill quality={85} sizes="64px" className="object-cover" />}
                 </button>
               )
             })}
@@ -123,34 +161,76 @@ export function ProductDetails({
         )}
       </div>
 
-      {/* ИНФОРМАЦИЯ И ВЫБОР */}
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">{product.title}</h1>
-          <p className="mt-2 text-2xl">{formatPrice(product.price, tc('currency'))}</p>
-          {product.sku && (
-            <p className="mt-1 text-sm text-muted-foreground">{t('sku', { sku: product.sku })}</p>
+      {/* PRODUCT CARD: framed on desktop, as in the design */}
+      <div className="mt-8 lg:mt-0 lg:w-[340px] lg:border lg:border-brown lg:px-10 lg:pb-3 lg:pt-14">
+        <h1 className="font-serif text-sm uppercase leading-[17px] tracking-[1px] text-ink">{product.title}</h1>
+        <p className="mt-3 text-sm tracking-[1px] text-brown">{formatPrice(product.price, tc('currency'))}</p>
+        {product.sku && <p className="mt-6 text-xs tracking-[1px] text-brown/50">{t('sku', { sku: product.sku })}</p>}
 
-          )}
-        </div>
-
-        {/* Размеры */}
-        {sizes.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-medium">{t('size')}</p>
-              <SizeChart html={product.sizeChartHtml} />
+        {/* Colors: variant cards (navigate on click) */}
+        {showVariantSwitch && (
+          <div className="mt-10">
+            <p className={label}>
+              {t('color')}{product.colorName ? `: ${product.colorName}` : ''}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1">
+              {colorVariants.map((v) => {
+                const isCurrent = v.id === product.id
+                const name = v.colorName ?? v.title ?? ''
+                const style = { backgroundColor: v.colorHex ?? '#ddd' }
+                return isCurrent ? (
+                  <span key={v.id} title={name} aria-label={t('selected', { label: name })} aria-current="true" className={swatchClass(true)} style={style} />
+                ) : (
+                  <Link key={v.id} href={`/product/${v.slug}`} title={name} aria-label={name}>
+                    <span className={swatchClass(false)} style={style} />
+                  </Link>
+                )
+              })}
             </div>
-            <div className="flex flex-wrap gap-2">
+          </div>
+        )}
+
+        {/* Colors: selection inside a single card (model not split into variants) */}
+        {!showVariantSwitch && colors.length > 0 && (
+          <div className="mt-10">
+            <p className={label}>{t('color')}{color ? `: ${color}` : ''}</p>
+            <div className="mt-3 flex flex-wrap gap-1">
+              {colors.map((c) => (
+                <button
+                  key={c.id ?? c.name}
+                  type="button"
+                  onClick={() => setColor(c.name)}
+                  title={c.name}
+                  aria-label={c.name}
+                  aria-pressed={color === c.name}
+                  className={swatchClass(color === c.name)}
+                  style={{ backgroundColor: c.hex ?? '#ddd' }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sizes */}
+        {sizes.length > 0 && (
+          <div className="mt-5">
+            <p className={label}>{t('size')}</p>
+            <div className="mt-2 flex flex-wrap gap-1">
               {sizes.map((s) => (
                 <button
                   key={s.id ?? s.value}
-                  onClick={() => setSize(s.value)}
+                  type="button"
+                  onClick={() => handleSelectSize(s.value, s.stock)}
+                  disabled={soldOut(s)}
+                  aria-pressed={size === s.value}
+                  title={soldOut(s) ? t('outOfStock') : undefined}
                   className={cn(
-                    'min-w-12 rounded-md border px-3 py-2 text-sm transition-colors',
-                    size === s.value
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'hover:bg-accent',
+                    'flex h-9 min-w-[35px] items-center justify-center border px-1.5 text-[10px] transition-colors',
+                    soldOut(s)
+                      ? 'cursor-not-allowed border-[#d4d4d4] text-brown/40 line-through'
+                      : size === s.value
+                        ? 'border-ink bg-ink text-white'
+                        : 'border-[#a3a3a3] text-brown hover:border-ink',
                   )}
                 >
                   {s.value}
@@ -160,149 +240,63 @@ export function ProductDetails({
           </div>
         )}
 
-        {/* Розмірна таблиця, якщо розмірів немає, але таблиця задана */}
-        {sizes.length === 0 && product.sizeChartHtml && (
+        <div className="mt-3 text-center">
           <SizeChart html={product.sizeChartHtml} />
-        )}
+        </div>
 
-        {/* Цвета: варианты-карточки (переход по клику) */}
-        {showVariantSwitch && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">
-              {t('color')}{product.colorName ? `: ${product.colorName}` : ''}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {colorVariants.map((v) => {
-                const isCurrent = v.id === product.id
-                const label = v.colorName ?? v.title ?? ''
-                const swatchClass = cn(
-                  'block h-9 w-9 rounded-full border-2 transition-transform',
-                  isCurrent
-                    ? 'border-primary scale-110'
-                    : 'border-border hover:scale-105',
-                )
-                const style = { backgroundColor: v.colorHex ?? '#ddd' }
-
-                return isCurrent ? (
-                  <span
-                    key={v.id}
-                    title={label}
-                    aria-label={t('selected', { label })}
-                    aria-current="true"
-                    className={swatchClass}
-                    style={style}
-                  />
-                ) : (
-                  <Link
-                    key={v.id}
-                    href={`/product/${v.slug}`}
-                    title={label}
-                    aria-label={label}
-                  >
-                    <span className={swatchClass} style={style} />
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Цвета: выбор внутри одной карточки (когда модель не разбита на варианты) */}
-        {!showVariantSwitch && colors.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">
-              {t('color')}{color ? `: ${color}` : ''}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {colors.map((c) => (
-                <button
-                  key={c.id ?? c.name}
-                  onClick={() => setColor(c.name)}
-                  title={c.name}
-                  className={cn(
-                    'h-9 w-9 rounded-full border-2 transition-transform',
-                    color === c.name
-                      ? 'border-primary scale-110'
-                      : 'border-border',
-                  )}
-                  style={{ backgroundColor: c.hex ?? '#ddd' }}
-                  aria-label={c.name}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Кількість + додати в кошик */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center rounded-md border">
+        {/* Quantity */}
+        <div className="mt-5 flex items-center justify-between">
+          <p className={label}>{t('quantity')}</p>
+          <div className="flex items-center border border-[#a3a3a3] text-sm text-ink">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1}
-              className="flex h-11 w-11 items-center justify-center text-lg leading-none disabled:opacity-40"
+              className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
               aria-label={t('decrease')}
             >
               −
             </button>
-            <span
-              className="min-w-10 text-center text-sm tabular-nums"
-              aria-live="polite"
-            >
+            <span className="min-w-6 text-center tabular-nums" aria-live="polite">
               {quantity}
             </span>
             <button
               type="button"
-              onClick={() => setQuantity((q) => q + 1)}
-              className="flex h-11 w-11 items-center justify-center text-lg leading-none"
+              onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+              disabled={quantity >= maxQuantity}
+              className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
               aria-label={t('increase')}
             >
               +
             </button>
           </div>
-
-          <Button onClick={handleAddToCart} size="lg" className="flex-1 sm:flex-none">
-            {added ? t('added') : t('buy')}
-          </Button>
         </div>
 
-        <Button
+        {/* On desktop the button is inside the card; on mobile it is pinned to the bottom of the screen */}
+        {addButton('mt-5 hidden lg:block')}
+        <button
+          type="button"
           onClick={() => setQuickOpen(true)}
-          size="lg"
-          variant="outline"
-          className="w-full sm:w-auto"
+          disabled={allSoldOut}
+          className="mt-2 h-10 w-full rounded-card border border-brown/40 text-xs uppercase tracking-[1px] text-brown transition-colors hover:border-brown disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {t('quickOrder')}
-        </Button>
+          {t('oneClick')}
+        </button>
+      </div>
 
-        {/* Опис + Характеристика + Догляд — акордеон */}
-        <ProductAccordion
-          sections={[
-            { title: t('description'), html: product.description },
-            { title: t('specs'), html: product.descriptionHtml },
-            { title: t('care'), html: product.careHtml },
-          ]}
+      <div className="fixed inset-x-0 bottom-0 z-30 bg-white/95 p-2 backdrop-blur lg:hidden">
+        {addButton('h-[57px] rounded-none')}
+      </div>
+
+      {lightboxOpen && (
+        <PhotoLightbox
+          photos={lightboxPhotos}
+          index={Math.min(activeImage, lightboxPhotos.length - 1)}
+          onChange={setActiveImage}
+          onClose={() => setLightboxOpen(false)}
         />
-      </div>
-
-      <QuickOrderModal
-        open={quickOpen}
-        onClose={() => setQuickOpen(false)}
-        item={selectedItem}
-      />
+      )}
+      <QuickOrderModal open={quickOpen} onClose={() => setQuickOpen(false)} item={selectedItem} />
     </div>
-
-    {/* Схожі товари — вручну обрані в адмінці */}
-    {relatedProducts.length > 0 && (
-      <div className="mt-12 space-y-4">
-        <h2 className="text-xl font-semibold">{t('related')}</h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-          {relatedProducts.map((related) => (
-            <ProductCard key={related.id} product={related} />
-          ))}
-        </div>
-      </div>
-    )}
-    </>
   )
 }

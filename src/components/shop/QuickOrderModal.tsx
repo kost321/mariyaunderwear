@@ -1,21 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import type { CartItem } from '@/types/shop'
 
 /**
- * «Швидке замовлення» — модалка з мінімальною формою (ім'я + телефон).
- * Відправляє замовлення на цей товар одразу через /api/order, минаючи
- * кошик і сторінку checkout. Менеджер передзвонює для уточнення деталей.
+ * "Quick order": a modal with a minimal form (name + phone).
+ * Sends an order for this product straight through /api/order, bypassing
+ * the cart and the checkout page. A manager calls back to confirm the details.
  *
- * `item` формується на сторінці товару з поточного вибору (розмір, колір,
- * кількість).
+ * `item` is built on the product page from the current selection (size, color,
+ * quantity).
  */
 
-// Службова примітка для менеджера в замовленні — завжди українською,
-// незалежно від мови сайту.
+// Service note for the manager in the order: always in Ukrainian,
+// regardless of the site language.
 const QUICK_ORDER_COMMENT = 'Швидке замовлення — уточнити деталі по телефону'
 export function QuickOrderModal({
   open,
@@ -28,13 +28,14 @@ export function QuickOrderModal({
 }) {
   const t = useTranslations('QuickOrder')
   const tc = useTranslations('Common')
+  const locale = useLocale()
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
 
-  // Esc + блокування прокрутки фону, поки відкрито.
+  // Esc + lock background scrolling while open.
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -47,7 +48,7 @@ export function QuickOrderModal({
     }
   }, [open, onClose])
 
-  // Скидаємо стан при кожному відкритті.
+  // Reset the state on every open.
   useEffect(() => {
     if (open) {
       setName('')
@@ -80,12 +81,16 @@ export function QuickOrderModal({
             novaPoshtaBranch: '',
             comment: QUICK_ORDER_COMMENT,
           },
+          locale,
         }),
       })
-      if (!res.ok) throw new Error('bad response')
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(res.status === 400 && data?.error ? data.error : '')
+      }
       setDone(true)
-    } catch {
-      setError(t('error'))
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : t('error'))
     } finally {
       setLoading(false)
     }
@@ -93,14 +98,14 @@ export function QuickOrderModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={t('title')}
     >
       <div
-        className="relative w-full max-w-sm rounded-lg bg-background p-6 shadow-xl"
+        className="relative w-full max-w-sm rounded-card bg-white p-8 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -114,18 +119,18 @@ export function QuickOrderModal({
 
         {done ? (
           <div className="space-y-4 py-4 text-center">
-            <h2 className="text-xl font-semibold">{t('thanks')}</h2>
+            <h2 className="font-serif text-xl uppercase tracking-[1px] text-ink">{t('thanks')}</h2>
             <p className="text-sm text-muted-foreground">
               {t('thanksText')}
             </p>
-            <Button onClick={onClose} className="w-full">
+            <Button onClick={onClose} className="h-11 w-full rounded-card bg-ink">
               {tc('close')}
             </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <h2 className="pr-8 text-lg font-semibold">{t('title')}</h2>
+              <h2 className="pr-8 font-serif text-lg uppercase tracking-[1px] text-ink">{t('title')}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {item.title}
                 {item.size ? `, ${t('size', { size: item.size })}` : ''}
@@ -143,7 +148,7 @@ export function QuickOrderModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="name"
-                className="w-full rounded-md border px-3 py-2 text-sm"
+                className="h-11 w-full border border-[#a3a3a3] px-4 text-sm text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none"
                 required
               />
             </div>
@@ -159,14 +164,14 @@ export function QuickOrderModal({
                 onChange={(e) => setPhone(e.target.value)}
                 autoComplete="tel"
                 placeholder={t('phonePlaceholder')}
-                className="w-full rounded-md border px-3 py-2 text-sm"
+                className="h-11 w-full border border-[#a3a3a3] px-4 text-sm text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none"
                 required
               />
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={loading} className="h-11 w-full rounded-card bg-ink uppercase tracking-[1px]">
               {loading ? tc('sending') : t('submit')}
             </Button>
           </form>

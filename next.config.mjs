@@ -6,10 +6,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Здесь можно настраивать разрешённые домены для next/image,
-  // редиректы, заголовки и т.д.
-  // Українська живе на /ua (код мови uk). Якщо хтось набере /uk/… за
-  // звичкою — ведемо на /ua/…
+  // Allowed next/image domains, redirects, headers, etc. are configured here.
+  // Ukrainian lives at /ua (language code uk). If someone types /uk/… out of
+  // habit, send them to /ua/…
   async redirects() {
     return [
       { source: '/uk', destination: '/ua', permanent: true },
@@ -17,6 +16,9 @@ const nextConfig = {
     ]
   },
   images: {
+    // 1600 matches the Cloudinary originals; 90 is the photo quality (default is 75), 85 is for thumbnails.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1600],
+    qualities: [75, 85, 90],
     remotePatterns: [
       {
         protocol: 'https',
@@ -26,6 +28,6 @@ const nextConfig = {
   },
 }
 
-// withPayload оборачивает конфиг Next, чтобы корректно собрать
-// серверную часть Payload внутри Next.js (admin UI, API, бандлинг).
+// withPayload wraps the Next config so the Payload server part
+// (admin UI, API, bundling) builds correctly inside Next.js.
 export default withPayload(withNextIntl(nextConfig))

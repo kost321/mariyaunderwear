@@ -9,13 +9,27 @@ const config: Config = {
   theme: {
     container: {
       center: true,
-      padding: '1rem',
+      // --gutter: 18px on mobile → 50px at 1280 (as in the design), see globals.css
+      padding: 'var(--gutter)',
       screens: {
         '2xl': '1280px',
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-serif)', 'Georgia', 'serif'],
+        script: ['var(--font-script)', 'cursive'],
+      },
       colors: {
+        // Palette from the Figma design
+        ink: '#403834',
+        'ink-text': '#403434',
+        brown: '#6e5c4d',
+        sand: '#d3c3b6',
+        cream: '#f3ebe8',
+        pink: '#f2afc6',
+        placeholder: '#b6ada3',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -43,6 +57,7 @@ const config: Config = {
         },
       },
       borderRadius: {
+        card: '26px',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',

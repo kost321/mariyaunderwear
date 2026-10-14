@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 /**
- * Ссылка «Розмірна таблиця» + модальное окно с HTML-таблицей размеров.
- * HTML приходит из поля sizeChartHtml товара и выводится как есть.
- * Без внешних зависимостей: overlay + Esc + клик по фону закрывают окно.
+ * "Size chart" link + a modal with an HTML table of sizes.
+ * The HTML comes from the product's sizeChartHtml field and is rendered as is.
+ * No external dependencies: overlay + Esc + click on the backdrop close the window.
  */
 export function SizeChart({ html }: { html?: string | null }) {
   const t = useTranslations('SizeChart')
@@ -19,7 +19,7 @@ export function SizeChart({ html }: { html?: string | null }) {
       if (e.key === 'Escape') setOpen(false)
     }
     document.addEventListener('keydown', onKey)
-    // блокируем прокрутку фона, пока открыто окно
+    // lock background scrolling while the window is open
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
@@ -35,21 +35,21 @@ export function SizeChart({ html }: { html?: string | null }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-sm underline underline-offset-4 hover:text-foreground text-muted-foreground"
+        className="text-[10px] uppercase text-brown/50 transition-colors hover:text-brown"
       >
-        {t('title')}
+        {t('trigger')}
       </button>
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-label={t('title')}
         >
           <div
-            className="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-background p-6 shadow-xl"
+            className="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-card bg-white p-8 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -61,7 +61,7 @@ export function SizeChart({ html }: { html?: string | null }) {
               ×
             </button>
 
-            <h2 className="mb-4 pr-8 text-lg font-semibold">{t('title')}</h2>
+            <h2 className="mb-4 pr-8 font-serif text-lg uppercase tracking-[1px] text-ink">{t('title')}</h2>
 
             <div
               className="size-chart-html text-sm [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_td]:text-center [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:px-3 [&_th]:py-2 [&_th]:text-center [&_p]:my-2 [&_strong]:font-semibold [&_img]:mx-auto"

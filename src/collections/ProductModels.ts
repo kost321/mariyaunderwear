@@ -2,12 +2,12 @@ import type { CollectionConfig } from 'payload'
 import { formatSlug } from '@/lib/slug'
 
 /**
- * ProductModels — «модель» товару (наприклад: «Халат Перлинний ранок»).
+ * ProductModels: a product "model" (for example "Pearl Morning robe").
  *
- * Одна модель об'єднує кілька карток товару — по одній на кожен колір.
- * Кожна картка кольору — окремий товар зі своїм slug, фото та описом,
- * а поле `model` у товарі вказує, до якої моделі він належить.
- * На сторінці товару це дає перемикач кольорів (див. getColorVariants).
+ * One model groups several product cards, one per color.
+ * Each color card is a separate product with its own slug, photos and description,
+ * and the `model` field on the product points to the model it belongs to.
+ * On the product page this gives the color switcher (see getColorVariants).
  */
 export const ProductModels: CollectionConfig = {
   slug: 'product-models',

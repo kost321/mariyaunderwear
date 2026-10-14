@@ -2,51 +2,222 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { getPayload } from '@/lib/payload'
 import type { CartItem, CheckoutForm } from '@/types/shop'
-import type { Locale } from '@/i18n/routing'
+import { hasLocale } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
+import { routing, type Locale } from '@/i18n/routing'
+import { isSizeAvailable } from '@/lib/stock'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Limit on orders per IP address (kept in process memory, which is
+// enough for a single Railway instance).
+const RATE_LIMIT = 5
+const RATE_WINDOW_MS = 10 * 60 * 1000
+const hits = new Map<string, number[]>()
 
-/** Товар, отриманий з locale: 'all' — localized-поля приходять як { uk, pl, en }. */
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const recent = (hits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
+  if (recent.length >= RATE_LIMIT) {
+    hits.set(ip, recent)
+    return true
+  }
+  recent.push(now)
+  hits.set(ip, recent)
+  // Do not let the map grow without bound.
+  if (hits.size > 5000) {
+    for (const [key, times] of hits) {
+      if (times.every((t) => now - t >= RATE_WINDOW_MS)) hits.delete(key)
+    }
+  }
+  return false
+}
+
+/** A string with a length limit; undefined if the value is invalid. */
+function str(value: unknown, max: number): string | undefined {
+  if (value === undefined || value === null || value === '') return ''
+  if (typeof value !== 'string' || value.length > max) return undefined
+  return value.trim()
+}
+
+/**
+ * Recipients of the new-order email: ORDER_NOTIFY_EMAIL (one address or
+ * several separated by commas). If the variable is unset, the owner's fallback address.
+ */
+function notifyRecipients(): string[] {
+  const list = (process.env.ORDER_NOTIFY_EMAIL ?? '')
+    .split(',')
+    .map((email) => email.trim())
+    .filter(Boolean)
+  return list.length > 0 ? list : ['itsmariainthecity@gmail.com']
+}
+
+/** Escapes customer-supplied text before inserting it into the email HTML. */
+function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const BAD_REQUEST = (error = 'Невірні дані') => NextResponse.json({ error }, { status: 400 })
+
+/** A product fetched with locale: 'all': localized fields arrive as { uk, pl, en }. */
 type LocalizedProduct = {
-  title?: Partial<Record<Locale, string>>
   colorName?: Partial<Record<Locale, string | null>>
 }
 
 export async function POST(req: NextRequest) {
-  const { items, form }: { items: CartItem[]; form: CheckoutForm } = await req.json()
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: 'Забагато спроб. Спробуйте пізніше.' }, { status: 429 })
+  }
 
-  if (!items?.length || !form?.customerName || !form?.phone) {
-    return NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
+  let body: { items?: CartItem[]; form?: Partial<CheckoutForm>; locale?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return BAD_REQUEST()
+  }
+  // Language of the errors shown to the customer; the admin and the email stay Ukrainian.
+  const locale = hasLocale(routing.locales, body?.locale) ? body.locale : routing.defaultLocale
+  const t = await getTranslations({ locale, namespace: 'OrderApi' })
+
+  const rawItems = body?.items
+  const rawForm = body?.form
+  if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > 50 || !rawForm) {
+    return BAD_REQUEST(t('invalid'))
+  }
+
+  const customerName = str(rawForm.customerName, 100)
+  const phone = str(rawForm.phone, 30)
+  const city = str(rawForm.city, 100)
+  const novaPoshtaBranch = str(rawForm.novaPoshtaBranch, 100)
+  const email = str(rawForm.email, 120)
+  const comment = str(rawForm.comment, 1000)
+  if (
+    !customerName ||
+    !phone ||
+    city === undefined ||
+    novaPoshtaBranch === undefined ||
+    email === undefined ||
+    comment === undefined
+  ) {
+    return BAD_REQUEST(t('invalid'))
+  }
+  // Phone: 10-15 digits, other characters only as ordinary separators.
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length < 10 || digits.length > 15 || !/^[\d\s+()-]+$/.test(phone)) {
+    return BAD_REQUEST(t('invalid'))
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return BAD_REQUEST(t('invalid'))
+  }
+  const form: CheckoutForm = {
+    customerName,
+    phone,
+    city,
+    novaPoshtaBranch,
+    email: email || undefined,
+    comment,
+  }
+
+  for (const item of rawItems) {
+    if (
+      !item ||
+      str(item.size, 50) === undefined ||
+      str(item.color, 50) === undefined
+    ) {
+      return BAD_REQUEST(t('invalid'))
+    }
+  }
+
+  const payload = await getPayload()
+
+  // Price and title come from the DB, not from the cart: the client is trusted only
+  // for productId, size, color and quantity.
+  const ids = [...new Set(rawItems.map((item) => Number(item?.productId)))]
+  if (ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+    return BAD_REQUEST(t('invalid'))
+  }
+  const found = await payload.find({
+    collection: 'products',
+    where: { id: { in: ids }, active: { equals: true } },
+    limit: ids.length,
+    depth: 0,
+    pagination: false,
+  })
+  const productsById = new Map(found.docs.map((p) => [p.id, p]))
+
+  // How many units of each size are already in the order (one product can
+  // appear in the cart several times with different colors).
+  const requested = new Map<string, number>()
+
+  const items: CartItem[] = []
+  for (const raw of rawItems) {
+    const product = productsById.get(Number(raw.productId))
+    const quantity = Number(raw.quantity)
+    if (!product || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+      return NextResponse.json({ error: t('unavailable') }, { status: 400 })
+    }
+
+    // The size must exist on the product, be in stock (lib/stock: empty stock = not in stock)
+    // and the quantity must not exceed the stock.
+    const sizeRow = product.sizes?.find((s) => s.value === raw.size)
+    // Title in the customer's language for the error message (shown only to them)
+    const title = typeof raw.title === 'string' && raw.title.length <= 200 ? raw.title : (product.title ?? '')
+    if (!sizeRow || !isSizeAvailable(sizeRow)) {
+      return NextResponse.json(
+        { error: raw.size ? t('outOfStockSize', { title, size: raw.size }) : t('outOfStock', { title }) },
+        { status: 400 },
+      )
+    }
+    const key = `${product.id}:${sizeRow.value}`
+    const total = (requested.get(key) ?? 0) + quantity
+    requested.set(key, total)
+    if (total > (sizeRow.stock ?? 0)) {
+      return NextResponse.json(
+        {
+          error: t('notEnough', { title, size: sizeRow.value, stock: sizeRow.stock ?? 0 }),
+        },
+        { status: 400 },
+      )
+    }
+
+    items.push({
+      productId: String(product.id),
+      title: product.title ?? '',
+      price: product.price,
+      slug: product.slug ?? '',
+      size: raw.size,
+      color: raw.color,
+      quantity,
+    })
   }
 
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  const payload = await getPayload()
-
-  // Кошик зберігає назву/колір мовою, якою покупець переглядав сайт.
-  // Для адмінки й листа менеджеру беремо українські — підтягуємо товари
-  // з усіма мовами і підміняємо назву та (якщо збігається) колір.
-  const { docs } = await payload.find({
+  // The cart keeps the color in the language the customer browsed the site in.
+  // For the admin and the manager email we want Ukrainian: fetch the color names
+  // in all languages and swap the color if it matches the card's own color.
+  const { docs: localizedDocs } = await payload.find({
     collection: 'products',
-    where: { id: { in: items.map((item) => Number(item.productId)) } },
+    where: { id: { in: ids } },
     locale: 'all',
     depth: 0,
     pagination: false,
+    select: { colorName: true },
   })
-  const byId = new Map(docs.map((doc) => [String(doc.id), doc as unknown as LocalizedProduct]))
+  const colorById = new Map(
+    localizedDocs.map((doc) => [String(doc.id), (doc as unknown as LocalizedProduct).colorName]),
+  )
   const ukItems = items.map((item) => {
-    const doc = byId.get(item.productId)
-    if (!doc) return item
-    const colorIsLocalized =
-      item.color && doc.colorName && Object.values(doc.colorName).includes(item.color)
-    return {
-      ...item,
-      title: doc.title?.uk || item.title,
-      color: colorIsLocalized ? doc.colorName?.uk || item.color : item.color,
-    }
+    const colorName = colorById.get(item.productId)
+    const colorIsLocalized = item.color && colorName && Object.values(colorName).includes(item.color)
+    return colorIsLocalized ? { ...item, color: colorName?.uk || item.color } : item
   })
 
-  // Зберігаємо замовлення в БД
+  // Save the order to the DB
   const order = await payload.create({
     collection: 'orders',
     data: {
@@ -67,31 +238,35 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Відправляємо email
+  // Send the email
   const itemsHtml = ukItems
     .map(
       (item) => `
       <tr>
-        <td style="padding:8px;border-bottom:1px solid #eee">${item.title}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee">${item.size ?? '—'}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee">${item.color ?? '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.title)}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.size ?? '—')}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.color ?? '—')}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${item.price * item.quantity} грн.</td>
       </tr>`,
     )
     .join('')
 
-  await resend.emails.send({
+  // The order is already saved: an email failure must not break the response to the customer
+  // (otherwise they would retry and create a duplicate).
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    const { error } = await resend.emails.send({
     from: 'Mariya Underwear <orders@mariyaunderwear.com>',
-    to: 'itsmariainthecity@gmail.com',
-    subject: `Нове замовлення #${order.id} — ${form.customerName}`,
+    to: notifyRecipients(),
+    subject: `Нове замовлення #${order.id} — ${String(form.customerName).replace(/[\r\n]+/g, ' ')}`,
     html: `
       <h2>Нове замовлення #${order.id}</h2>
-      <p><b>Ім'я:</b> ${form.customerName}</p>
-      <p><b>Телефон:</b> ${form.phone}</p>
-      <p><b>Місто:</b> ${form.city}</p>
-      <p><b>Відділення НП:</b> ${form.novaPoshtaBranch}</p>
-      ${form.comment ? `<p><b>Коментар:</b> ${form.comment}</p>` : ''}
+      <p><b>Ім'я:</b> ${esc(form.customerName)}</p>
+      <p><b>Телефон:</b> ${esc(form.phone)}</p>
+      <p><b>Місто:</b> ${esc(form.city)}</p>
+      <p><b>Відділення НП:</b> ${esc(form.novaPoshtaBranch)}</p>
+      ${form.comment ? `<p><b>Коментар:</b> ${esc(form.comment)}</p>` : ''}
       <table style="width:100%;border-collapse:collapse;margin-top:16px">
         <thead>
           <tr style="background:#f5f5f5">
@@ -111,7 +286,11 @@ export async function POST(req: NextRequest) {
         </tfoot>
       </table>
     `,
-  })
+    })
+    if (error) console.error('[order] Resend відхилив лист:', order.id, error)
+  } catch (err) {
+    console.error('[order] Не вдалося надіслати лист:', order.id, err)
+  }
 
   return NextResponse.json({ success: true, orderId: order.id })
 }

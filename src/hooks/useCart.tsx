@@ -25,27 +25,27 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | null>(null)
 
 /**
- * CartProvider хранит корзину в состоянии React и синхронизирует её с
- * localStorage, чтобы корзина переживала перезагрузку страницы.
- * Без онлайн-оплаты корзина целиком клиентская — на сервер уходит
- * только финальный заказ при checkout.
+ * CartProvider keeps the cart in React state and syncs it with
+ * localStorage so the cart survives a page reload.
+ * Without online payment the cart is entirely client-side; only the
+ * final order is sent to the server at checkout.
  */
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [hydrated, setHydrated] = useState(false)
 
-  // Загружаем корзину из localStorage один раз при монтировании.
+  // Load the cart from localStorage once on mount.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) setItems(JSON.parse(raw))
     } catch {
-      // битый JSON — игнорируем, начинаем с пустой корзины
+      // broken JSON: ignore it and start with an empty cart
     }
     setHydrated(true)
   }, [])
 
-  // Сохраняем при каждом изменении (но не до первой гидрации).
+  // Save on every change (but not before the first hydration).
   useEffect(() => {
     if (!hydrated) return
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
@@ -53,7 +53,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = useCallback((item: CartItem) => {
     setItems((prev) => {
-      // Та же позиция = тот же товар + размер + цвет: увеличиваем кол-во.
+      // Same line = same product + size + color: increase the quantity.
       const idx = prev.findIndex(
         (p) =>
           p.productId === item.productId &&

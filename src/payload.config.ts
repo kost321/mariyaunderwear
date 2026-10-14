@@ -16,16 +16,26 @@ import { ProductModels } from './collections/ProductModels'
 import { Products } from './collections/Products'
 import { Orders } from './collections/Orders'
 import { Settings } from './globals/Settings'
+import { torgsoftImportHandler } from './lib/torgsoftImportEndpoint'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
-  // Какой пользователь логинится в админку.
+  // Which collection users log into the admin with.
   admin: {
     user: Users.slug,
     meta: {
       titleSuffix: '— Mariya Underwear',
+    },
+    components: {
+      views: {
+        torgsoftImport: {
+          Component: '/src/admin/torgsoft-import/TorgsoftImportView#TorgsoftImportView',
+          path: '/torgsoft-import',
+        },
+      },
+      afterNavLinks: ['/src/admin/torgsoft-import/TorgsoftNavLink#TorgsoftNavLink'],
     },
   },
 
@@ -34,9 +44,9 @@ export default buildConfig({
     fallbackLanguage: 'uk',
   },
 
-  // Мови контенту (назви/описи товарів). У картці товару в адмінці —
-  // перемикач мови в шапці документа. Порожній переклад → фолбек на uk.
-  // Список мов має збігатися з src/i18n/routing.ts.
+  // Content languages (product titles/descriptions). On the product page in the admin
+  // there is a language switcher in the document header. Empty translation → fallback to uk.
+  // The list of languages must match src/i18n/routing.ts.
   localization: {
     locales: [
       { code: 'uk', label: 'Українська' },
@@ -47,38 +57,47 @@ export default buildConfig({
     fallback: true,
   },
 
-  // Регистрируем все коллекции.
+  // Register all collections.
   collections: [Products, ProductModels, Categories, Orders, Media, Users],
 
-  // Глобальні налаштування магазину.
+  // Global store settings.
   globals: [Settings],
 
-  // Редактор richText по умолчанию (для описаний товаров).
+  // Custom API endpoints (served through /app/(payload)/api/[...slug]).
+  endpoints: [
+    {
+      path: '/torgsoft-import',
+      method: 'post',
+      handler: torgsoftImportHandler,
+    },
+  ],
+
+  // Default richText editor (for product descriptions).
   editor: lexicalEditor(),
 
-  // Секрет для подписи токенов/cookie.
+  // Secret used to sign tokens/cookies.
   secret: process.env.PAYLOAD_SECRET || '',
 
-  // Куда генерировать TypeScript-типы из схемы коллекций.
+  // Where to generate TypeScript types from the collection schema.
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
 
-  // Адаптер базы данных — PostgreSQL.
+  // Database adapter: PostgreSQL.
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || process.env.DATABASE_URL || '',
     },
-    // push синхронізує схему з колекціями автоматично, але робить це
-    // «на свій розсуд» — у проді це призводило до розсинхрону _rels
-    // таблиць (падав каскадний DELETE товару). Тому:
-    //   dev  — push увімкнено, зручно для локальної розробки;
-    //   prod — вимкнено, схемою керують ТІЛЬКИ міграції (scripts/start.sh
+    // push syncs the schema with the collections automatically, but does so
+    // at its own discretion. In production this caused the _rels tables to drift
+    // out of sync (cascading product DELETE failed). Therefore:
+    //   dev  - push is on, convenient for local development;
+    //   prod - push is off, ONLY migrations manage the schema (scripts/start.sh
     //          → payload migrate).
     push: process.env.NODE_ENV !== 'production',
   }),
 
-  // sharp нужен для генерации превью изображений (imageSizes в Media).
+  // sharp is needed to generate image previews (imageSizes in Media).
   sharp,
 
   plugins: [

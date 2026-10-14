@@ -12,26 +12,66 @@
     "currency": "UAH",
     "noPhoto": "no photo",
     "close": "Close",
-    "sending": "Sending…"
+    "sending": "Sending…",
+    "prev": "Back",
+    "next": "Forward"
   },
   "Header": {
     "catalog": "Catalog",
     "cart": "Cart",
-    "language": "Language"
+    "language": "Language",
+    "home": "Home",
+    "newArrivals": "New in",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "menu": "Menu",
+    "categories": "Categories",
+    "toHome": "Mariya Underwear — home",
+    "cartCount": "Cart, items: {count}"
   },
   "Footer": {
-    "rights": "All rights reserved."
+    "rights": "All rights reserved",
+    "info": "Info",
+    "catalog": "Catalog",
+    "newArrivals": "New in",
+    "cart": "Cart",
+    "contacts": "Contacts",
+    "cooperation": "Partnership",
+    "care": "Care",
+    "social": "Social media",
+    "offer": "Terms of sale",
+    "privacy": "Privacy policy",
+    "faq": "FAQ",
+    "toTop": "Back to top"
   },
   "Home": {
-    "tagline1": "Nightgowns, loungewear, elegant dresses.",
-    "tagline2": "The new collection is now in the catalog.",
-    "toCatalog": "Go to catalog"
+    "search": "Search",
+    "searchLabel": "Search products",
+    "heroTitle1": "New",
+    "heroTitle2": "collection",
+    "heroSeason": "Summer",
+    "toShop": "Shop now",
+    "newArrivals": "New in",
+    "seeAll": "See all",
+    "careTitle": "Product care",
+    "careText": "Proper care keeps the fabric soft and the garment in shape. Gentle wash at 30°, no bleach, dry flat — and your pieces will stay like new for a long time.",
+    "fabrics": {
+      "silk": "Silk",
+      "cotton": "Cotton",
+      "micromodal": "Micromodal"
+    }
   },
   "Catalog": {
     "title": "Catalog",
     "count": "{count, plural, one {# product} other {# products}}",
-    "all": "All",
-    "empty": "No products found."
+    "all": "All products",
+    "empty": "No products found.",
+    "newArrivals": "New in",
+    "home": "Home",
+    "breadcrumbs": "Breadcrumbs",
+    "search": "Search",
+    "searchLabel": "Search products",
+    "searchFor": "Search “{q}”: "
   },
   "Product": {
     "backToCatalog": "← Back to catalog",
@@ -42,41 +82,63 @@
     "image": "Image {n}",
     "decrease": "Decrease quantity",
     "increase": "Increase quantity",
-    "buy": "Buy",
     "added": "Added ✓",
-    "quickOrder": "Quick order",
-    "description": "Description",
-    "specs": "Details",
-    "care": "Care",
-    "related": "Similar products"
+    "related": "Frequently bought together",
+    "addToCart": "Add to cart",
+    "outOfStock": "Out of stock",
+    "zoom": "Zoom photo",
+    "quantity": "Quantity",
+    "oneClick": "Buy in 1 click",
+    "careTitle": "Washing instructions"
   },
   "SizeChart": {
-    "title": "Size chart"
+    "title": "Size chart",
+    "trigger": "Size chart | How to choose a size"
   },
   "Cart": {
     "thanks": "Thank you for your order!",
     "thanksText": "We'll be in touch shortly.",
-    "backToCatalog": "Back to catalog",
-    "empty": "Your cart is empty",
     "toCatalog": "Go to catalog",
+    "empty": "Your cart is empty",
     "yourOrder": "Your order:",
-    "color": "Color: {color}",
-    "size": "Size: {size}",
     "decrease": "Decrease quantity",
     "increase": "Increase quantity",
-    "remove": "Remove",
-    "sum": "Subtotal: {sum}",
-    "total": "Total: {sum}",
-    "name": "Full name",
-    "namePlaceholder": "Jane Smith",
-    "phone": "Phone number",
-    "phonePlaceholder": "+380 (00) 000-00-00",
     "city": "City",
-    "cityPlaceholder": "Kyiv",
+    "error": "Something went wrong. Please try again or contact us.",
     "branch": "Nova Poshta branch number",
-    "branchPlaceholder": "e.g. 1",
-    "submit": "Place order",
-    "error": "Something went wrong. Please try again or contact us."
+    "title": "Cart",
+    "summary": "Summary",
+    "checkout": "Checkout",
+    "subtotal": "Subtotal",
+    "delivery": "Delivery",
+    "deliveryCost": "at Nova Poshta rates",
+    "total": "Total",
+    "remove": "Remove {title}",
+    "backToCart": "Back to cart",
+    "checkoutTitle": "Checkout",
+    "steps": {
+      "label": "Checkout steps",
+      "info": "Information",
+      "shipping": "Shipping",
+      "payment": "Payment"
+    },
+    "contacts": "Contact details",
+    "contactsShort": "Contacts",
+    "phone": "Phone",
+    "phonePlaceholder": "Phone, +380…",
+    "emailPlaceholder": "Email (optional)",
+    "recipient": "Recipient",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "shippingTitle": "Nova Poshta delivery",
+    "branchPlaceholder": "Branch no.",
+    "comment": "Comment",
+    "commentPlaceholder": "Order comment",
+    "review": "Review your details",
+    "deliverySummary": "Nova Poshta, {city}, branch {branch}",
+    "change": "Change",
+    "paymentNote": "Our manager will confirm the payment method when they call to confirm your order.",
+    "confirm": "Confirm"
   },
   "QuickOrder": {
     "title": "Quick order",
@@ -95,5 +157,39 @@
     "title": "Page not found",
     "text": "It may have been removed, or the address was mistyped.",
     "toCatalog": "Go to catalog"
+  },
+  "Filters": {
+    "title": "Filters",
+    "size": "Size",
+    "stock": "Availability",
+    "stockOptions": {
+      "in": "In stock",
+      "out": "Out of stock"
+    },
+    "color": "Color",
+    "price": "Price",
+    "priceFrom": "Price from",
+    "priceTo": "Price to",
+    "fromValue": "from {value}",
+    "toValue": "to {value}",
+    "reset": "Clear filters",
+    "sort": "Sort",
+    "sortOptions": {
+      "new": "Newest",
+      "price-asc": "Price: low to high",
+      "price-desc": "Price: high to low"
+    }
+  },
+  "Lightbox": {
+    "viewer": "Photo viewer",
+    "prev": "Previous photo",
+    "next": "Next photo"
+  },
+  "OrderApi": {
+    "invalid": "Invalid data",
+    "unavailable": "Product unavailable or invalid quantity",
+    "outOfStock": "Out of stock: {title}",
+    "outOfStockSize": "Out of stock: {title}, size {size}",
+    "notEnough": "Not enough in stock: {title}, size {size} ({stock} left)"
   }
 }

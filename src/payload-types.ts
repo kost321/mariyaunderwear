@@ -149,6 +149,10 @@ export interface Product {
    * Може повторюватися — напр. у різних кольорів однієї моделі однаковий артикул.
    */
   sku?: string | null;
+  /**
+   * Внутрішнє поле для адмінки. Не показується на сайті.
+   */
+  wholesalePrice?: number | null;
   category: number | Category;
   /**
    * Оберіть модель, щоб зв'язати цей колір з іншими кольорами того самого товару. Порожньо — товар без варіантів кольору. Моделі створюються у розділі «Каталог → Моделі».
@@ -187,6 +191,10 @@ export interface Product {
   sizes?:
     | {
         value: string;
+        /**
+         * Заповнюється імпортом із Торгсофт. Порожньо або 0 — розміру немає в наявності (на сайті закреслений).
+         */
+        stock?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -229,6 +237,7 @@ export interface Category {
 export interface Media {
   id: number;
   alt?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -304,6 +313,7 @@ export interface User {
   resetPasswordExpiration?: string | null;
   salt?: string | null;
   hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
   sessions?:
@@ -416,6 +426,7 @@ export interface ProductsSelect<T extends boolean = true> {
   active?: T;
   price?: T;
   sku?: T;
+  wholesalePrice?: T;
   category?: T;
   model?: T;
   colorName?: T;
@@ -434,6 +445,7 @@ export interface ProductsSelect<T extends boolean = true> {
     | T
     | {
         value?: T;
+        stock?: T;
         id?: T;
       };
   colors?:
@@ -500,6 +512,7 @@ export interface OrdersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -525,6 +538,7 @@ export interface UsersSelect<T extends boolean = true> {
   resetPasswordExpiration?: T;
   salt?: T;
   hash?: T;
+  resetPasswordRequestedAt?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:

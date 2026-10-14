@@ -7,6 +7,7 @@ import * as migration_20260920_160352_care_html from './20260920_160352_care_htm
 import * as migration_20260924_180000_sizes_stock_wholesale_price from './20260924_180000_sizes_stock_wholesale_price';
 import * as migration_20260928_120000_products_images_cascade from './20260928_120000_products_images_cascade';
 import * as migration_20261011_120000_payload_3_90_columns from './20261011_120000_payload_3_90_columns';
+import * as migration_20260923_120000_localization from './20260923_120000_localization';
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20261011_120000_payload_3_90_columns.up,
     down: migration_20261011_120000_payload_3_90_columns.down,
     name: '20261011_120000_payload_3_90_columns',
+  },
+  {
+    up: migration_20260923_120000_localization.up,
+    down: migration_20260923_120000_localization.down,
+    name: '20260923_120000_localization',
   },
 ];

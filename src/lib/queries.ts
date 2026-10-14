@@ -3,15 +3,22 @@ import 'server-only'
 import type { Where } from 'payload'
 import { getPayload } from './payload'
 import type { Product, Category } from '@/payload-types'
+import type { Locale } from '@/i18n/routing'
 
 /**
  * Data access layer. All product/category queries go through these
  * functions, so the frontend does not know Payload details and the filtering rules
  * (for example, only active) live in one place.
+ *
+ * Language: localized fields (title, descriptions, alt) are returned in `locale`;
+ * if a translation is empty, Ukrainian is used (fallbackLocale).
  */
 
+const FALLBACK_LOCALE = 'uk' satisfies Locale
+
 /** Get the list of active products (for the catalog). */
-export async function getProducts(options?: {
+export async function getProducts(options: {
+  locale: Locale
   categorySlug?: string
   /** Search by title (case-insensitive). */
   q?: string
@@ -25,19 +32,21 @@ export async function getProducts(options?: {
   }
 
   // Optional filtering by category via its slug.
-  if (options?.categorySlug) {
+  if (options.categorySlug) {
     where['category.slug'] = { equals: options.categorySlug }
   }
 
-  if (options?.q?.trim()) {
+  if (options.q?.trim()) {
     where.title = { like: options.q.trim() }
   }
 
   const result = await payload.find({
     collection: 'products',
     where,
-    limit: options?.limit ?? 100,
+    limit: options.limit ?? 100,
     sort: '-createdAt',
+    locale: options.locale,
+    fallbackLocale: FALLBACK_LOCALE,
     // depth: 2 pulls related media and category in as objects,
     // not just their ids.
     depth: 2,
@@ -50,7 +59,10 @@ export async function getProducts(options?: {
 }
 
 /** Get one product by slug (for the product page). */
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export async function getProductBySlug(
+  slug: string,
+  locale: Locale,
+): Promise<Product | null> {
   const payload = await getPayload()
 
   const result = await payload.find({
@@ -61,6 +73,8 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     },
     limit: 1,
     depth: 2,
+    locale,
+    fallbackLocale: FALLBACK_LOCALE,
   })
 
   return result.docs[0] ?? null
@@ -74,6 +88,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
  */
 export async function getColorVariants(
   modelId: number | string,
+  locale: Locale,
 ): Promise<Product[]> {
   if (!modelId) return []
 
@@ -88,13 +103,15 @@ export async function getColorVariants(
     limit: 20,
     sort: 'createdAt',
     depth: 1,
+    locale,
+    fallbackLocale: FALLBACK_LOCALE,
   })
 
   return result.docs
 }
 
 /** Get all categories (for the menu/filter). */
-export async function getCategories(): Promise<Category[]> {
+export async function getCategories(locale: Locale): Promise<Category[]> {
   const payload = await getPayload()
 
   const result = await payload.find({
@@ -102,6 +119,8 @@ export async function getCategories(): Promise<Category[]> {
     limit: 100,
     sort: 'title',
     depth: 1,
+    locale,
+    fallbackLocale: FALLBACK_LOCALE,
   })
 
   return result.docs

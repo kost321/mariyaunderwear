@@ -44,6 +44,19 @@ export default buildConfig({
     fallbackLanguage: 'uk',
   },
 
+  // Content languages (product titles/descriptions). On the product page in the admin
+  // there is a language switcher in the document header. Empty translation → fallback to uk.
+  // The list of languages must match src/i18n/routing.ts.
+  localization: {
+    locales: [
+      { code: 'uk', label: 'Українська' },
+      { code: 'pl', label: 'Polski' },
+      { code: 'en', label: 'English' },
+    ],
+    defaultLocale: 'uk',
+    fallback: true,
+  },
+
   // Register all collections.
   collections: [Products, ProductModels, Categories, Orders, Media, Users],
 

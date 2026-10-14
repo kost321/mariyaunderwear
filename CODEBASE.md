@@ -9,7 +9,7 @@ Payload runs inside the Next.js app, so the storefront, admin panel and API are 
 
 | File | Purpose |
 |------|---------|
-| `next.config.mjs` | Next.js config: allowed image domains (Cloudinary), `withPayload` wrapper |
+| `next.config.mjs` | Next.js config: allowed image domains (Cloudinary), `/uk` → `/ua` redirects, `withNextIntl` + `withPayload` wrappers |
 | `package.json` | Dependencies and scripts: `dev`, `build`, `start` (runs DB migrations before starting) |
 | `railway.toml` | Railway deploy config; start command `sh scripts/start.sh` |
 | `scripts/start.sh` | Start script: `payload migrate` first, then `next start` |
@@ -61,17 +61,27 @@ A custom admin page and sidebar link for importing prices and per-size stock fro
 
 ---
 
-## Storefront `src/app/(frontend)/`
+## Multilingual site (uk / pl / en)
 
-The public part of the site.
+- **URLs:** every storefront page lives under a language prefix: `/ua/…`, `/pl/…`, `/en/…`. Ukrainian uses `/ua` in the address, but the language code is `uk` everywhere (Payload, hreflang, `<html lang>`). Prefixes are defined in `src/i18n/routing.ts`; build paths with `localePath()`. `src/middleware.ts` (next-intl) redirects `/` and unprefixed paths: `NEXT_LOCALE` cookie (set by the switcher, kept for a year) → browser language → Ukrainian. `/uk/…` redirects to `/ua/…` (`next.config.mjs`). The middleware does not touch `/admin` and `/api`.
+- **UI text:** `src/messages/{uk,pl,en}.json`. In components use `useTranslations('Ns')` / `getTranslations('Ns')`; keys are typed (`src/global.d.ts`), so a wrong key is a TS error. New text → add the key to all three files.
+- **Links:** import `Link`, `useRouter`, `usePathname` from `@/i18n/navigation` (not `next/link`); they add the language prefix.
+- **Content (Payload `localization`):** localized fields are title, color, description, specs, size chart, care (Products), title (Categories), alt (Media). In the admin, the language is switched in the document header. Title is required only in Ukrainian (`src/lib/localization.ts`); an empty translation shows the Ukrainian value on the site (`fallbackLocale: 'uk'` in `lib/queries.ts`). The slug is shared by all languages.
+- **Orders** (`api/order`) are saved and emailed to the manager in Ukrainian regardless of the site language; only the errors shown to the customer use their language.
+- **Language list** is defined in two places, `src/i18n/routing.ts` and `localization` in `payload.config.ts`; change them together (+ a migration for the `_locales` enum).
 
-- **`layout.tsx`**: shared layout (Header, Footer, CartProvider) and site-wide SEO metadata.
-- **`page.tsx`**: home page: hero, collection tabs, "our approach" block. Rendered on every request.
+## Storefront `src/app/(frontend)/[locale]/`
+
+The public part of the site. `api/order/route.ts` and `globals.css` live outside `[locale]`.
+
+- **`layout.tsx`**: shared layout (`<html lang={locale}>`, `NextIntlClientProvider`, Header with `LanguageSwitcher`, Footer, CartProvider) and site-wide SEO metadata (hreflang via `lib/seo.ts`, og:locale).
+- **`page.tsx`**: home page: hero, new arrivals, care block. Rendered on every request.
 - **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, price and sorting are applied in memory (`lib/catalog.ts`).
-- **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams`, `generateMetadata`, canonical URL and JSON-LD `Product` markup.
+- **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams` (every language × every slug), `generateMetadata`, canonical URL + hreflang and JSON-LD `Product` markup.
 - **`cart/page.tsx`**: cart and checkout.
+- **`not-found.tsx`, `[...rest]/page.tsx`**: localized 404.
 - **`api/order/route.ts`**: order endpoint. Validates input, rate-limits by IP, re-reads prices and stock from the database, saves the order and emails the owner.
-- **`src/app/robots.ts`, `src/app/sitemap.ts`**: `robots.txt` and `sitemap.xml`.
+- **`src/app/robots.ts`, `src/app/sitemap.ts`**: `robots.txt` and `sitemap.xml` (every page in every language with hreflang).
 
 ## Payload `src/app/(payload)/`
 
@@ -88,7 +98,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 ## Components `src/components/`
 
-- **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `RichText`, `ScrollToTop`.
+- **`shop/`**: storefront components: `Header`, `LanguageSwitcher`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `RichText`, `ScrollToTop`.
 - **`shop/catalog/`**: `CatalogFilters`.
 - **`shop/home/`**: `HeroSection`, `ProductSlider`, `ArrowButton`.
 - **`ui/button.tsx`**: base button with style variants (CVA).
@@ -109,7 +119,8 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 | `slug.ts` | Slug generation with Cyrillic transliteration |
 | `torgsoftImport.ts` | Parses and applies a Torgsoft export |
 | `torgsoftImportEndpoint.ts` | `POST /api/torgsoft-import` (admins only) |
-| `utils.ts` | `formatPrice` (hryvnias), `cn` (class merging) |
+| `seo.ts` | `alternates()`: canonical + hreflang for a page that exists in every language |
+| `utils.ts` | `formatPrice(value, currency)` (hryvnias; currency label from `t('Common.currency')`), `cn` (class merging) |
 
 ## Migrations `src/migrations/`
 
@@ -124,11 +135,11 @@ SQL migrations run by `payload migrate` when the server starts on Railway. In pr
 ## Data flow
 
 ```
-Customer opens /catalog
+Customer opens /ua/catalog
         ↓
 catalog/page.tsx (Server Component)
         ↓
-queries.ts → getProducts()
+queries.ts → getProducts({ locale })
         ↓
 Payload Local API → PostgreSQL
         ↓

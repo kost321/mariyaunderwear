@@ -1,0 +1,195 @@
+{
+  "Meta": {
+    "siteTitle": "Mariya Underwear — women's clothing store",
+    "siteDescription": "Mariya Underwear, an online store of women's clothing: nightgowns, pajamas, robes and sets.",
+    "catalogTitle": "Catalog",
+    "catalogDescription": "The Mariya Underwear catalog: nightgowns, pajamas, robes and sets.",
+    "cartTitle": "Cart",
+    "productNotFound": "Product not found",
+    "productDescription": "{title}: buy online at Mariya Underwear."
+  },
+  "Common": {
+    "currency": "UAH",
+    "noPhoto": "no photo",
+    "close": "Close",
+    "sending": "Sending…",
+    "prev": "Back",
+    "next": "Forward"
+  },
+  "Header": {
+    "catalog": "Catalog",
+    "cart": "Cart",
+    "language": "Language",
+    "home": "Home",
+    "newArrivals": "New in",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "menu": "Menu",
+    "categories": "Categories",
+    "toHome": "Mariya Underwear — home",
+    "cartCount": "Cart, items: {count}"
+  },
+  "Footer": {
+    "rights": "All rights reserved",
+    "info": "Info",
+    "catalog": "Catalog",
+    "newArrivals": "New in",
+    "cart": "Cart",
+    "contacts": "Contacts",
+    "cooperation": "Partnership",
+    "care": "Care",
+    "social": "Social media",
+    "offer": "Terms of sale",
+    "privacy": "Privacy policy",
+    "faq": "FAQ",
+    "toTop": "Back to top"
+  },
+  "Home": {
+    "search": "Search",
+    "searchLabel": "Search products",
+    "heroTitle1": "New",
+    "heroTitle2": "collection",
+    "heroSeason": "Summer",
+    "toShop": "Shop now",
+    "newArrivals": "New in",
+    "seeAll": "See all",
+    "careTitle": "Product care",
+    "careText": "Proper care keeps the fabric soft and the garment in shape. Gentle wash at 30°, no bleach, dry flat — and your pieces will stay like new for a long time.",
+    "fabrics": {
+      "silk": "Silk",
+      "cotton": "Cotton",
+      "micromodal": "Micromodal"
+    }
+  },
+  "Catalog": {
+    "title": "Catalog",
+    "count": "{count, plural, one {# product} other {# products}}",
+    "all": "All products",
+    "empty": "No products found.",
+    "newArrivals": "New in",
+    "home": "Home",
+    "breadcrumbs": "Breadcrumbs",
+    "search": "Search",
+    "searchLabel": "Search products",
+    "searchFor": "Search “{q}”: "
+  },
+  "Product": {
+    "backToCatalog": "← Back to catalog",
+    "sku": "SKU: {sku}",
+    "size": "Size",
+    "color": "Color",
+    "selected": "{label} (selected)",
+    "image": "Image {n}",
+    "decrease": "Decrease quantity",
+    "increase": "Increase quantity",
+    "added": "Added ✓",
+    "related": "Frequently bought together",
+    "addToCart": "Add to cart",
+    "outOfStock": "Out of stock",
+    "zoom": "Zoom photo",
+    "quantity": "Quantity",
+    "oneClick": "Buy in 1 click",
+    "careTitle": "Washing instructions"
+  },
+  "SizeChart": {
+    "title": "Size chart",
+    "trigger": "Size chart | How to choose a size"
+  },
+  "Cart": {
+    "thanks": "Thank you for your order!",
+    "thanksText": "We'll be in touch shortly.",
+    "toCatalog": "Go to catalog",
+    "empty": "Your cart is empty",
+    "yourOrder": "Your order:",
+    "decrease": "Decrease quantity",
+    "increase": "Increase quantity",
+    "city": "City",
+    "error": "Something went wrong. Please try again or contact us.",
+    "branch": "Nova Poshta branch number",
+    "title": "Cart",
+    "summary": "Summary",
+    "checkout": "Checkout",
+    "subtotal": "Subtotal",
+    "delivery": "Delivery",
+    "deliveryCost": "at Nova Poshta rates",
+    "total": "Total",
+    "remove": "Remove {title}",
+    "backToCart": "Back to cart",
+    "checkoutTitle": "Checkout",
+    "steps": {
+      "label": "Checkout steps",
+      "info": "Information",
+      "shipping": "Shipping",
+      "payment": "Payment"
+    },
+    "contacts": "Contact details",
+    "contactsShort": "Contacts",
+    "phone": "Phone",
+    "phonePlaceholder": "Phone, +380…",
+    "emailPlaceholder": "Email (optional)",
+    "recipient": "Recipient",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "shippingTitle": "Nova Poshta delivery",
+    "branchPlaceholder": "Branch no.",
+    "comment": "Comment",
+    "commentPlaceholder": "Order comment",
+    "review": "Review your details",
+    "deliverySummary": "Nova Poshta, {city}, branch {branch}",
+    "change": "Change",
+    "paymentNote": "Our manager will confirm the payment method when they call to confirm your order.",
+    "confirm": "Confirm"
+  },
+  "QuickOrder": {
+    "title": "Quick order",
+    "thanks": "Thank you!",
+    "thanksText": "We'll contact you shortly to confirm your order.",
+    "size": "size {size}",
+    "pcs": "{count} pcs",
+    "name": "Name",
+    "phone": "Phone",
+    "phonePlaceholder": "+380",
+    "submit": "Order now",
+    "required": "Please enter your name and phone number.",
+    "error": "Something went wrong. Please try again or call us."
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "text": "It may have been removed, or the address was mistyped.",
+    "toCatalog": "Go to catalog"
+  },
+  "Filters": {
+    "title": "Filters",
+    "size": "Size",
+    "stock": "Availability",
+    "stockOptions": {
+      "in": "In stock",
+      "out": "Out of stock"
+    },
+    "color": "Color",
+    "price": "Price",
+    "priceFrom": "Price from",
+    "priceTo": "Price to",
+    "fromValue": "from {value}",
+    "toValue": "to {value}",
+    "reset": "Clear filters",
+    "sort": "Sort",
+    "sortOptions": {
+      "new": "Newest",
+      "price-asc": "Price: low to high",
+      "price-desc": "Price: high to low"
+    }
+  },
+  "Lightbox": {
+    "viewer": "Photo viewer",
+    "prev": "Previous photo",
+    "next": "Next photo"
+  },
+  "OrderApi": {
+    "invalid": "Invalid data",
+    "unavailable": "Product unavailable or invalid quantity",
+    "outOfStock": "Out of stock: {title}",
+    "outOfStockSize": "Out of stock: {title}, size {size}",
+    "notEnough": "Not enough in stock: {title}, size {size} ({stock} left)"
+  }
+}

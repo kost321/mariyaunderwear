@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { ChevronRight } from 'lucide-react'
 import type { CatalogFacets, CatalogParams } from '@/lib/catalog'
 import { cn } from '@/lib/utils'
@@ -55,13 +56,11 @@ function Section({
   )
 }
 
-const STOCK_OPTIONS = [
-  { value: 'in', label: 'В наявності' },
-  { value: 'out', label: 'Немає в наявності' },
-] as const
+const STOCK_OPTIONS = ['in', 'out'] as const
 
 /** Left filter panel: size, availability, color, price. On mobile it expands with a button. */
 export function FilterPanel({ params, facets }: { params: CatalogParams; facets: CatalogFacets }) {
+  const t = useTranslations('Filters')
   const { update, pending } = useUpdateParams()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [min, setMin] = useState(params.min?.toString() ?? '')
@@ -78,7 +77,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
         aria-expanded={mobileOpen}
         className="flex items-center gap-3 font-serif text-base tracking-[2px] text-ink lg:pointer-events-none"
       >
-        Фільтри
+        {t('title')}
         {activeCount > 0 && <span className="font-script text-lg text-pink">({activeCount})</span>}
         <ChevronRight
           className={cn('h-4 w-4 transition-transform lg:hidden', mobileOpen && 'rotate-90')}
@@ -89,7 +88,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
       <div className={cn('mt-6 lg:block', mobileOpen ? 'block' : 'hidden')}>
         {facets.sizes.length > 0 && (
           <div className="border-b border-dashed border-[#c9c9c9] pb-5">
-            <p className="text-sm tracking-[2px] text-brown">Розмір</p>
+            <p className="text-sm tracking-[2px] text-brown">{t('size')}</p>
             <div className="mt-3 flex flex-wrap gap-1">
               {facets.sizes.map((size) => {
                 const on = params.sizes.includes(size)
@@ -112,19 +111,19 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
           </div>
         )}
 
-        <Section title="Наявність" defaultOpen={Boolean(params.stock)}>
+        <Section title={t('stock')} defaultOpen={Boolean(params.stock)}>
           <ul className="flex flex-col gap-3">
             {STOCK_OPTIONS.map((option) => (
-              <li key={option.value}>
+              <li key={option}>
                 <label className="flex cursor-pointer items-center gap-3 text-xs tracking-[2px] text-ink">
                   <input
                     type="checkbox"
-                    checked={params.stock === option.value}
-                    onChange={() => update({ stock: params.stock === option.value ? undefined : option.value })}
+                    checked={params.stock === option}
+                    onChange={() => update({ stock: params.stock === option ? undefined : option })}
                     className="h-[22px] w-[22px] shrink-0 appearance-none border border-[#a3a3a3] bg-white checked:border-ink checked:bg-ink"
                   />
-                  {option.label}
-                  <span className="text-brown/50">({facets.stock[option.value]})</span>
+                  {t(`stockOptions.${option}`)}
+                  <span className="text-brown/50">({facets.stock[option]})</span>
                 </label>
               </li>
             ))}
@@ -132,7 +131,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
         </Section>
 
         {facets.colors.length > 0 && (
-          <Section title="Колір" defaultOpen={params.colors.length > 0}>
+          <Section title={t('color')} defaultOpen={params.colors.length > 0}>
             <ul className="flex flex-col gap-3">
               {facets.colors.map((color) => {
                 const on = params.colors.includes(color.name)
@@ -157,7 +156,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
           </Section>
         )}
 
-        <Section title="Ціна" defaultOpen={Boolean(params.min || params.max)}>
+        <Section title={t('price')} defaultOpen={Boolean(params.min || params.max)}>
           <form
             className="flex items-center gap-2"
             onSubmit={(e) => {
@@ -166,8 +165,8 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
             }}
           >
             {[
-              { value: min, set: setMin, placeholder: `від ${facets.priceMin}`, label: 'Ціна від' },
-              { value: max, set: setMax, placeholder: `до ${facets.priceMax}`, label: 'Ціна до' },
+              { value: min, set: setMin, placeholder: t('fromValue', { value: facets.priceMin }), label: t('priceFrom') },
+              { value: max, set: setMax, placeholder: t('toValue', { value: facets.priceMax }), label: t('priceTo') },
             ].map((f) => (
               <input
                 key={f.label}
@@ -197,7 +196,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
             }}
             className="mt-4 text-xs tracking-[1px] text-brown/60 underline-offset-4 hover:underline"
           >
-            Скинути фільтри
+            {t('reset')}
           </button>
         )}
       </div>
@@ -205,26 +204,23 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
   )
 }
 
-const SORT_OPTIONS: { value: CatalogParams['sort']; label: string }[] = [
-  { value: 'new', label: 'Спочатку нові' },
-  { value: 'price-asc', label: 'Від дешевих' },
-  { value: 'price-desc', label: 'Від дорогих' },
-]
+const SORT_OPTIONS = ['new', 'price-asc', 'price-desc'] as const satisfies CatalogParams['sort'][]
 
 /** Sorting in the design's style: "Sort(-)" and the options under it. */
 export function SortSelect({ value }: { value: CatalogParams['sort'] }) {
+  const t = useTranslations('Filters')
   const { update } = useUpdateParams()
   return (
     <label className="flex items-center gap-2 text-sm text-ink">
-      <span className="hidden sm:inline">Сортування</span>
+      <span className="hidden sm:inline">{t('sort')}</span>
       <select
         value={value}
         onChange={(e) => update({ sort: e.target.value === 'new' ? undefined : e.target.value })}
         className="cursor-pointer bg-transparent text-sm text-brown/70 focus:outline-none"
       >
         {SORT_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
+          <option key={o} value={o}>
+            {t(`sortOptions.${o}`)}
           </option>
         ))}
       </select>

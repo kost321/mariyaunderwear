@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { formatSlug } from '@/lib/slug'
+import { requiredInDefaultLocale } from '@/lib/localization'
 
 /**
  * Products: store products.
@@ -39,7 +40,12 @@ export const Products: CollectionConfig = {
       name: 'title',
       label: 'Назва',
       type: 'text',
-      required: true,
+      localized: true,
+      // Обов'язкова лише українською — див. requiredInDefaultLocale.
+      validate: requiredInDefaultLocale,
+      admin: {
+        description: "Обов'язково українською. PL/EN — за бажанням: порожньо — на сайті буде українська назва.",
+      },
     },
     {
       name: 'slug',
@@ -124,6 +130,7 @@ export const Products: CollectionConfig = {
       name: 'colorName',
       label: 'Назва цього кольору',
       type: 'text',
+      localized: true,
       admin: {
         position: 'sidebar',
         description: 'Напр. "Молочний". Показується у перемикачі кольорів.',
@@ -147,6 +154,7 @@ export const Products: CollectionConfig = {
           name: 'description',
           label: 'Опис',
           type: 'textarea',
+          localized: true,
           admin: {
             description:
               'Опис товару у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>, таблиці. Показується в акордеоні «Опис» на сторінці товару. Порожньо — секція не показується.',
@@ -164,6 +172,7 @@ export const Products: CollectionConfig = {
           name: 'descriptionHtml',
           label: 'Характеристика',
           type: 'textarea',
+          localized: true,
           admin: {
             description:
               'Характеристики товару у форматі HTML — текст, списки, таблиця <table>…</table>. Показується в акордеоні «Характеристика» на сторінці товару. Порожньо — секція не показується.',
@@ -181,6 +190,7 @@ export const Products: CollectionConfig = {
           name: 'sizeChartHtml',
           label: 'Розмірна таблиця (HTML)',
           type: 'textarea',
+          localized: true,
           admin: {
             description:
               'Готовий HTML з таблицею розмірів для цього товару. На сторінці товару поруч із вибором розміру з\'явиться посилання «Розмірна таблиця», яке відкриває це у модальному вікні. Порожньо — посилання не показується.',
@@ -198,6 +208,7 @@ export const Products: CollectionConfig = {
           name: 'careHtml',
           label: 'Догляд',
           type: 'textarea',
+          localized: true,
           admin: {
             description:
               'Рекомендації з догляду за товаром у форматі HTML — абзаци <p>…</p>, списки <ul><li>…</li></ul>. Показується в акордеоні «Догляд» на сторінці товару. Порожньо — секція не показується.',

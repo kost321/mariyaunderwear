@@ -1,19 +1,21 @@
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import { ScrollToTop } from './ScrollToTop'
 
 // Items without `href` have no page yet: they are shown as plain text until the pages exist.
-const INFO_LINKS: { label: string; href?: string }[] = [
-  { href: '/catalog', label: 'Каталог' },
-  { href: '/catalog?sort=new', label: 'Новинки' },
-  { href: '/cart', label: 'Кошик' },
-  { label: 'Контакти' },
-  { label: 'Співпраця' },
-  { href: '/#care', label: 'Догляд' },
-  { label: 'Соцмережі' },
-  { label: 'Договір публічної оферти' },
-  { label: 'Політика конфіденційності' },
-  { label: 'FAQ' },
-]
+// `key` is the label key in the Footer dictionary.
+const INFO_LINKS = [
+  { href: '/catalog', key: 'catalog' },
+  { href: '/catalog?sort=new', key: 'newArrivals' },
+  { href: '/cart', key: 'cart' },
+  { key: 'contacts' },
+  { key: 'cooperation' },
+  { href: '/#care', key: 'care' },
+  { key: 'social' },
+  { key: 'offer' },
+  { key: 'privacy' },
+  { key: 'faq' },
+] as const satisfies { key: string; href?: string }[]
 
 /** List of links separated by "/", as in the design. */
 function SlashList({ items }: { items: { label: string; href?: string }[] }) {
@@ -36,6 +38,7 @@ function SlashList({ items }: { items: { label: string; href?: string }[] }) {
 }
 
 export function Footer() {
+  const t = useTranslations('Footer')
   const year = new Date().getFullYear()
 
   return (
@@ -43,14 +46,14 @@ export function Footer() {
       <div className="container flex min-h-[420px] flex-col lg:min-h-[628px]">
         <div className="flex flex-col gap-12 pt-16 lg:pl-[117px] lg:pt-[126px]">
           <section className="flex flex-col gap-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.4px] text-pink opacity-40">Інфо</p>
-            <SlashList items={INFO_LINKS} />
+            <p className="text-[10px] font-bold uppercase tracking-[0.4px] text-pink opacity-40">{t('info')}</p>
+            <SlashList items={INFO_LINKS.map((item) => ({ ...item, label: t(item.key) }))} />
           </section>
         </div>
 
         <div className="mt-auto flex flex-col gap-2 pb-6 pt-16 text-[10px] font-medium lowercase text-sand/40 sm:flex-row sm:justify-center sm:gap-24">
           <p>© {year} — Mariya Underwear</p>
-          <p>Всі права захищені</p>
+          <p>{t('rights')}</p>
         </div>
       </div>
 

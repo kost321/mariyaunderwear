@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 
 export type LightboxPhoto = { url: string; alt: string }
 
@@ -20,6 +21,8 @@ export function PhotoLightbox({
   onChange: (index: number) => void
   onClose: () => void
 }) {
+  const t = useTranslations('Lightbox')
+  const tc = useTranslations('Common')
   const touchStartX = useRef<number | null>(null)
   const count = photos.length
   const photo = photos[index]
@@ -62,13 +65,13 @@ export function PhotoLightbox({
       }}
       role="dialog"
       aria-modal="true"
-      aria-label="Перегляд фото"
+      aria-label={t('viewer')}
     >
       <button
         type="button"
         onClick={onClose}
         className="absolute right-4 top-4 z-10 flex h-12 w-12 items-center justify-center text-4xl leading-none text-white/80 hover:text-white"
-        aria-label="Закрити"
+        aria-label={tc('close')}
       >
         ×
       </button>
@@ -82,7 +85,7 @@ export function PhotoLightbox({
               go(-1)
             }}
             className={`${arrow} left-3 lg:left-8`}
-            aria-label="Попереднє фото"
+            aria-label={t('prev')}
           >
             ‹
           </button>
@@ -93,7 +96,7 @@ export function PhotoLightbox({
               go(1)
             }}
             className={`${arrow} right-3 lg:right-8`}
-            aria-label="Наступне фото"
+            aria-label={t('next')}
           >
             ›
           </button>

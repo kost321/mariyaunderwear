@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
+import { localePath } from '@/i18n/routing'
 import { ArrowButton } from './ArrowButton'
 
 export type HeroImage = { url: string; alt: string; href: string }
@@ -24,6 +26,8 @@ function Photo({ image, sizes, className }: { image?: HeroImage; sizes: string; 
  * and arrows that cycle through the photos.
  */
 export function HeroSection({ images }: { images: HeroImage[] }) {
+  const t = useTranslations('Home')
+  const locale = useLocale()
   const [offset, setOffset] = useState(0)
   const count = images.length
   // Four slots of the current "frame": 0-1 small on the left, 2-3 large on the right.
@@ -34,24 +38,24 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
   return (
     <section className="grid gap-8 lg:grid-cols-[397px_1fr_1fr] lg:gap-x-9">
       <div className="flex flex-col lg:h-[606px]">
-        <form action="/catalog" role="search" className="relative">
+        <form action={`${localePath(locale)}/catalog`} role="search" className="relative">
           <Image src="/brand/search.svg" alt="" width={17} height={16} className="absolute left-5 top-1/2 -translate-y-1/2" />
           <input
             type="search"
             name="q"
-            placeholder="Пошук"
-            aria-label="Пошук товарів"
+            placeholder={t('search')}
+            aria-label={t('searchLabel')}
             className="h-[50px] w-full rounded-card bg-cream/70 pl-12 pr-6 text-xs tracking-[2px] text-brown placeholder:text-right placeholder:text-brown focus:outline-none focus:ring-1 focus:ring-brown/40"
           />
         </form>
 
         <h1 className="mt-12 font-serif text-[40px] uppercase leading-[40px] tracking-[2px] text-ink-text lg:mt-[80px] lg:text-5xl">
-          Нова
+          {t('heroTitle1')}
           <br />
-          колекція
+          {t('heroTitle2')}
         </h1>
         <p className="mt-2 font-script text-xl leading-6 tracking-[2px] text-brown">
-          Літо
+          {t('heroSeason')}
           <br />
           2026
         </p>
@@ -66,7 +70,7 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
             href="/catalog"
             className="flex h-10 w-[265px] items-center justify-between rounded-card bg-cream/70 pl-7 pr-5 text-base text-brown transition-colors hover:bg-cream"
           >
-            До магазину
+            {t('toShop')}
             <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100" />
           </Link>
           {canScroll && (

@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { LanguageSwitcher } from '@/components/shop/LanguageSwitcher'
 
 export type MenuCategory = { slug: string; title: string }
 
@@ -21,6 +23,8 @@ export function MobileMenu({
   links: { href: string; label: string }[]
   categories: MenuCategory[]
 }) {
+  const t = useTranslations('Header')
+
   // Esc closes the menu; the page underneath does not scroll
   useEffect(() => {
     if (!open) return
@@ -42,13 +46,13 @@ export function MobileMenu({
       <aside
         role="dialog"
         aria-modal="true"
-        aria-label="Меню"
+        aria-label={t('menu')}
         className={cn(
           'absolute inset-y-0 left-0 flex w-[min(360px,85vw)] flex-col overflow-y-auto bg-white px-8 py-8 transition-transform duration-300',
           open ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <button type="button" onClick={onClose} className="-m-2 self-end p-2 text-brown" aria-label="Закрити меню">
+        <button type="button" onClick={onClose} className="-m-2 self-end p-2 text-brown" aria-label={t('closeMenu')}>
           <X className="h-6 w-6" strokeWidth={1.5} />
         </button>
 
@@ -62,7 +66,7 @@ export function MobileMenu({
 
         {categories.length > 0 && (
           <div className="mt-10">
-            <p className="text-[10px] font-bold uppercase tracking-[0.4px] text-pink">Категорії</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.4px] text-pink">{t('categories')}</p>
             <ul className="mt-4 flex flex-col gap-3 text-base tracking-[1px] text-brown">
               {categories.map((c) => (
                 <li key={c.slug}>
@@ -74,6 +78,10 @@ export function MobileMenu({
             </ul>
           </div>
         )}
+
+        <div className="mt-10">
+          <LanguageSwitcher />
+        </div>
       </aside>
     </div>
   )

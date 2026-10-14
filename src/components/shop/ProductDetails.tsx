@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { formatPrice, cn } from '@/lib/utils'
@@ -32,6 +33,8 @@ export function ProductDetails({
   /** Other color cards of the same model (linked by the model field). */
   colorVariants?: Product[]
 }) {
+  const t = useTranslations('Product')
+  const tc = useTranslations('Common')
   const { addItem } = useCart()
 
   const images = product.images ?? []
@@ -59,18 +62,18 @@ export function ProductDetails({
 
   const mainImage = images[activeImage]?.image
   const mainUrl = getMediaUrl(mainImage)
-  const mainAlt = getMediaAlt(mainImage, product.title)
+  const mainAlt = getMediaAlt(mainImage, product.title ?? '')
 
   // Photos for the full-screen viewer (skip entries without a file).
   const lightboxPhotos = images.flatMap((item) => {
     const url = getMediaUrl(item.image)
-    return url ? [{ url, alt: getMediaAlt(item.image, product.title) }] : []
+    return url ? [{ url, alt: getMediaAlt(item.image, product.title ?? '') }] : []
   })
 
   // Cart / quick-order line built from the current selection on the page.
   const selectedItem: CartItem = {
     productId: String(product.id),
-    title: product.title,
+    title: product.title ?? '',
     price: product.price,
     slug: product.slug ?? '',
     image: getMediaUrl(images[0]?.image),
@@ -111,7 +114,7 @@ export function ProductDetails({
         className,
       )}
     >
-      {allSoldOut ? 'Немає в наявності' : added ? 'Додано ✓' : 'Додати в кошик'}
+      {allSoldOut ? t('outOfStock') : added ? t('added') : t('addToCart')}
     </button>
   )
 
@@ -126,7 +129,7 @@ export function ProductDetails({
               type="button"
               onClick={() => setLightboxOpen(true)}
               className="absolute inset-0 cursor-zoom-in"
-              aria-label="Збільшити фото"
+              aria-label={t('zoom')}
             >
               <Image src={mainUrl} alt={mainAlt} fill priority quality={90} sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" />
             </button>
@@ -147,7 +150,7 @@ export function ProductDetails({
                     'h-[78px] w-16 shrink-0 transition-opacity',
                     i === activeImage ? 'opacity-100' : 'opacity-50 hover:opacity-80',
                   )}
-                  aria-label={`Фото ${i + 1}`}
+                  aria-label={t('image', { n: i + 1 })}
                   aria-current={i === activeImage}
                 >
                   {thumb && <Image src={thumb} alt="" fill quality={85} sizes="64px" className="object-cover" />}
@@ -161,22 +164,22 @@ export function ProductDetails({
       {/* PRODUCT CARD: framed on desktop, as in the design */}
       <div className="mt-8 lg:mt-0 lg:w-[340px] lg:border lg:border-brown lg:px-10 lg:pb-3 lg:pt-14">
         <h1 className="font-serif text-sm uppercase leading-[17px] tracking-[1px] text-ink">{product.title}</h1>
-        <p className="mt-3 text-sm tracking-[1px] text-brown">{formatPrice(product.price)}</p>
-        {product.sku && <p className="mt-6 text-xs tracking-[1px] text-brown/50">Артикул: {product.sku}</p>}
+        <p className="mt-3 text-sm tracking-[1px] text-brown">{formatPrice(product.price, tc('currency'))}</p>
+        {product.sku && <p className="mt-6 text-xs tracking-[1px] text-brown/50">{t('sku', { sku: product.sku })}</p>}
 
         {/* Colors: variant cards (navigate on click) */}
         {showVariantSwitch && (
           <div className="mt-10">
             <p className={label}>
-              Колір{product.colorName ? `: ${product.colorName}` : ''}
+              {t('color')}{product.colorName ? `: ${product.colorName}` : ''}
             </p>
             <div className="mt-3 flex flex-wrap gap-1">
               {colorVariants.map((v) => {
                 const isCurrent = v.id === product.id
-                const name = v.colorName ?? v.title
+                const name = v.colorName ?? v.title ?? ''
                 const style = { backgroundColor: v.colorHex ?? '#ddd' }
                 return isCurrent ? (
-                  <span key={v.id} title={name} aria-label={`${name} (обраний)`} aria-current="true" className={swatchClass(true)} style={style} />
+                  <span key={v.id} title={name} aria-label={t('selected', { label: name })} aria-current="true" className={swatchClass(true)} style={style} />
                 ) : (
                   <Link key={v.id} href={`/product/${v.slug}`} title={name} aria-label={name}>
                     <span className={swatchClass(false)} style={style} />
@@ -190,7 +193,7 @@ export function ProductDetails({
         {/* Colors: selection inside a single card (model not split into variants) */}
         {!showVariantSwitch && colors.length > 0 && (
           <div className="mt-10">
-            <p className={label}>Колір{color ? `: ${color}` : ''}</p>
+            <p className={label}>{t('color')}{color ? `: ${color}` : ''}</p>
             <div className="mt-3 flex flex-wrap gap-1">
               {colors.map((c) => (
                 <button
@@ -211,7 +214,7 @@ export function ProductDetails({
         {/* Sizes */}
         {sizes.length > 0 && (
           <div className="mt-5">
-            <p className={label}>Розмір</p>
+            <p className={label}>{t('size')}</p>
             <div className="mt-2 flex flex-wrap gap-1">
               {sizes.map((s) => (
                 <button
@@ -220,7 +223,7 @@ export function ProductDetails({
                   onClick={() => handleSelectSize(s.value, s.stock)}
                   disabled={soldOut(s)}
                   aria-pressed={size === s.value}
-                  title={soldOut(s) ? 'Немає в наявності' : undefined}
+                  title={soldOut(s) ? t('outOfStock') : undefined}
                   className={cn(
                     'flex h-9 min-w-[35px] items-center justify-center border px-1.5 text-[10px] transition-colors',
                     soldOut(s)
@@ -243,14 +246,14 @@ export function ProductDetails({
 
         {/* Quantity */}
         <div className="mt-5 flex items-center justify-between">
-          <p className={label}>Кількість</p>
+          <p className={label}>{t('quantity')}</p>
           <div className="flex items-center border border-[#a3a3a3] text-sm text-ink">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1}
               className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
-              aria-label="Зменшити кількість"
+              aria-label={t('decrease')}
             >
               −
             </button>
@@ -262,7 +265,7 @@ export function ProductDetails({
               onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
               disabled={quantity >= maxQuantity}
               className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
-              aria-label="Збільшити кількість"
+              aria-label={t('increase')}
             >
               +
             </button>
@@ -277,7 +280,7 @@ export function ProductDetails({
           disabled={allSoldOut}
           className="mt-2 h-10 w-full rounded-card border border-brown/40 text-xs uppercase tracking-[1px] text-brown transition-colors hover:border-brown disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Купити в 1 клік
+          {t('oneClick')}
         </button>
       </div>
 

@@ -1,4 +1,6 @@
-import Link from 'next/link'
+import type { Locale } from 'next-intl'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { Link } from '@/i18n/navigation'
 import type { Product } from '@/payload-types'
 import { getProducts } from '@/lib/queries'
 import { getMediaAlt, getMediaUrl } from '@/lib/media'
@@ -14,21 +16,28 @@ function toImage(product: Product): HeroImage | null {
   const media = product.images?.[0]?.image
   const url = getMediaUrl(media)
   if (!url) return null
-  return { url, alt: getMediaAlt(media, product.title), href: `/product/${product.slug}` }
+  return { url, alt: getMediaAlt(media, product.title ?? ''), href: `/product/${product.slug}` }
 }
 
 // "Product care" block: fabric cards in a staircase, as in the design. Even cards have the label above
 // the photo and are shifted down (32px / 63px from the row top), odd ones have it below.
 // TODO: the 4th fabric is a duplicate "бавовна" in the design, the client has to name it; photos are placeholders for now.
 const CARE_FABRICS = [
-  { name: 'Шовк', aspect: 'aspect-[317/389]', labelAbove: false, offset: '' },
-  { name: 'Бавовна', aspect: 'aspect-[317/419]', labelAbove: true, offset: 'mt-8' },
-  { name: 'Мікромасло', aspect: 'aspect-[317/419]', labelAbove: false, offset: '' },
-  { name: 'Бавовна', aspect: 'aspect-[317/389]', labelAbove: true, offset: 'mt-[63px]' },
-]
+  { name: 'silk', aspect: 'aspect-[317/389]', labelAbove: false, offset: '' },
+  { name: 'cotton', aspect: 'aspect-[317/419]', labelAbove: true, offset: 'mt-8' },
+  { name: 'micromodal', aspect: 'aspect-[317/419]', labelAbove: false, offset: '' },
+  { name: 'cotton', aspect: 'aspect-[317/389]', labelAbove: true, offset: 'mt-[63px]' },
+] as const
 
-export default async function HomePage() {
-  const products = await getProducts()
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>
+}) {
+  const { locale } = await params
+  setRequestLocale(locale)
+  const t = await getTranslations('Home')
+  const products = await getProducts({ locale })
 
   const withImages = products.filter((p) => getMediaUrl(p.images?.[0]?.image))
   const heroImages = withImages.slice(0, 8).map(toImage).filter((i): i is HeroImage => i !== null)
@@ -41,13 +50,13 @@ export default async function HomePage() {
       {newest.length > 0 && (
         <section>
           <h2 className="heading-section text-black">
-            Новинки
+            {t('newArrivals')}
             <span className="ml-2 align-top font-script text-xl normal-case text-pink">({newest.length})</span>
           </h2>
           {/* As in the design: "see all" on its own row under the heading, 70px from heading to cards */}
           <div className="mb-[9px] mt-[21px] flex justify-end">
             <Link href="/catalog?sort=new" className="text-base leading-10 text-brown/50 hover:text-brown">
-              Дивитись усі
+              {t('seeAll')}
             </Link>
           </div>
           <ProductSlider>
@@ -60,10 +69,9 @@ export default async function HomePage() {
 
       <section id="care" className="scroll-mt-8">
         <div className="text-center">
-          <h2 className="heading-section text-black">Догляд за виробами</h2>
+          <h2 className="heading-section text-black">{t('careTitle')}</h2>
           <p className="mx-auto mt-[13px] max-w-[685px] text-base leading-[18px] tracking-[2px] text-brown/50">
-            Правильний догляд зберігає м&apos;якість тканини та форму виробу. Ніжне прання при 30°, без відбілювачів,
-            сушіння в розправленому вигляді — і ваші речі довго залишатимуться як нові.
+            {t('careText')}
           </p>
         </div>
 
@@ -71,7 +79,7 @@ export default async function HomePage() {
         <div className="-mr-[var(--gutter)] mt-16 flex items-start gap-4 overflow-x-auto pr-[var(--gutter)] [scrollbar-width:none] lg:mt-[124px] lg:gap-9 [&::-webkit-scrollbar]:hidden">
           {CARE_FABRICS.map((fabric, i) => {
             const label = (
-              <p className="text-center font-serif text-[25px] uppercase leading-7 tracking-[2px] text-brown">{fabric.name}</p>
+              <p className="text-center font-serif text-[25px] uppercase leading-7 tracking-[2px] text-brown">{t(`fabrics.${fabric.name}`)}</p>
             )
             return (
               <div key={i} className={`flex w-[70vw] shrink-0 flex-col gap-3 sm:w-[317px] ${fabric.offset}`}>

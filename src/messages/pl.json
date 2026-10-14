@@ -1,0 +1,195 @@
+{
+  "Meta": {
+    "siteTitle": "Mariya Underwear — sklep z odzieżą damską",
+    "siteDescription": "Sklep internetowy z odzieżą damską Mariya Underwear. Koszule nocne, piżamy, szlafroki, komplety.",
+    "catalogTitle": "Katalog",
+    "catalogDescription": "Katalog odzieży Mariya Underwear — koszule nocne, piżamy, szlafroki, komplety.",
+    "cartTitle": "Koszyk",
+    "productNotFound": "Nie znaleziono produktu",
+    "productDescription": "{title} — kup w sklepie Mariya Underwear."
+  },
+  "Common": {
+    "currency": "UAH",
+    "noPhoto": "brak zdjęcia",
+    "close": "Zamknij",
+    "sending": "Wysyłanie…",
+    "prev": "Wstecz",
+    "next": "Dalej"
+  },
+  "Header": {
+    "catalog": "Katalog",
+    "cart": "Koszyk",
+    "language": "Język",
+    "home": "Strona główna",
+    "newArrivals": "Nowości",
+    "openMenu": "Otwórz menu",
+    "closeMenu": "Zamknij menu",
+    "menu": "Menu",
+    "categories": "Kategorie",
+    "toHome": "Mariya Underwear — strona główna",
+    "cartCount": "Koszyk, produkty: {count}"
+  },
+  "Footer": {
+    "rights": "Wszelkie prawa zastrzeżone",
+    "info": "Info",
+    "catalog": "Katalog",
+    "newArrivals": "Nowości",
+    "cart": "Koszyk",
+    "contacts": "Kontakt",
+    "cooperation": "Współpraca",
+    "care": "Pielęgnacja",
+    "social": "Social media",
+    "offer": "Regulamin sklepu",
+    "privacy": "Polityka prywatności",
+    "faq": "FAQ",
+    "toTop": "Do góry"
+  },
+  "Home": {
+    "search": "Szukaj",
+    "searchLabel": "Szukaj produktów",
+    "heroTitle1": "Nowa",
+    "heroTitle2": "kolekcja",
+    "heroSeason": "Lato",
+    "toShop": "Do sklepu",
+    "newArrivals": "Nowości",
+    "seeAll": "Zobacz wszystkie",
+    "careTitle": "Pielęgnacja produktów",
+    "careText": "Właściwa pielęgnacja zachowuje miękkość tkaniny i kształt wyrobu. Delikatne pranie w 30°, bez wybielaczy, suszenie w stanie rozłożonym — a Twoje rzeczy długo pozostaną jak nowe.",
+    "fabrics": {
+      "silk": "Jedwab",
+      "cotton": "Bawełna",
+      "micromodal": "Mikromodal"
+    }
+  },
+  "Catalog": {
+    "title": "Katalog",
+    "count": "{count, plural, one {# produkt} few {# produkty} many {# produktów} other {# produktu}}",
+    "all": "Wszystkie produkty",
+    "empty": "Nie znaleziono produktów.",
+    "newArrivals": "Nowości",
+    "home": "Strona główna",
+    "breadcrumbs": "Okruszki",
+    "search": "Szukaj",
+    "searchLabel": "Szukaj produktów",
+    "searchFor": "Wyszukiwanie „{q}”: "
+  },
+  "Product": {
+    "backToCatalog": "← Wróć do katalogu",
+    "sku": "Kod produktu: {sku}",
+    "size": "Rozmiar",
+    "color": "Kolor",
+    "selected": "{label} (wybrany)",
+    "image": "Zdjęcie {n}",
+    "decrease": "Zmniejsz ilość",
+    "increase": "Zwiększ ilość",
+    "added": "Dodano ✓",
+    "related": "Często kupowane razem",
+    "addToCart": "Dodaj do koszyka",
+    "outOfStock": "Niedostępny",
+    "zoom": "Powiększ zdjęcie",
+    "quantity": "Ilość",
+    "oneClick": "Kup w 1 kliknięciu",
+    "careTitle": "Zalecenia dotyczące prania"
+  },
+  "SizeChart": {
+    "title": "Tabela rozmiarów",
+    "trigger": "Tabela rozmiarów | Jak wybrać rozmiar"
+  },
+  "Cart": {
+    "thanks": "Dziękujemy za zamówienie!",
+    "thanksText": "Skontaktujemy się z Tobą wkrótce.",
+    "toCatalog": "Przejdź do katalogu",
+    "empty": "Koszyk jest pusty",
+    "yourOrder": "Twoje zamówienie:",
+    "decrease": "Zmniejsz ilość",
+    "increase": "Zwiększ ilość",
+    "city": "Miasto",
+    "error": "Coś poszło nie tak. Spróbuj ponownie lub skontaktuj się z nami.",
+    "branch": "Numer oddziału Nova Poshta",
+    "title": "Koszyk",
+    "summary": "Podsumowanie",
+    "checkout": "Przejdź do zamówienia",
+    "subtotal": "Suma",
+    "delivery": "Dostawa",
+    "deliveryCost": "według taryf Nova Poshta",
+    "total": "Razem",
+    "remove": "Usuń {title}",
+    "backToCart": "Wróć do koszyka",
+    "checkoutTitle": "Zamówienie",
+    "steps": {
+      "label": "Kroki zamówienia",
+      "info": "Informacje",
+      "shipping": "Dostawa",
+      "payment": "Płatność"
+    },
+    "contacts": "Dane kontaktowe",
+    "contactsShort": "Kontakt",
+    "phone": "Telefon",
+    "phonePlaceholder": "Telefon, +380…",
+    "emailPlaceholder": "E-mail (opcjonalnie)",
+    "recipient": "Odbiorca",
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "shippingTitle": "Dostawa Nova Poshta",
+    "branchPlaceholder": "Nr oddziału",
+    "comment": "Komentarz",
+    "commentPlaceholder": "Komentarz do zamówienia",
+    "review": "Sprawdź dane",
+    "deliverySummary": "Nova Poshta, {city}, oddział {branch}",
+    "change": "Zmień",
+    "paymentNote": "Sposób płatności menedżer ustali, gdy zadzwoni, aby potwierdzić zamówienie.",
+    "confirm": "Potwierdź"
+  },
+  "QuickOrder": {
+    "title": "Szybkie zamówienie",
+    "thanks": "Dziękujemy!",
+    "thanksText": "Wkrótce skontaktujemy się z Tobą, aby potwierdzić zamówienie.",
+    "size": "rozmiar {size}",
+    "pcs": "{count} szt.",
+    "name": "Imię",
+    "phone": "Telefon",
+    "phonePlaceholder": "+380",
+    "submit": "Zamów",
+    "required": "Podaj imię i numer telefonu.",
+    "error": "Coś poszło nie tak. Spróbuj ponownie lub zadzwoń do nas."
+  },
+  "NotFound": {
+    "title": "Nie znaleziono strony",
+    "text": "Mogła zostać usunięta lub adres został wpisany z błędem.",
+    "toCatalog": "Przejdź do katalogu"
+  },
+  "Filters": {
+    "title": "Filtry",
+    "size": "Rozmiar",
+    "stock": "Dostępność",
+    "stockOptions": {
+      "in": "Dostępne",
+      "out": "Niedostępne"
+    },
+    "color": "Kolor",
+    "price": "Cena",
+    "priceFrom": "Cena od",
+    "priceTo": "Cena do",
+    "fromValue": "od {value}",
+    "toValue": "do {value}",
+    "reset": "Wyczyść filtry",
+    "sort": "Sortowanie",
+    "sortOptions": {
+      "new": "Najnowsze",
+      "price-asc": "Od najtańszych",
+      "price-desc": "Od najdroższych"
+    }
+  },
+  "Lightbox": {
+    "viewer": "Podgląd zdjęć",
+    "prev": "Poprzednie zdjęcie",
+    "next": "Następne zdjęcie"
+  },
+  "OrderApi": {
+    "invalid": "Nieprawidłowe dane",
+    "unavailable": "Produkt niedostępny lub nieprawidłowa ilość",
+    "outOfStock": "Niedostępne: {title}",
+    "outOfStockSize": "Niedostępne: {title}, rozmiar {size}",
+    "notEnough": "Za mało w magazynie: {title}, rozmiar {size} (zostało {stock} szt.)"
+  }
+}

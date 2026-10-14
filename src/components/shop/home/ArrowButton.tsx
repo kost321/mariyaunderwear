@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 /** Round arrow button (carousel "back / forward"), as in the design. */
@@ -7,10 +8,11 @@ export function ArrowButton({
   className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { direction: 'prev' | 'next' }) {
+  const t = useTranslations('Common')
   return (
     <button
       type="button"
-      aria-label={direction === 'prev' ? 'Назад' : 'Вперед'}
+      aria-label={direction === 'prev' ? t('prev') : t('next')}
       className={cn(
         'flex h-10 w-10 items-center justify-center rounded-full border border-brown transition-opacity hover:bg-cream disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent',
         className,

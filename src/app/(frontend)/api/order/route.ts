@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { getPayload } from '@/lib/payload'
 import type { CartItem, CheckoutForm } from '@/types/shop'
+import { hasLocale } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
+import { routing, type Locale } from '@/i18n/routing'
 import { isSizeAvailable } from '@/lib/stock'
 
 // Limit on orders per IP address (kept in process memory, which is
@@ -57,7 +60,12 @@ function esc(value: unknown): string {
     .replace(/'/g, '&#39;')
 }
 
-const BAD_REQUEST = () => NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
+const BAD_REQUEST = (error = 'Невірні дані') => NextResponse.json({ error }, { status: 400 })
+
+/** A product fetched with locale: 'all': localized fields arrive as { uk, pl, en }. */
+type LocalizedProduct = {
+  colorName?: Partial<Record<Locale, string | null>>
+}
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
@@ -65,17 +73,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Забагато спроб. Спробуйте пізніше.' }, { status: 429 })
   }
 
-  let body: { items?: CartItem[]; form?: Partial<CheckoutForm> }
+  let body: { items?: CartItem[]; form?: Partial<CheckoutForm>; locale?: string }
   try {
     body = await req.json()
   } catch {
     return BAD_REQUEST()
   }
+  // Language of the errors shown to the customer; the admin and the email stay Ukrainian.
+  const locale = hasLocale(routing.locales, body?.locale) ? body.locale : routing.defaultLocale
+  const t = await getTranslations({ locale, namespace: 'OrderApi' })
 
   const rawItems = body?.items
   const rawForm = body?.form
   if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > 50 || !rawForm) {
-    return BAD_REQUEST()
+    return BAD_REQUEST(t('invalid'))
   }
 
   const customerName = str(rawForm.customerName, 100)
@@ -92,15 +103,15 @@ export async function POST(req: NextRequest) {
     email === undefined ||
     comment === undefined
   ) {
-    return BAD_REQUEST()
+    return BAD_REQUEST(t('invalid'))
   }
   // Phone: 10-15 digits, other characters only as ordinary separators.
   const digits = phone.replace(/\D/g, '')
   if (digits.length < 10 || digits.length > 15 || !/^[\d\s+()-]+$/.test(phone)) {
-    return BAD_REQUEST()
+    return BAD_REQUEST(t('invalid'))
   }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return BAD_REQUEST()
+    return BAD_REQUEST(t('invalid'))
   }
   const form: CheckoutForm = {
     customerName,
@@ -117,7 +128,7 @@ export async function POST(req: NextRequest) {
       str(item.size, 50) === undefined ||
       str(item.color, 50) === undefined
     ) {
-      return BAD_REQUEST()
+      return BAD_REQUEST(t('invalid'))
     }
   }
 
@@ -127,7 +138,7 @@ export async function POST(req: NextRequest) {
   // for productId, size, color and quantity.
   const ids = [...new Set(rawItems.map((item) => Number(item?.productId)))]
   if (ids.some((id) => !Number.isInteger(id) || id <= 0)) {
-    return NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
+    return BAD_REQUEST(t('invalid'))
   }
   const found = await payload.find({
     collection: 'products',
@@ -147,18 +158,17 @@ export async function POST(req: NextRequest) {
     const product = productsById.get(Number(raw.productId))
     const quantity = Number(raw.quantity)
     if (!product || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
-      return NextResponse.json(
-        { error: 'Товар недоступний або невірна кількість' },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: t('unavailable') }, { status: 400 })
     }
 
     // The size must exist on the product, be in stock (lib/stock: empty stock = not in stock)
     // and the quantity must not exceed the stock.
     const sizeRow = product.sizes?.find((s) => s.value === raw.size)
+    // Title in the customer's language for the error message (shown only to them)
+    const title = typeof raw.title === 'string' && raw.title.length <= 200 ? raw.title : (product.title ?? '')
     if (!sizeRow || !isSizeAvailable(sizeRow)) {
       return NextResponse.json(
-        { error: `Немає в наявності: ${product.title}${raw.size ? `, розмір ${raw.size}` : ''}` },
+        { error: raw.size ? t('outOfStockSize', { title, size: raw.size }) : t('outOfStock', { title }) },
         { status: 400 },
       )
     }
@@ -168,7 +178,7 @@ export async function POST(req: NextRequest) {
     if (total > (sizeRow.stock ?? 0)) {
       return NextResponse.json(
         {
-          error: `Недостатньо в наявності: ${product.title}, розмір ${sizeRow.value} (залишилось ${sizeRow.stock} шт.)`,
+          error: t('notEnough', { title, size: sizeRow.value, stock: sizeRow.stock ?? 0 }),
         },
         { status: 400 },
       )
@@ -176,7 +186,7 @@ export async function POST(req: NextRequest) {
 
     items.push({
       productId: String(product.id),
-      title: product.title,
+      title: product.title ?? '',
       price: product.price,
       slug: product.slug ?? '',
       size: raw.size,
@@ -186,6 +196,26 @@ export async function POST(req: NextRequest) {
   }
 
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+  // The cart keeps the color in the language the customer browsed the site in.
+  // For the admin and the manager email we want Ukrainian: fetch the color names
+  // in all languages and swap the color if it matches the card's own color.
+  const { docs: localizedDocs } = await payload.find({
+    collection: 'products',
+    where: { id: { in: ids } },
+    locale: 'all',
+    depth: 0,
+    pagination: false,
+    select: { colorName: true },
+  })
+  const colorById = new Map(
+    localizedDocs.map((doc) => [String(doc.id), (doc as unknown as LocalizedProduct).colorName]),
+  )
+  const ukItems = items.map((item) => {
+    const colorName = colorById.get(item.productId)
+    const colorIsLocalized = item.color && colorName && Object.values(colorName).includes(item.color)
+    return colorIsLocalized ? { ...item, color: colorName?.uk || item.color } : item
+  })
 
   // Save the order to the DB
   const order = await payload.create({
@@ -197,7 +227,7 @@ export async function POST(req: NextRequest) {
       comment: [form.city, form.novaPoshtaBranch, form.comment].filter(Boolean).join(' | '),
       totalPrice,
       status: 'new',
-      products: items.map((item) => ({
+      products: ukItems.map((item) => ({
         product: Number(item.productId),
         titleSnapshot: item.title,
         priceSnapshot: item.price,
@@ -209,7 +239,7 @@ export async function POST(req: NextRequest) {
   })
 
   // Send the email
-  const itemsHtml = items
+  const itemsHtml = ukItems
     .map(
       (item) => `
       <tr>

@@ -1,5 +1,6 @@
 import Image from 'next/image'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import { Plus } from 'lucide-react'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
@@ -18,10 +19,11 @@ export function ProductCard({
   sizes?: string
   className?: string
 }) {
+  const t = useTranslations('Common')
   // Take the first image from the gallery.
   const firstImage = product.images?.[0]?.image
   const url = getMediaUrl(firstImage)
-  const alt = getMediaAlt(firstImage, product.title)
+  const alt = getMediaAlt(firstImage, product.title ?? '')
   const category = typeof product.category === 'object' ? product.category.title : null
 
   // A model color card shows its own color (colorHex); otherwise the colors inside the card (colors[])
@@ -41,7 +43,7 @@ export function ProductCard({
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-brown/60">немає фото</div>
+          <div className="flex h-full items-center justify-center text-sm text-brown/60">{t('noPhoto')}</div>
         )}
         <span className="absolute bottom-3 left-1/2 flex h-[34px] w-[34px] -translate-x-1/2 items-center justify-center rounded-full bg-brown/50 text-ink transition-colors group-hover:bg-ink group-hover:text-white">
           <Plus className="h-4 w-4" strokeWidth={1.25} />
@@ -64,7 +66,7 @@ export function ProductCard({
           )}
           <h3 className="mt-1 font-serif text-sm leading-[17px] text-ink sm:text-base sm:leading-[19px]">{product.title}</h3>
         </div>
-        <p className="shrink-0 whitespace-nowrap font-serif text-sm leading-[17px] text-ink/50 sm:text-base sm:leading-[19px]">{formatPrice(product.price)}</p>
+        <p className="shrink-0 whitespace-nowrap font-serif text-sm leading-[17px] text-ink/50 sm:text-base sm:leading-[19px]">{formatPrice(product.price, t('currency'))}</p>
       </div>
     </Link>
   )

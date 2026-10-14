@@ -1,0 +1,195 @@
+{
+  "Meta": {
+    "siteTitle": "Mariya Underwear — магазин одягу",
+    "siteDescription": "Інтернет-магазин жіночого одягу Mariya Underwear. Нічні сорочки, піжами, халати, комплекти.",
+    "catalogTitle": "Каталог",
+    "catalogDescription": "Каталог одягу Mariya Underwear — нічні сорочки, піжами, халати, комплекти.",
+    "cartTitle": "Кошик",
+    "productNotFound": "Товар не знайдено",
+    "productDescription": "{title} — купити в магазині Mariya Underwear."
+  },
+  "Common": {
+    "currency": "грн",
+    "noPhoto": "немає фото",
+    "close": "Закрити",
+    "sending": "Відправляємо…",
+    "prev": "Назад",
+    "next": "Вперед"
+  },
+  "Header": {
+    "catalog": "Каталог",
+    "cart": "Кошик",
+    "language": "Мова",
+    "home": "Головна",
+    "newArrivals": "Новинки",
+    "openMenu": "Відкрити меню",
+    "closeMenu": "Закрити меню",
+    "menu": "Меню",
+    "categories": "Категорії",
+    "toHome": "Mariya Underwear — на головну",
+    "cartCount": "Кошик, товарів: {count}"
+  },
+  "Footer": {
+    "rights": "Всі права захищені",
+    "info": "Інфо",
+    "catalog": "Каталог",
+    "newArrivals": "Новинки",
+    "cart": "Кошик",
+    "contacts": "Контакти",
+    "cooperation": "Співпраця",
+    "care": "Догляд",
+    "social": "Соцмережі",
+    "offer": "Договір публічної оферти",
+    "privacy": "Політика конфіденційності",
+    "faq": "FAQ",
+    "toTop": "Нагору"
+  },
+  "Home": {
+    "search": "Пошук",
+    "searchLabel": "Пошук товарів",
+    "heroTitle1": "Нова",
+    "heroTitle2": "колекція",
+    "heroSeason": "Літо",
+    "toShop": "До магазину",
+    "newArrivals": "Новинки",
+    "seeAll": "Дивитись усі",
+    "careTitle": "Догляд за виробами",
+    "careText": "Правильний догляд зберігає м'якість тканини та форму виробу. Ніжне прання при 30°, без відбілювачів, сушіння в розправленому вигляді — і ваші речі довго залишатимуться як нові.",
+    "fabrics": {
+      "silk": "Шовк",
+      "cotton": "Бавовна",
+      "micromodal": "Мікромасло"
+    }
+  },
+  "Catalog": {
+    "title": "Каталог",
+    "count": "{count, plural, one {# товар} few {# товари} many {# товарів} other {# товару}}",
+    "all": "Усі товари",
+    "empty": "Товари не знайдено.",
+    "newArrivals": "Новинки",
+    "home": "Головна",
+    "breadcrumbs": "Хлібні крихти",
+    "search": "Пошук",
+    "searchLabel": "Пошук товарів",
+    "searchFor": "Пошук «{q}»: "
+  },
+  "Product": {
+    "backToCatalog": "← Назад до каталогу",
+    "sku": "Артикул: {sku}",
+    "size": "Розмір",
+    "color": "Колір",
+    "selected": "{label} (обраний)",
+    "image": "Зображення {n}",
+    "decrease": "Зменшити кількість",
+    "increase": "Збільшити кількість",
+    "added": "Додано ✓",
+    "related": "З цим товаром часто купують",
+    "addToCart": "Додати в кошик",
+    "outOfStock": "Немає в наявності",
+    "zoom": "Збільшити фото",
+    "quantity": "Кількість",
+    "oneClick": "Купити в 1 клік",
+    "careTitle": "Рекомендації щодо прання"
+  },
+  "SizeChart": {
+    "title": "Розмірна таблиця",
+    "trigger": "Розмірна таблиця | Як обрати розмір"
+  },
+  "Cart": {
+    "thanks": "Дякуємо за замовлення!",
+    "thanksText": "Ми зв'яжемось з вами найближчим часом.",
+    "toCatalog": "Перейти до каталогу",
+    "empty": "Кошик порожній",
+    "yourOrder": "Ваше замовлення:",
+    "decrease": "Зменшити кількість",
+    "increase": "Збільшити кількість",
+    "city": "Місто",
+    "error": "Щось пішло не так. Спробуйте ще раз або зв'яжіться з нами.",
+    "branch": "№ відділення нової пошти",
+    "title": "Кошик",
+    "summary": "Підсумок",
+    "checkout": "Оформити замовлення",
+    "subtotal": "Сума",
+    "delivery": "Доставка",
+    "deliveryCost": "за тарифами Нової пошти",
+    "total": "Разом",
+    "remove": "Прибрати {title}",
+    "backToCart": "Назад до кошика",
+    "checkoutTitle": "Оформлення",
+    "steps": {
+      "label": "Кроки оформлення",
+      "info": "Інформація",
+      "shipping": "Доставка",
+      "payment": "Оплата"
+    },
+    "contacts": "Контактні дані",
+    "contactsShort": "Контакти",
+    "phone": "Телефон",
+    "phonePlaceholder": "Телефон, +380…",
+    "emailPlaceholder": "Email (необов'язково)",
+    "recipient": "Отримувач",
+    "firstName": "Ім'я",
+    "lastName": "Прізвище",
+    "shippingTitle": "Доставка Новою поштою",
+    "branchPlaceholder": "№ відділення",
+    "comment": "Коментар",
+    "commentPlaceholder": "Коментар до замовлення",
+    "review": "Перевірте дані",
+    "deliverySummary": "Нова пошта, {city}, відділення {branch}",
+    "change": "Змінити",
+    "paymentNote": "Спосіб оплати менеджер уточнить, коли зателефонує підтвердити замовлення.",
+    "confirm": "Підтвердити"
+  },
+  "QuickOrder": {
+    "title": "Швидке замовлення",
+    "thanks": "Дякуємо!",
+    "thanksText": "Ми зв'яжемось з вами найближчим часом, щоб підтвердити замовлення.",
+    "size": "розмір {size}",
+    "pcs": "{count} шт.",
+    "name": "Ім'я",
+    "phone": "Телефон",
+    "phonePlaceholder": "+380",
+    "submit": "Замовити",
+    "required": "Вкажіть ім'я та телефон.",
+    "error": "Щось пішло не так. Спробуйте ще раз або зателефонуйте нам."
+  },
+  "NotFound": {
+    "title": "Сторінку не знайдено",
+    "text": "Можливо, її видалили або адресу введено з помилкою.",
+    "toCatalog": "Перейти до каталогу"
+  },
+  "Filters": {
+    "title": "Фільтри",
+    "size": "Розмір",
+    "stock": "Наявність",
+    "stockOptions": {
+      "in": "В наявності",
+      "out": "Немає в наявності"
+    },
+    "color": "Колір",
+    "price": "Ціна",
+    "priceFrom": "Ціна від",
+    "priceTo": "Ціна до",
+    "fromValue": "від {value}",
+    "toValue": "до {value}",
+    "reset": "Скинути фільтри",
+    "sort": "Сортування",
+    "sortOptions": {
+      "new": "Спочатку нові",
+      "price-asc": "Від дешевих",
+      "price-desc": "Від дорогих"
+    }
+  },
+  "Lightbox": {
+    "viewer": "Перегляд фото",
+    "prev": "Попереднє фото",
+    "next": "Наступне фото"
+  },
+  "OrderApi": {
+    "invalid": "Невірні дані",
+    "unavailable": "Товар недоступний або невірна кількість",
+    "outOfStock": "Немає в наявності: {title}",
+    "outOfStockSize": "Немає в наявності: {title}, розмір {size}",
+    "notEnough": "Недостатньо в наявності: {title}, розмір {size} (залишилось {stock} шт.)"
+  }
+}

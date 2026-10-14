@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import Link from 'next/link'
+import type { Locale } from 'next-intl'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { Link } from '@/i18n/navigation'
+import { routing, ogLocales, localePath } from '@/i18n/routing'
 import {
   getProductBySlug,
   getAllProductSlugs,
@@ -11,10 +14,11 @@ import { getMediaUrl } from '@/lib/media'
 import { ProductDetails } from '@/components/shop/ProductDetails'
 import { ProductDescription } from '@/components/shop/ProductDescription'
 import { ProductCard } from '@/components/shop/ProductCard'
+import { alternates } from '@/lib/seo'
 import type { Product } from '@/payload-types'
 import { isProductInStock } from '@/lib/stock'
 
-type Params = { params: Promise<{ slug: string }> }
+type Params = { params: Promise<{ locale: Locale; slug: string }> }
 
 /**
  * ISR: the page is static, but at least once every 60 seconds Next rebuilds
@@ -24,13 +28,14 @@ type Params = { params: Promise<{ slug: string }> }
 export const revalidate = 60
 
 /**
- * SSG: pre-generate pages for all active products.
+ * SSG: pre-generate pages for all active products in every language.
  * Makes the pages static and as SEO-friendly as possible.
+ * The slug is shared by all languages: /ua/product/x, /pl/product/x, /en/product/x.
  */
 export async function generateStaticParams() {
   try {
     const slugs = await getAllProductSlugs()
-    return slugs.map((slug) => ({ slug }))
+    return routing.locales.flatMap((locale) => slugs.map((slug) => ({ locale, slug })))
   } catch {
     // DB is unavailable during the build (for example on Railway without a connected database)
     return []
@@ -60,33 +65,40 @@ function truncate(text: string, max: number): string {
 
 /** Dynamic SEO metadata based on the product. */
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { slug } = await params
-  const product = await getProductBySlug(slug)
-  if (!product) return { title: 'Товар не знайдено' }
+  const { locale, slug } = await params
+  const t = await getTranslations({ locale, namespace: 'Meta' })
+  const product = await getProductBySlug(slug, locale)
+  if (!product) return { title: t('productNotFound') }
 
   const ogImage = getMediaUrl(product.images?.[0]?.image)
+  // title is not null in practice: required in Ukrainian + fallback to uk.
+  const title = product.title ?? ''
 
   const plain = toPlainText(product.description)
   const description = plain
     ? truncate(plain, 155)
-    : `${product.title} — купити в магазині Mariya Underwear.`
+    : t('productDescription', { title })
 
   return {
-    title: product.title,
+    title,
     description,
-    alternates: { canonical: `/product/${slug}` },
+    alternates: alternates(locale, `/product/${slug}`),
+    // The page openGraph fully replaces the layout openGraph, so locale is repeated.
     openGraph: {
-      title: product.title,
+      locale: ogLocales[locale],
+      title,
       description,
-      url: `/product/${slug}`,
+      url: `${localePath(locale)}/product/${slug}`,
       images: ogImage ? [{ url: ogImage }] : undefined,
     },
   }
 }
 
 export default async function ProductPage({ params }: Params) {
-  const { slug } = await params
-  const product = await getProductBySlug(slug)
+  const { locale, slug } = await params
+  setRequestLocale(locale)
+  const t = await getTranslations('Product')
+  const product = await getProductBySlug(slug, locale)
 
   // If the product does not exist or is inactive, return 404.
   if (!product) notFound()
@@ -98,7 +110,7 @@ export default async function ProductPage({ params }: Params) {
       ? product.model.id
       : product.model
   const [colorVariants] = await Promise.all([
-    modelId ? getColorVariants(modelId) : Promise.resolve([]),
+    modelId ? getColorVariants(modelId, locale) : Promise.resolve([]),
   ])
 
   // relatedProducts: products hand-picked in the admin (relationship, hasMany).
@@ -125,7 +137,7 @@ export default async function ProductPage({ params }: Params) {
     brand: { '@type': 'Brand', name: 'Mariya Underwear' },
     offers: {
       '@type': 'Offer',
-      url: `${serverUrl}/product/${slug}`,
+      url: `${serverUrl}${localePath(locale)}/product/${slug}`,
       priceCurrency: 'UAH',
       price: product.price,
       availability: outOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
@@ -141,7 +153,7 @@ export default async function ProductPage({ params }: Params) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
       <nav className="mb-6 hidden lg:block">
-        <Link href="/catalog" aria-label="Назад до каталогу" className="inline-block transition-opacity hover:opacity-70">
+        <Link href="/catalog" aria-label={t('backToCatalog')} className="inline-block transition-opacity hover:opacity-70">
           <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="h-[14px] w-[61px]" />
         </Link>
       </nav>
@@ -155,7 +167,7 @@ export default async function ProductPage({ params }: Params) {
             { html: product.description },
             // "Характеристики:" is already in the admin text itself, so we do not add our own heading
             { html: product.descriptionHtml },
-            { title: 'Рекомендації щодо прання', html: product.careHtml },
+            { title: t('careTitle'), html: product.careHtml },
           ]}
         />
       </div>
@@ -164,7 +176,7 @@ export default async function ProductPage({ params }: Params) {
       {relatedProducts.length > 0 && (
         <section className="mt-16 lg:mt-[100px]">
           <h2 className="border-b border-brown/40 pb-5 font-serif text-xl uppercase leading-10 tracking-[2px] text-brown">
-            З цим товаром часто купують
+            {t('related')}
           </h2>
           <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-3 lg:gap-x-[41px] lg:gap-y-12">
             {relatedProducts.map((related) => (

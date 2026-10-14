@@ -67,10 +67,20 @@ function inStock(p: Product, sizes: string[] = []): boolean {
   return (p.sizes ?? []).some((s) => isSizeAvailable(s) && sizeTokens(s.value).some((t) => sizes.includes(t)))
 }
 
+/**
+ * A color card of a model (colorName set) has exactly one color; its legacy colors[]
+ * may still list every color of the model (Tilda import), so it is ignored then.
+ */
+function productColorList(p: Product): { name: string; hex: string | null }[] {
+  const colorName = p.colorName?.trim()
+  if (colorName) return [{ name: colorName, hex: p.colorHex ?? null }]
+  return (p.colors ?? [])
+    .map((c) => ({ name: c.name.trim(), hex: c.hex ?? null }))
+    .filter((c) => c.name)
+}
+
 function productColors(p: Product): string[] {
-  const names = (p.colors ?? []).map((c) => c.name)
-  if (p.colorName) names.push(p.colorName)
-  return names.map((n) => n.trim()).filter(Boolean)
+  return productColorList(p).map((c) => c.name)
 }
 
 export function filterProducts(products: Product[], params: CatalogParams): Product[] {
@@ -106,8 +116,7 @@ export function getFacets(products: Product[]): CatalogFacets {
 
   for (const p of products) {
     productSizes(p).forEach((s) => sizes.add(s))
-    for (const c of p.colors ?? []) if (!colors.get(c.name)) colors.set(c.name.trim(), c.hex ?? null)
-    if (p.colorName && !colors.get(p.colorName)) colors.set(p.colorName.trim(), p.colorHex ?? null)
+    for (const c of productColorList(p)) if (!colors.get(c.name)) colors.set(c.name, c.hex)
   }
 
   const rank = (s: string) => {

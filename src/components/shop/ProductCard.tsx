@@ -24,9 +24,9 @@ export function ProductCard({
   const alt = getMediaAlt(firstImage, product.title)
   const category = typeof product.category === 'object' ? product.category.title : null
 
-  // Colors inside the card (colors[]) or the model variant color (colorHex)
-  const swatch = product.colors?.[0]?.hex ?? product.colorHex
-  const extraColors = (product.colors?.length ?? 0) - 1
+  // A model color card shows its own color (colorHex); otherwise the colors inside the card (colors[])
+  const swatch = product.colorName ? product.colorHex : product.colors?.[0]?.hex
+  const extraColors = product.colorName ? 0 : (product.colors?.length ?? 0) - 1
 
   return (
     <Link href={`/product/${product.slug}`} className={cn('group block', className)}>

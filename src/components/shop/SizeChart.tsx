@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 
 /**
- * Ссылка «Розмірна таблиця» + модальное окно с HTML-таблицей размеров.
- * HTML приходит из поля sizeChartHtml товара и выводится как есть.
- * Без внешних зависимостей: overlay + Esc + клик по фону закрывают окно.
+ * "Size chart" link + a modal with an HTML table of sizes.
+ * The HTML comes from the product's sizeChartHtml field and is rendered as is.
+ * No external dependencies: overlay + Esc + click on the backdrop close the window.
  */
 export function SizeChart({ html }: { html?: string | null }) {
   const [open, setOpen] = useState(false)
@@ -16,7 +16,7 @@ export function SizeChart({ html }: { html?: string | null }) {
       if (e.key === 'Escape') setOpen(false)
     }
     document.addEventListener('keydown', onKey)
-    // блокируем прокрутку фона, пока открыто окно
+    // lock background scrolling while the window is open
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {

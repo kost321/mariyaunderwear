@@ -2,14 +2,14 @@ import type { Payload } from 'payload'
 import * as XLSX from 'xlsx'
 
 /**
- * Імпорт цін/залишків з вивантаження Торгсофт (Excel/CSV) в товари Payload.
+ * Import of prices/stock from a Torgsoft export (Excel/CSV) into Payload products.
  *
- * Файл: один рядок = одна комбінація Артикул + Колір + Розмір, зі своєю
- * Кількістю. Ціна роздрібна/Ціна опту однакові для всіх рядків одного
- * Артикулу. Ключ зіставлення з товаром на сайті — Артикул (sku) + Колір
- * (colorName): кожен такий Product-документ отримує новий масив `sizes`,
- * повністю зібраний із поточного файлу (розміри з Кількість=0, або взагалі
- * відсутні у файлі для цієї пари, у новому масиві не з'являються).
+ * File: one row = one combination of Article + Color + Size, with its own
+ * Quantity. Retail price / Wholesale price are the same for all rows of one
+ * Article. The key for matching a product on the site is Article (sku) + Color
+ * (colorName): each such Product document gets a new `sizes` array
+ * built entirely from the current file (sizes with Quantity=0, or absent
+ * from the file for that pair altogether, do not appear in the new array).
  */
 
 export interface TorgsoftRow {
@@ -29,7 +29,7 @@ export interface TorgsoftImportResult {
   skipped: { sku: string; colorName: string; reason: string }[]
 }
 
-// Заголовки, як їх експортує Торгсофт (можлива різна регістрація/пробіли).
+// Headers as Torgsoft exports them (case/whitespace may vary).
 const HEADER_ALIASES: Record<keyof TorgsoftRow, string[]> = {
   sku: ['артикул'],
   colorName: ['колір', 'колiр', 'цвет'],
@@ -71,15 +71,15 @@ function toNumber(value: unknown): number {
 }
 
 /**
- * Розбирає .xlsx/.xls (і .csv — SheetJS вміє й це) у рядки TorgsoftRow.
+ * Parses .xlsx/.xls (and .csv, which SheetJS also handles) into TorgsoftRow rows.
  */
 export function parseTorgsoftFile(buffer: Buffer): TorgsoftRow[] {
   const workbook = XLSX.read(buffer, { type: 'buffer' })
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
   const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true })
 
-  // Знаходимо перший непорожній рядок як заголовок (у файлі зі скріншота
-  // перед заголовками може бути службовий рядок "Стан складу ...").
+  // Find the first non-empty row and use it as the header (in the screenshot file
+  // there may be a service row "Стан складу ..." before the headers).
   const headerRowIndex = rows.findIndex((row) =>
     row.some((cell) => normalizeHeader(String(cell ?? '')) === 'артикул'),
   )
@@ -96,7 +96,7 @@ export function parseTorgsoftFile(buffer: Buffer): TorgsoftRow[] {
     const sku = String(row[columnIndex.sku] ?? '').trim()
     const colorName = String(row[columnIndex.colorName] ?? '').trim()
     const size = String(row[columnIndex.size] ?? '').trim()
-    if (!sku && !colorName && !size) continue // повністю порожній рядок
+    if (!sku && !colorName && !size) continue // if (!sku && !colorName && !size) continue // completely empty row
 
     result.push({
       sku,
@@ -146,10 +146,10 @@ export async function runTorgsoftImport(
   for (const groupRows of groups.values()) {
     const { sku, colorName } = groupRows[0]
 
-    // Колір звіряємо без урахування регістру (в БД зустрічається як
-    // "Чорний", у файлі Торгсофта — "чорний") — порівняння по sku робимо
-    // на стороні БД, а колір фільтруємо в коді, щоб не залежати від
-    // регістро-залежності стандартного equals у Payload.
+    // Compare the color case-insensitively (in the DB it appears as
+    // "Чорний", in the Torgsoft file as "чорний"); the sku comparison is done
+    // on the DB side, and the color is filtered in code so we do not depend on
+    // the case sensitivity of the standard equals in Payload.
     const bySku = await payload.find({
       collection: 'products',
       where: {

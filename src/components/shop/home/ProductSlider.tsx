@@ -4,8 +4,8 @@ import { useRef } from 'react'
 import { ArrowButton } from './ArrowButton'
 
 /**
- * Горизонтальний слайдер карток на CSS scroll-snap; стрілки прокручують
- * на ширину видимої області.
+ * Horizontal card slider on CSS scroll-snap; the arrows scroll
+ * by the width of the visible area.
  */
 export function ProductSlider({ children }: { children: React.ReactNode }) {
   const track = useRef<HTMLDivElement>(null)

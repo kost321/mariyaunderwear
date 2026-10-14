@@ -7,10 +7,10 @@ export function getMediaUrl(
 ): string | undefined {
   if (!media || typeof media !== 'object') return undefined
 
-  // Якщо є повний URL (https://...) — повертаємо як є
+  // If there is a full URL (https://...), return it as is
   if (media.url && media.url.startsWith('http')) return media.url
 
-  // Якщо є filename — будуємо Cloudinary URL
+  // If there is a filename, build the Cloudinary URL
   if (media.filename) {
     return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${media.filename}`
   }
@@ -18,7 +18,7 @@ export function getMediaUrl(
   return media.url ?? undefined
 }
 
-/** Alt-текст изображения (для next/image и SEO). */
+/** Image alt text (for next/image and SEO). */
 export function getMediaAlt(
   media: number | string | Media | null | undefined,
   fallback = '',

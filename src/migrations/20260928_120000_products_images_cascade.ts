@@ -1,17 +1,17 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 /**
- * products_images.image_id — NOT NULL, але FK на media був ON DELETE SET NULL:
- * видалення картинки, що стоїть у галереї товару, падало на not-null
- * constraint і відкочувало всю транзакцію (масове видалення в «Медіа» не
- * працювало). Міняємо на ON DELETE CASCADE — разом із картинкою зникає лише
- * рядок галереї, сам товар не чіпається.
+ * products_images.image_id is NOT NULL, but the FK to media was ON DELETE SET NULL:
+ * deleting an image that is in a product gallery failed on the not-null
+ * constraint and rolled back the whole transaction (bulk delete in "Media" did not
+ * work). Changing to ON DELETE CASCADE: deleting an image removes only the
+ * gallery row; the product itself is untouched.
  *
- * Написано вручну (не через migrate:create), даних не змінює. Будь-який
- * наявний FK products_images(image_id) -> media видаляємо за фактом, а не за
- * назвою, щоб не залежати від назви констрейнта в прод-схемі.
- * УВАГА: Payload у своїй схемі й далі вважає правило SET NULL — наступний
- * migrate:create може спробувати повернути його назад; таке треба прибрати.
+ * Written by hand (not via migrate:create), changes no data. Any
+ * existing FK products_images(image_id) -> media is dropped by fact, not by
+ * name, so we do not depend on the constraint name in the prod schema.
+ * WARNING: Payload still considers the rule SET NULL in its schema; the next
+ * migrate:create may try to revert it; that must be removed.
  */
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`

@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
-/** Кругла кнопка зі стрілкою (карусель «назад / вперед»), як у макеті. */
+/** Round arrow button (carousel "back / forward"), as in the design. */
 export function ArrowButton({
   direction,
   className,
@@ -17,7 +17,7 @@ export function ArrowButton({
       )}
       {...props}
     >
-      {/* chevron.svg дивиться вгору — повертаємо */}
+      {/* chevron.svg points up, so rotate it */}
       <Image
         src="/brand/chevron.svg"
         alt=""

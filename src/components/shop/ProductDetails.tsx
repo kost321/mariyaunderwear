@@ -7,27 +7,29 @@ import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { formatPrice, cn } from '@/lib/utils'
 import { SizeChart } from '@/components/shop/SizeChart'
+import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
 import { useCart } from '@/hooks/useCart'
+import { isProductInStock, isSizeAvailable } from '@/lib/stock'
 import type { CartItem } from '@/types/shop'
 
 const photoFrame = 'relative overflow-hidden rounded-card border border-[#d9d9d9] bg-placeholder/40'
 
 /**
- * Интерактивная часть карточки товара (макет Figma «Product»):
- *  - галерея: большое фото + колонка миниатюр (на мобилке — лента под фото);
- *  - карточка в рамке: название, цена, цвет, размер, «Додати в кошик»;
- *  - быстрый заказ. Описание — под галереей (ProductDescription в page.tsx).
+ * Interactive part of the product card (Figma design "Product"):
+ *  - gallery: large photo + a column of thumbnails (a strip under the photo on mobile);
+ *  - framed card: title, price, color, size, "Add to cart";
+ *  - quick order. The description sits under the gallery (ProductDescription in page.tsx).
  *
- * Данные приходят пропсом из серверного page.tsx, поэтому этот
- * клиентский компонент сам ничего не запрашивает.
+ * Data arrives as props from the server page.tsx, so this
+ * client component does not fetch anything itself.
  */
 export function ProductDetails({
   product,
   colorVariants = [],
 }: {
   product: Product
-  /** Другие цветовые карточки той же модели (связаны полем model). */
+  /** Other color cards of the same model (linked by the model field). */
   colorVariants?: Product[]
 }) {
   const { addItem } = useCart()
@@ -36,13 +38,13 @@ export function ProductDetails({
   const sizes = product.sizes ?? []
   const colors = product.colors ?? []
 
-  // Показываем переключатель-ссылки только если у модели есть хотя бы 2 цвета-карточки.
+  // Show the switcher links only if the model has at least 2 color cards.
   const showVariantSwitch = colorVariants.length > 1
 
   const [activeImage, setActiveImage] = useState(0)
-  // stock === 0 — розмір закінчився; порожнє значення = залишок невідомий.
-  const soldOut = (s: { stock?: number | null }) => s.stock === 0
-  const allSoldOut = sizes.length > 0 && sizes.every(soldOut)
+  // A size without a positive stock (0 or empty) is sold out and crossed out (lib/stock).
+  const soldOut = (s: { stock?: number | null }) => !isSizeAvailable(s)
+  const allSoldOut = !isProductInStock(sizes)
   const [size, setSize] = useState<string | undefined>(
     (sizes.find((s) => !soldOut(s)) ?? sizes[0])?.value,
   )
@@ -50,15 +52,22 @@ export function ProductDetails({
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   const selectedStock = sizes.find((s) => s.value === size)?.stock
-  const maxQuantity = typeof selectedStock === 'number' && selectedStock > 0 ? selectedStock : 99
+  const maxQuantity = typeof selectedStock === 'number' && selectedStock > 0 ? selectedStock : 1
 
   const mainImage = images[activeImage]?.image
   const mainUrl = getMediaUrl(mainImage)
   const mainAlt = getMediaAlt(mainImage, product.title)
 
-  // Позиция для корзины / быстрого заказа из текущего выбора на странице.
+  // Photos for the full-screen viewer (skip entries without a file).
+  const lightboxPhotos = images.flatMap((item) => {
+    const url = getMediaUrl(item.image)
+    return url ? [{ url, alt: getMediaAlt(item.image, product.title) }] : []
+  })
+
+  // Cart / quick-order line built from the current selection on the page.
   const selectedItem: CartItem = {
     productId: String(product.id),
     title: product.title,
@@ -66,8 +75,8 @@ export function ProductDetails({
     slug: product.slug ?? '',
     image: getMediaUrl(images[0]?.image),
     size,
-    // Если модель разбита на цветовые карточки — цвет берём из карточки,
-    // иначе из старого массива colors (выбор внутри страницы).
+    // If the model is split into color cards, the color comes from the card,
+    // otherwise from the legacy colors array (selection within the page).
     color: showVariantSwitch ? (product.colorName ?? undefined) : color,
     quantity,
   }
@@ -108,11 +117,20 @@ export function ProductDetails({
 
   return (
     <div className="lg:flex lg:items-start lg:justify-center lg:gap-[100px]">
-      {/* ГАЛЕРЕЯ: на мобілці фото на всю ширину, мініатюри стрічкою під ним */}
+      {/* GALLERY: full-width photo on mobile, thumbnails as a strip under it */}
       <div className="flex flex-col gap-4 lg:flex-row lg:gap-10 lg:pt-[30px]">
         <div className="relative -mx-[var(--gutter)] aspect-[3/4] overflow-hidden rounded-b-card border-b border-[#d9d9d9] bg-placeholder/40 lg:mx-0 lg:w-[367px] lg:rounded-card lg:border">
 
-          {mainUrl && <Image src={mainUrl} alt={mainAlt} fill priority sizes="(max-width: 1024px) 100vw, 367px" className="object-cover" />}
+          {mainUrl && (
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="absolute inset-0 cursor-zoom-in"
+              aria-label="Збільшити фото"
+            >
+              <Image src={mainUrl} alt={mainAlt} fill priority quality={90} sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" />
+            </button>
+          )}
         </div>
 
         {images.length > 1 && (
@@ -132,7 +150,7 @@ export function ProductDetails({
                   aria-label={`Фото ${i + 1}`}
                   aria-current={i === activeImage}
                 >
-                  {thumb && <Image src={thumb} alt="" fill sizes="64px" className="object-cover" />}
+                  {thumb && <Image src={thumb} alt="" fill quality={85} sizes="64px" className="object-cover" />}
                 </button>
               )
             })}
@@ -140,13 +158,13 @@ export function ProductDetails({
         )}
       </div>
 
-      {/* КАРТКА ТОВАРУ: на десктопі в рамці, як у макеті */}
+      {/* PRODUCT CARD: framed on desktop, as in the design */}
       <div className="mt-8 lg:mt-0 lg:w-[340px] lg:border lg:border-brown lg:px-10 lg:pb-3 lg:pt-14">
         <h1 className="font-serif text-sm uppercase leading-[17px] tracking-[1px] text-ink">{product.title}</h1>
         <p className="mt-3 text-sm tracking-[1px] text-brown">{formatPrice(product.price)}</p>
         {product.sku && <p className="mt-6 text-xs tracking-[1px] text-brown/50">Артикул: {product.sku}</p>}
 
-        {/* Кольори: варіанти-картки (перехід за кліком) */}
+        {/* Colors: variant cards (navigate on click) */}
         {showVariantSwitch && (
           <div className="mt-10">
             <p className={label}>
@@ -169,7 +187,7 @@ export function ProductDetails({
           </div>
         )}
 
-        {/* Кольори: вибір усередині однієї картки (модель не розбита на варіанти) */}
+        {/* Colors: selection inside a single card (model not split into variants) */}
         {!showVariantSwitch && colors.length > 0 && (
           <div className="mt-10">
             <p className={label}>Колір{color ? `: ${color}` : ''}</p>
@@ -190,7 +208,7 @@ export function ProductDetails({
           </div>
         )}
 
-        {/* Розміри */}
+        {/* Sizes */}
         {sizes.length > 0 && (
           <div className="mt-5">
             <p className={label}>Розмір</p>
@@ -223,7 +241,7 @@ export function ProductDetails({
           <SizeChart html={product.sizeChartHtml} />
         </div>
 
-        {/* Кількість */}
+        {/* Quantity */}
         <div className="mt-5 flex items-center justify-between">
           <p className={label}>Кількість</p>
           <div className="flex items-center border border-[#a3a3a3] text-sm text-ink">
@@ -251,7 +269,7 @@ export function ProductDetails({
           </div>
         </div>
 
-        {/* На десктопі кнопка в картці; на мобілці — закріплена знизу екрана */}
+        {/* On desktop the button is inside the card; on mobile it is pinned to the bottom of the screen */}
         {addButton('mt-5 hidden lg:block')}
         <button
           type="button"
@@ -267,6 +285,14 @@ export function ProductDetails({
         {addButton('h-[57px] rounded-none')}
       </div>
 
+      {lightboxOpen && (
+        <PhotoLightbox
+          photos={lightboxPhotos}
+          index={Math.min(activeImage, lightboxPhotos.length - 1)}
+          onChange={setActiveImage}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
       <QuickOrderModal open={quickOpen} onClose={() => setQuickOpen(false)} item={selectedItem} />
     </div>
   )

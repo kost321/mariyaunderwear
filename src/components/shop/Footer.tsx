@@ -1,21 +1,33 @@
 import Link from 'next/link'
 import { ScrollToTop } from './ScrollToTop'
 
-const INFO_LINKS = [
+// Items without `href` have no page yet: they are shown as plain text until the pages exist.
+const INFO_LINKS: { label: string; href?: string }[] = [
   { href: '/catalog', label: 'Каталог' },
   { href: '/catalog?sort=new', label: 'Новинки' },
   { href: '/cart', label: 'Кошик' },
+  { label: 'Контакти' },
+  { label: 'Співпраця' },
+  { href: '/#care', label: 'Догляд' },
+  { label: 'Соцмережі' },
+  { label: 'Договір публічної оферти' },
+  { label: 'Політика конфіденційності' },
+  { label: 'FAQ' },
 ]
 
-/** Список посилань через «/», як у макеті. */
-function SlashList({ items }: { items: { href: string; label: string }[] }) {
+/** List of links separated by "/", as in the design. */
+function SlashList({ items }: { items: { label: string; href?: string }[] }) {
   return (
     <ul className="flex flex-col gap-2 text-xs font-medium uppercase tracking-[-0.24px] text-sand">
       {items.map((item, i) => (
-        <li key={item.href} className="flex gap-2">
-          <Link href={item.href} className="opacity-60 transition-opacity hover:opacity-100">
-            {item.label}
-          </Link>
+        <li key={item.label} className="flex gap-2">
+          {item.href ? (
+            <Link href={item.href} className="opacity-60 transition-opacity hover:opacity-100">
+              {item.label}
+            </Link>
+          ) : (
+            <span className="opacity-60">{item.label}</span>
+          )}
           {i < items.length - 1 && <span className="font-light opacity-20">/</span>}
         </li>
       ))}

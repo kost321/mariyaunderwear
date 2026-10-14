@@ -5,9 +5,9 @@ import type { AdminViewServerProps } from 'payload'
 import { TorgsoftImportForm } from './TorgsoftImportForm'
 
 /**
- * Custom admін-сторінка «Імпорт з Торгсофт» — завантаження Excel/CSV
- * вивантаження зі складу, яке оновлює ціни/залишки товарів.
- * Зареєстрована в payload.config.ts під admin.components.views.
+ * Custom admin page "Import from Torgsoft": upload an Excel/CSV
+ * export from the warehouse system that updates product prices and stock.
+ * Registered in payload.config.ts under admin.components.views.
  */
 export function TorgsoftImportView(props: AdminViewServerProps) {
   const { initPageResult, params, searchParams } = props

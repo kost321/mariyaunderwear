@@ -1,18 +1,18 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 /**
- * Products.relatedProducts — relationship (hasMany) на саму себе:
- * співробітник вручну обирає товари для блоку «Схожі товари».
+ * Products.relatedProducts: a self-referencing relationship (hasMany):
+ * a staff member hand-picks products for the "Similar products" block.
  *
- * Написано вручну (не через migrate:create): автогенератор порівнює
- * поточний снапшот схеми з products_id_1234.json, який не відповідає
- * фактичному стану продової таблиці products (перевірено pg_dump зі
- * справжньої prod-бази) — і намагається зайво перестворити вже наявні
- * колонки та видалити неіснуючу color_group. products_rels — єдина
- * нова таблиця, потрібна для цього поля, тому міграція обмежена нею.
+ * Written by hand (not via migrate:create): the generator compares the
+ * current schema snapshot with products_id_1234.json, which does not match
+ * the actual state of the production products table (verified with pg_dump from
+ * the real prod database), and tries to needlessly recreate columns that already exist
+ * and drop the nonexistent color_group. products_rels is the only
+ * new table this field needs, so the migration is limited to it.
  *
- * Idempotent (IF NOT EXISTS) — безпечно застосовувати навіть якщо
- * таблицю вже створив db push у dev.
+ * Idempotent (IF NOT EXISTS), so it is safe to apply even if
+ * the table was already created by db push in dev.
  */
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`

@@ -3,12 +3,12 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 /**
  * products.description: richText (jsonb) → HTML (varchar).
  *
- * Поле «Опис» повертається у UI як звичайне HTML-поле (як descriptionHtml,
- * що тепер зветься «Характеристика»). Старих даних у колонці немає
- * (поле було приховане), тому просто змінюємо тип.
+ * The "Description" field returns to the UI as a plain HTML field (like descriptionHtml,
+ * which is now called "Characteristics"). There is no old data in the column
+ * (the field was hidden), so we simply change the type.
  *
- * USING NULL — відкидаємо будь-який залишковий jsonb; idempotent через
- * перевірку поточного типу.
+ * USING NULL discards any leftover jsonb; idempotent via a
+ * check of the current type.
  */
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`

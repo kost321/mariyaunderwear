@@ -1,20 +1,20 @@
 import type { CollectionConfig } from 'payload'
 
 /**
- * Orders — заказы покупателей.
+ * Orders: customer orders.
  *
- * Поля по ТЗ: customerName, phone, email, products, totalPrice, status.
+ * Fields per the spec: customerName, phone, email, products, totalPrice, status.
  *
- * Решения:
- *  - products: массив позиций. Для каждой позиции храним relationship
- *    на товар + снимок (название, цена, размер, цвет, количество) на
- *    момент заказа. Снимок нужен, чтобы заказ остался корректным, даже
- *    если позже изменят цену или удалят товар.
- *  - totalPrice: пересчитывается на сервере в beforeChange — НЕ доверяем
- *    сумме, пришедшей с клиента.
- *  - status: select с фиксированными значениями new/processing/
+ * Decisions:
+ *  - products: an array of line items. For each line we store a relationship
+ *    to the product plus a snapshot (title, price, size, color, quantity) at
+ *    the time of the order. The snapshot keeps the order correct even
+ *    if the price changes or the product is deleted later.
+ *  - totalPrice: recalculated on the server in beforeChange; the total
+ *    sent by the client is NOT trusted.
+ *  - status: select with fixed values new/processing/
  *    completed/cancelled.
- *  - orderNumber: человекочитаемый номер, генерируется при создании.
+ *  - orderNumber: a human-readable number generated on creation.
  */
 export const Orders: CollectionConfig = {
   slug: 'orders',
@@ -28,10 +28,10 @@ export const Orders: CollectionConfig = {
     plural: 'Замовлення',
   },
   access: {
-    // Замовлення створює лише серверний роут /api/order (Local API,
-    // overrideAccess), тож публічний REST/GraphQL створення закритий.
+    // Orders are created only by the server route /api/order (Local API,
+    // overrideAccess), so public REST/GraphQL creation is closed.
     create: ({ req }) => Boolean(req.user),
-    // Просматривать/менять заказы может только администратор CMS.
+    // Only a CMS administrator can view or change orders.
     read: ({ req }) => Boolean(req.user),
     update: ({ req }) => Boolean(req.user),
     delete: ({ req }) => Boolean(req.user),
@@ -39,11 +39,11 @@ export const Orders: CollectionConfig = {
   hooks: {
     beforeChange: [
       ({ data, operation }) => {
-        // 1. Номер заказа — только при создании.
+        // 1. Order number: only on creation.
         if (operation === 'create' && !data.orderNumber) {
           data.orderNumber = `ORD-${Date.now()}`
         }
-        // 2. Пересчёт суммы на сервере по снимкам позиций.
+        // 2. Recalculate the total on the server from the line-item snapshots.
         if (Array.isArray(data.products)) {
           data.totalPrice = data.products.reduce(
             (sum: number, item: { priceSnapshot?: number; quantity?: number }) =>

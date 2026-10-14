@@ -5,26 +5,26 @@ import { getPayload } from './payload'
 import type { Product, Category } from '@/payload-types'
 
 /**
- * Слой доступа к данным. Все запросы товаров/категорий идут через эти
- * функции — так фронтенд не знает деталей Payload, а правила фильтрации
- * (например, only active) лежат в одном месте.
+ * Data access layer. All product/category queries go through these
+ * functions, so the frontend does not know Payload details and the filtering rules
+ * (for example, only active) live in one place.
  */
 
-/** Получить список активных товаров (для каталога). */
+/** Get the list of active products (for the catalog). */
 export async function getProducts(options?: {
   categorySlug?: string
-  /** Пошук за назвою (без урахування регістру). */
+  /** Search by title (case-insensitive). */
   q?: string
   limit?: number
 }): Promise<Product[]> {
   const payload = await getPayload()
 
-  // Базовый фильтр: только активные товары.
+  // Base filter: active products only.
   const where: Where = {
     active: { equals: true },
   }
 
-  // Опциональная фильтрация по категории через её slug.
+  // Optional filtering by category via its slug.
   if (options?.categorySlug) {
     where['category.slug'] = { equals: options.categorySlug }
   }
@@ -38,18 +38,18 @@ export async function getProducts(options?: {
     where,
     limit: options?.limit ?? 100,
     sort: '-createdAt',
-    // depth: 2 — подтянуть связанные media и category объектами,
-    // а не просто их id.
+    // depth: 2 pulls related media and category in as objects,
+    // not just their ids.
     depth: 2,
   })
 
-  // Каждый товар (в т.ч. каждый цвет модели) показывается в каталоге
-  // отдельной плиткой. Связь цветов работает только на странице товара
-  // через переключатель (getColorVariants).
+  // Every product (including every color of a model) is shown in the catalog
+  // as a separate tile. The color link only works on the product page
+  // through the switcher (getColorVariants).
   return result.docs
 }
 
-/** Получить один товар по slug (для карточки товара). */
+/** Get one product by slug (for the product page). */
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const payload = await getPayload()
 
@@ -67,10 +67,10 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 }
 
 /**
- * Все карточки одной модели (варианты цвета).
- * Каждый цвет — самостоятельный товар со своим slug; связаны полем `model`
- * (relationship на коллекцию product-models).
- * Возвращаются в том же порядке, в каком заведены в админке.
+ * All cards of one model (color variants).
+ * Each color is a standalone product with its own slug; they are linked by the `model` field
+ * (a relationship to the product-models collection).
+ * Returned in the same order as they were created in the admin.
  */
 export async function getColorVariants(
   modelId: number | string,
@@ -93,7 +93,7 @@ export async function getColorVariants(
   return result.docs
 }
 
-/** Получить все категории (для меню/фильтра). */
+/** Get all categories (for the menu/filter). */
 export async function getCategories(): Promise<Category[]> {
   const payload = await getPayload()
 
@@ -107,19 +107,19 @@ export async function getCategories(): Promise<Category[]> {
   return result.docs
 }
 
-/** Глобальний текст «Доставка та оплата» (глобал Settings). */
+/** Global "Delivery and payment" text (the Settings global). */
 export async function getDeliveryPaymentHtml(): Promise<string | null> {
   try {
     const payload = await getPayload()
     const settings = await payload.findGlobal({ slug: 'settings' })
     return settings?.deliveryPaymentHtml ?? null
   } catch {
-    // Таблиця settings ще не створена (напр. білд до міграції) — не валимо сторінку.
+    // The settings table is not created yet (e.g. a build before the migration); do not crash the page.
     return null
   }
 }
 
-/** slug всех активных товаров — для generateStaticParams (SSG/SEO). */
+/** Slugs of all active products, for generateStaticParams (SSG/SEO). */
 export async function getAllProductSlugs(): Promise<string[]> {
   const payload = await getPayload()
 

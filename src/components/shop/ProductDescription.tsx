@@ -1,11 +1,11 @@
 type Section = { title?: string; html?: string | null }
 
 /**
- * Опис, склад і догляд під галереєю товару (макет «Products2»): звичайний
- * текст з розрядкою, без акордеона. Секції з порожнім html не показуються.
+ * Description, composition and care under the product gallery (design "Products2"): plain
+ * letter-spaced text, no accordion. Sections with empty html are not shown.
  *
- * HTML виводиться як є (dangerouslySetInnerHTML) — джерело довірене
- * (адмінка магазину), як і в SizeChart / RawHtml.
+ * HTML is rendered as is (dangerouslySetInnerHTML); the source is trusted
+ * (the store admin), same as in SizeChart / RawHtml.
  */
 export function ProductDescription({ sections }: { sections: Section[] }) {
   const visible = sections.filter((s) => s.html && s.html.trim())

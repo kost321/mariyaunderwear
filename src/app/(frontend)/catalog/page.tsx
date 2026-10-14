@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   description: 'Каталог одягу Mariya Underwear — нічні сорочки, піжами, халати, комплекти.',
 }
 
-// Каталог получает данные на сервере при каждом запросе.
-// category и q фильтруют в Payload, размер/цвет/цена/сортировка — в памяти (lib/catalog).
+// The catalog fetches data on the server on every request.
+// category and q are filtered in Payload; size/color/price/sorting in memory (lib/catalog).
 export default async function CatalogPage({
   searchParams,
 }: {
@@ -23,7 +23,7 @@ export default async function CatalogPage({
   const params = parseCatalogParams(raw)
   const showNew = raw.sort === 'new'
 
-  // Параллельно тянем товары и категории из Payload (Local API).
+  // Fetch products and categories from Payload in parallel (Local API).
   const [baseProducts, categories] = await Promise.all([
     getProducts({ categorySlug: params.category, q: params.q, limit: 1000 }),
     getCategories(),
@@ -40,7 +40,7 @@ export default async function CatalogPage({
 
   return (
     <div className="lg:grid lg:grid-cols-[265px_1fr] lg:gap-x-10">
-      {/* Заголовок над сіткою: на десктопі — у правій колонці */}
+      {/* Heading above the grid: on desktop it sits in the right column */}
       <div className="text-center lg:col-start-2 lg:text-left">
         <nav aria-label="Хлібні крихти" className="text-xs tracking-[1px] text-brown/60">
           <Link href="/" className="hover:text-brown">
@@ -101,7 +101,7 @@ export default async function CatalogPage({
         {products.length > 0 ? (
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:gap-x-10 lg:gap-y-12">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} sizes="(max-width: 768px) 50vw, 265px" />
+              <ProductCard key={product.id} product={product} sizes="(max-width: 768px) 80vw, 540px" />
             ))}
           </div>
         ) : (

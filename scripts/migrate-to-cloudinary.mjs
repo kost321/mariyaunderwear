@@ -1,8 +1,8 @@
 /**
- * Міграція локальних фото з public/media/ у Cloudinary.
- * Оновлює URL в базі даних через Payload API.
+ * Migration of local photos from public/media/ to Cloudinary.
+ * Updates the URLs in the database through the Payload API.
  *
- * Запуск: ADMIN_EMAIL=… ADMIN_PASSWORD=… CLOUDINARY_CLOUD_NAME=… CLOUDINARY_API_KEY=… \
+ * Run: ADMIN_EMAIL=… ADMIN_PASSWORD=… CLOUDINARY_CLOUD_NAME=… CLOUDINARY_API_KEY=… \
  *         CLOUDINARY_API_SECRET=… node scripts/migrate-to-cloudinary.mjs
  */
 
@@ -90,17 +90,17 @@ async function main() {
     const originalFilename = doc.filename
     if (!originalFilename) { warn(`Запис ${doc.id} без filename, пропускаю`); skipped++; continue }
 
-    // Якщо вже в Cloudinary — пропускаємо
+    // If it is already in Cloudinary, skip it
     if (doc.url && doc.url.includes('cloudinary.com')) {
       log(`Вже в Cloudinary: ${originalFilename}`)
       skipped++
       continue
     }
 
-    // Шукаємо файл локально (тільки оригінал, без ресайзів)
+    // Look for the file locally (original only, no resizes)
     const baseName = originalFilename.replace(/\.[^.]+$/, '')
     const ext = path.extname(originalFilename)
-    // Оригінал — файл без суфіксу розміру (не містить -400x400 тощо)
+    // Original = the file without a size suffix (does not contain -400x400 etc.)
     const localPath = path.join(MEDIA_DIR, originalFilename)
 
     if (!fs.existsSync(localPath)) {
@@ -116,7 +116,7 @@ async function main() {
       const result = await uploadToCloudinary(localPath, baseName)
       const cloudUrl = result.secure_url
 
-      // Оновлюємо запис у базі
+      // Update the record in the database
       await updateMediaDoc(token, doc.id, cloudUrl, result.public_id)
       log(`  ✓ ${originalFilename} → ${cloudUrl}`)
       uploaded++

@@ -1,5 +1,5 @@
 /* THIS FILE WAS GENERATED FOR PAYLOAD ADMIN.
- * Рендерит все страницы админки Payload по пути /admin/... */
+ * Renders all Payload admin pages under /admin/... */
 import type { Metadata } from 'next'
 
 import config from '@payload-config'

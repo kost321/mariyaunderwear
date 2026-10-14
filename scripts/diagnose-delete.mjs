@@ -1,6 +1,6 @@
-// Діагностика: чому DELETE товару падає 500 на проді.
-// Виконує послідовність видалень у транзакції та РОЛБЕКАЄ — нічого не змінює.
-// Запуск: node --import tsx scripts/diagnose-delete.mjs
+// Diagnostics: why DELETE of a product returns 500 in production.
+// Runs a sequence of deletes inside a transaction and ROLLS BACK, so nothing changes.
+// Run: node --import tsx scripts/diagnose-delete.mjs
 import { readFileSync } from 'fs'
 import pg from 'pg'
 
@@ -15,7 +15,7 @@ const client = new pg.Client({
 })
 await client.connect()
 
-// Ті самі таблиці, які Payload чистить при видаленні товару.
+// The same tables Payload cleans up when a product is deleted.
 const steps = [
   ['products_images', `DELETE FROM products_images WHERE _parent_id = $1`],
   ['products_sizes', `DELETE FROM products_sizes WHERE _parent_id = $1`],

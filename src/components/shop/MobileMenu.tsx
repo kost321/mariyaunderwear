@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 export type MenuCategory = { slug: string; title: string }
 
 /**
- * Бокове меню, яке відкривається бургером: навігація + категорії каталогу.
+ * Side menu opened by the burger: navigation + catalog categories.
  */
 export function MobileMenu({
   open,
@@ -21,7 +21,7 @@ export function MobileMenu({
   links: { href: string; label: string }[]
   categories: MenuCategory[]
 }) {
-  // Esc закриває меню, сторінка під ним не скролиться
+  // Esc closes the menu; the page underneath does not scroll
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()

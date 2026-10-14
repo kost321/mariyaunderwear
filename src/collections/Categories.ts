@@ -2,8 +2,8 @@ import type { CollectionConfig } from 'payload'
 import { formatSlug } from '@/lib/slug'
 
 /**
- * Categories — категории товаров (например: «Платья», «Куртки»).
- * Поля: title, slug, image (по ТЗ).
+ * Categories: product categories (for example "Dresses", "Jackets").
+ * Fields: title, slug, image (per the spec).
  */
 export const Categories: CollectionConfig = {
   slug: 'categories',
@@ -17,7 +17,7 @@ export const Categories: CollectionConfig = {
     plural: 'Категорії',
   },
   access: {
-    read: () => true, // категории публичны
+    read: () => true, // read: () => true, // categories are public
     create: ({ req }) => Boolean(req.user),
     update: ({ req }) => Boolean(req.user),
     delete: ({ req }) => Boolean(req.user),
@@ -40,7 +40,7 @@ export const Categories: CollectionConfig = {
         description: 'Залиште порожнім — згенерується з назви.',
       },
       hooks: {
-        // Перед сохранением приводим slug к URL-безопасному виду.
+        // Before saving, normalize the slug to a URL-safe form.
         beforeValidate: [formatSlug('title')],
       },
     },

@@ -1,13 +1,13 @@
 /**
- * Скрипт импорта товаров из Tilda CSV в Payload CMS.
+ * Script that imports products from a Tilda CSV into Payload CMS.
  *
- * Запуск:
+ * Run:
  *   node scripts/import-tilda.mjs --file=scripts/data/komplekt.csv
  *
- * Перед запуском:
- *   1. Убедитесь что приложение запущено: npm run dev (или build)
- *   2. Положите CSV-файл из Tilda рядом со скриптом
- *   3. Укажите PAYLOAD_URL и admin credentials ниже или через .env
+ * Before running:
+ *   1. Make sure the app is running: npm run dev (or build)
+ *   2. Put the Tilda CSV file next to the script
+ *   3. Set PAYLOAD_URL and the admin credentials below or via .env
  */
 
 import fs from 'fs'
@@ -16,14 +16,14 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// ─── Настройки ────────────────────────────────────────────────────────────────
+// ─── Settings ────────────────────────────────────────────────────────────────
 const PAYLOAD_URL = process.env.PAYLOAD_URL || 'http://localhost:3000'
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'kostyannn1996@gmail.com'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '' // заполните или передайте через env
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '' // const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '' // fill in or pass via env
 
 const DEFAULT_CSV = path.join(__dirname, 'data', 'komplekt.csv')
 
-// Маппинг цветов украинского → HEX
+// Color mapping: Ukrainian name → HEX
 const COLOR_HEX = {
   'чорний': '#1a1a1a',
   'білий': '#ffffff',
@@ -45,7 +45,7 @@ const COLOR_HEX = {
   'леопард': '#c19a49',
 }
 
-// ─── Утиліти ─────────────────────────────────────────────────────────────────
+// ─── Utilities ───────────────────────────────────────────────────────────────
 
 function log(msg) { console.log(`[import] ${msg}`) }
 function warn(msg) { console.warn(`[warn]   ${msg}`) }
@@ -57,8 +57,8 @@ function getArg(name) {
 }
 
 /**
- * Разбирает CSV с разделителем `;` и поддержкой кавычек.
- * Возвращает массив объектов { [header]: value }.
+ * Parses a `;`-separated CSV with quote support.
+ * Returns an array of { [header]: value } objects.
  */
 function parseCsv(content) {
   const lines = content.split('\n').filter(l => l.trim())
@@ -95,8 +95,8 @@ function splitCsvLine(line) {
 }
 
 /**
- * Парсит поле Editions: "Колір:Чорний;Розмір:S"
- * Возвращает { color: 'Чорний', size: 'S' }
+ * Parses the Editions field: "Колір:Чорний;Розмір:S"
+ * Returns { color: 'Чорний', size: 'S' }
  */
 function parseEditions(editions) {
   if (!editions) return {}
@@ -162,7 +162,7 @@ function authHeaders(extra = {}) {
 
 async function findOrCreateCategory(title) {
   const slug = slugify(title)
-  // Поиск по slug
+  // Look up by slug
   const searchRes = await fetch(
     `${PAYLOAD_URL}/api/categories?where[slug][equals]=${encodeURIComponent(slug)}&limit=1`,
     { headers: authHeaders() }
@@ -171,7 +171,7 @@ async function findOrCreateCategory(title) {
   if (searchData.docs && searchData.docs.length > 0) {
     return searchData.docs[0].id
   }
-  // Создание
+  // Create
   const createRes = await fetch(`${PAYLOAD_URL}/api/categories`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
@@ -186,11 +186,11 @@ async function findOrCreateCategory(title) {
 }
 
 /**
- * Скачивает изображение по URL и загружает в Media.
- * Возвращает ID медиа-записи.
+ * Downloads an image by URL and uploads it to Media.
+ * Returns the ID of the media record.
  */
 async function uploadImageFromUrl(imageUrl, altText = '') {
-  // Проверяем что уже не загружено (по alt/filename)
+  // Check that it is not already uploaded (by alt/filename)
   const filename = path.basename(new URL(imageUrl).pathname)
   const checkRes = await fetch(
     `${PAYLOAD_URL}/api/media?where[filename][equals]=${encodeURIComponent(filename)}&limit=1`,
@@ -202,7 +202,7 @@ async function uploadImageFromUrl(imageUrl, altText = '') {
     return checkData.docs[0].id
   }
 
-  // Скачиваем
+  // Download
   const imgRes = await fetch(imageUrl)
   if (!imgRes.ok) {
     warn(`  Не удалось скачать фото: ${imageUrl} (${imgRes.status})`)
@@ -215,7 +215,7 @@ async function uploadImageFromUrl(imageUrl, altText = '') {
     ? filename
     : filename + ext
 
-  // Загружаем в Payload Media (нативный FormData Node 18+)
+  // Upload to Payload Media (native FormData, Node 18+)
   const form = new FormData()
   const blob = new Blob([buffer], { type: contentType })
   form.append('file', blob, safeFilename)
@@ -236,7 +236,7 @@ async function uploadImageFromUrl(imageUrl, altText = '') {
 }
 
 async function productExists(title) {
-  // Перевіряємо тільки по точній назві
+  // Check by exact title only
   const byTitle = await fetch(
     `${PAYLOAD_URL}/api/products?where[title][equals]=${encodeURIComponent(title)}&limit=1`,
     { headers: authHeaders() }
@@ -253,7 +253,7 @@ async function createProduct(productData) {
   const data = await res.json()
   if (data.doc) return data.doc
 
-  // Якщо конфлікт SKU — спробуємо без SKU (використовуємо унікальний slug)
+  // On an SKU conflict, retry without the SKU (the unique slug is used)
   const skuConflict = JSON.stringify(data).includes('"sku"')
   if (skuConflict && productData.sku) {
     const fallback = { ...productData, sku: undefined, slug: `${productData.slug}-${Date.now()}` }
@@ -270,7 +270,7 @@ async function createProduct(productData) {
   throw new Error(`Ошибка создания товара: ${JSON.stringify(data).slice(0, 300)}`)
 }
 
-// ─── Основная логика ──────────────────────────────────────────────────────────
+// ─── Main logic ───────────────────────────────────────────────────────────
 
 async function main() {
   const csvPath = getArg('file') || DEFAULT_CSV
@@ -286,14 +286,14 @@ async function main() {
   const rows = parseCsv(content)
   log(`Строк в CSV: ${rows.length}`)
 
-  // Группируем: родители (нет Parent UID) и дети (есть Parent UID)
+  // Group: parents (no Parent UID) and children (has Parent UID)
   const parents = rows.filter(r => !r['Parent UID'] || r['Parent UID'] === '')
   const children = rows.filter(r => r['Parent UID'] && r['Parent UID'] !== '')
 
   log(`Товаров (родители): ${parents.length}`)
   log(`Вариантов (дети): ${children.length}`)
 
-  // Индекс детей по Parent UID
+  // Index of children by Parent UID
   const childrenByParent = {}
   for (const child of children) {
     const pid = child['Parent UID']
@@ -310,7 +310,7 @@ async function main() {
   for (const parent of parents) {
     const tildaUid = parent['Tilda UID']
     const title = parent['Title'] || ''
-    // SKU берём из родителя, или из первого варианта (Tilda хранит его там)
+    // SKU comes from the parent, or from the first variant (Tilda stores it there)
     const variants0 = childrenByParent[tildaUid] || []
     const sku = parent['SKU'] || variants0[0]?.['SKU'] || parent['External ID'] || tildaUid || ''
 
@@ -322,18 +322,18 @@ async function main() {
 
     log(`\nОбрабатываю: ${title}`)
 
-    // Slug генерируем заранее для проверки дубликата
+    // Generate the slug up front to check for duplicates
     const baseSlug = slugify(title)
     const slug = sku ? `${baseSlug}-${sku}` : baseSlug
 
-    // Проверка на дубликат по title и SKU
+    // Duplicate check by title and SKU
     if (await productExists(title)) {
       warn(`Товар уже существует, пропускаю: ${title}`)
       skipped++
       continue
     }
 
-    // Категория (берём первую из списка через ";")
+    // Category (take the first one from the ";" list)
     const categoryRaw = (parent['Category'] || 'Комплект').split(';')[0].trim()
     let categoryId
     try {
@@ -344,10 +344,10 @@ async function main() {
       continue
     }
 
-    // Варианты этого товара
+    // Variants of this product
     const variants = variants0
 
-    // Цена — берём минимальную из вариантов (или из родителя)
+    // Price: take the minimum across variants (or from the parent)
     const prices = variants
       .map(v => parseFloat(v['Price']))
       .filter(p => !isNaN(p) && p > 0)
@@ -361,7 +361,7 @@ async function main() {
       continue
     }
 
-    // Размеры и цвета из вариантов
+    // Sizes and colors from the variants
     const sizesSet = new Set()
     const colorsMap = new Map() // name → hex
 
@@ -379,16 +379,16 @@ async function main() {
       ...(hex ? { hex } : {}),
     }))
 
-    // Фотографии — из родителя (space-separated) + первое фото каждого варианта
+    // Photos: from the parent (space-separated) + the first photo of each variant
     const photoStr = parent['Photo'] || ''
     const parentPhotos = photoStr.split(' ').map(u => u.trim()).filter(Boolean)
 
-    // Убираем дубли
+    // Remove duplicates
     const allPhotoUrls = [...new Set(parentPhotos)]
 
     log(`  Фото: ${allPhotoUrls.length}, Размеры: ${sizes.length}, Цвета: ${colors.length}, Цена: ${price}`)
 
-    // Загружаем фото
+    // Upload photos
     const imageIds = []
     for (const url of allPhotoUrls) {
       const mediaId = await uploadImageFromUrl(url, title)
@@ -420,7 +420,7 @@ async function main() {
       failed++
     }
 
-    // Пауза чтобы не перегружать сервер
+    // Pause so the server is not overloaded
     await new Promise(r => setTimeout(r, 200))
   }
 

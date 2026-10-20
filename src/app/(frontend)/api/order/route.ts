@@ -3,59 +3,10 @@ import { Resend } from 'resend'
 import { getPayload } from '@/lib/payload'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 import { isSizeAvailable } from '@/lib/stock'
+import { esc, notifyRecipients, str } from '@/lib/mail'
+import { createRateLimiter } from '@/lib/rateLimit'
 
-// Limit on orders per IP address (kept in process memory, which is
-// enough for a single Railway instance).
-const RATE_LIMIT = 5
-const RATE_WINDOW_MS = 10 * 60 * 1000
-const hits = new Map<string, number[]>()
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now()
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
-  if (recent.length >= RATE_LIMIT) {
-    hits.set(ip, recent)
-    return true
-  }
-  recent.push(now)
-  hits.set(ip, recent)
-  // Do not let the map grow without bound.
-  if (hits.size > 5000) {
-    for (const [key, times] of hits) {
-      if (times.every((t) => now - t >= RATE_WINDOW_MS)) hits.delete(key)
-    }
-  }
-  return false
-}
-
-/** A string with a length limit; undefined if the value is invalid. */
-function str(value: unknown, max: number): string | undefined {
-  if (value === undefined || value === null || value === '') return ''
-  if (typeof value !== 'string' || value.length > max) return undefined
-  return value.trim()
-}
-
-/**
- * Recipients of the new-order email: ORDER_NOTIFY_EMAIL (one address or
- * several separated by commas). If the variable is unset, the owner's fallback address.
- */
-function notifyRecipients(): string[] {
-  const list = (process.env.ORDER_NOTIFY_EMAIL ?? '')
-    .split(',')
-    .map((email) => email.trim())
-    .filter(Boolean)
-  return list.length > 0 ? list : ['itsmariainthecity@gmail.com']
-}
-
-/** Escapes customer-supplied text before inserting it into the email HTML. */
-function esc(value: unknown): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
+const isRateLimited = createRateLimiter(5, 10 * 60 * 1000)
 
 const BAD_REQUEST = () => NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
 

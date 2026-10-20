@@ -24,12 +24,11 @@ const pill =
 const field =
   'h-11 w-full border border-[#b6ada3] px-5 text-xs text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none'
 
-/** Empty cart / thank-you: heading + button to the catalog. */
-function Message({ title, text }: { title: string; text?: string }) {
+/** Empty cart: heading + button to the catalog. */
+function Message({ title }: { title: string }) {
   return (
     <div className="flex flex-col items-center gap-5 py-24 text-center">
       <h1 className="font-serif text-2xl uppercase tracking-[2px] text-ink lg:text-[32px]">{title}</h1>
-      {text && <p className="text-sm tracking-[1px] text-brown/60">{text}</p>}
       <Link href="/catalog" className={cn(pill, 'mt-4 w-[265px]')}>
         Перейти до каталогу
       </Link>
@@ -72,6 +71,76 @@ function Totals({ total, large }: { total: number; large?: boolean }) {
         <span className="font-serif text-base tracking-[1px] text-brown">{formatPrice(total)}</span>
       </div>
     </>
+  )
+}
+
+/** Order line, as in "Your order" of the design: photo, title, color/size, quantity and amount. */
+function OrderLine({ item, onChange }: { item: CartItem; onChange?: () => void }) {
+  return (
+    <div className="flex gap-[11px]">
+      <div className={cn(photo, 'h-[134px] w-[113px] shrink-0')}>
+        {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="113px" className="object-cover" />}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col py-4">
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-serif text-sm text-black">{item.title}</p>
+          {onChange && (
+            <button type="button" onClick={onChange} className="shrink-0 text-xs text-brown underline underline-offset-2">
+              Змінити
+            </button>
+          )}
+        </div>
+        <p className="mt-2 text-xs text-brown">{[item.color, item.size].filter(Boolean).join(' / ')}</p>
+        <div className="mt-auto flex items-baseline justify-between">
+          <span className="font-script text-sm text-pink">({item.quantity})</span>
+          <span className="text-[13px] text-brown/50">{formatPrice(item.price * item.quantity)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** What is left on screen after the order: the cart itself is already cleared. */
+type PlacedOrder = { id: number | string; items: CartItem[]; total: number; address: string }
+
+/** Thank-you screen: message + full-width band with the order lines and the summary. */
+function OrderSuccess({ order }: { order: PlacedOrder }) {
+  return (
+    <div className="lg:pt-8">
+      <div className="mx-auto flex max-w-[538px] flex-col items-center border border-[#d9d9d9] px-5 py-8 text-center lg:h-[166px] lg:pb-0 lg:pt-[46px]">
+        <h1 className="font-serif text-2xl uppercase leading-8 tracking-[2px] text-ink lg:text-[32px] lg:leading-10">Дякуємо за замовлення</h1>
+        <Link href="/catalog" className="mt-2 uppercase leading-10 text-ink/50 transition-colors hover:text-ink lg:mt-[17px]">
+          Повернутись до покупок
+        </Link>
+      </div>
+
+      <section className="-mx-[var(--gutter)] mt-[43px] grid border-y border-[#d9d9d9] px-[var(--gutter)] py-10 lg:grid-cols-[1fr_327px] lg:gap-x-[38px] lg:pb-[39px] lg:pr-[57px] lg:pt-[41px]">
+        <ul className="grid items-start gap-6 sm:grid-cols-[repeat(2,minmax(0,328px))] sm:gap-x-[97px] lg:min-h-[191px] lg:border-r lg:border-[#dfdfdf] lg:pt-[29px]">
+          {order.items.map((item) => (
+            <li key={`${item.productId}-${item.size}-${item.color}`}>
+              <OrderLine item={item} />
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-10 flex flex-col border-t border-[#dfdfdf] pt-6 lg:mt-0 lg:border-t-0 lg:pt-0">
+          <dl className="space-y-2.5 text-xs text-ink">
+            <div className="flex items-baseline justify-between gap-4">
+              <dt>Номер замовлення</dt>
+              <dd className="text-[13px] text-brown/50">№{order.id}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="shrink-0">Адреса доставки</dt>
+              <dd className="text-right text-[10px] text-brown/50">{order.address}</dd>
+            </div>
+          </dl>
+          <div className="mt-10 flex items-baseline justify-between border-t border-[#dfdfdf] pt-4 font-serif text-sm text-ink lg:mt-auto">
+            <span>Сума</span>
+            <span>{formatPrice(order.total)}</span>
+          </div>
+        </div>
+      </section>
+    </div>
   )
 }
 
@@ -141,6 +210,7 @@ export function CartPage() {
   const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [placed, setPlaced] = useState<PlacedOrder | null>(null)
   const [form, setForm] = useState<CheckoutForm>({
     customerName: '',
     phone: '',
@@ -181,6 +251,13 @@ export function CartPage() {
         const data = await res.json().catch(() => null)
         throw new Error(res.status === 400 && data?.error ? data.error : '')
       }
+      const data = await res.json().catch(() => null)
+      setPlaced({
+        id: data?.orderId ?? '',
+        items,
+        total: totalPrice,
+        address: `Нова пошта, ${form.city}, відділення ${form.novaPoshtaBranch}`,
+      })
       clear()
       goTo('success')
     } catch (e) {
@@ -194,9 +271,7 @@ export function CartPage() {
     }
   }
 
-  if (step === 'success') {
-    return <Message title="Дякуємо за замовлення!" text="Ми зв'яжемось з вами найближчим часом." />
-  }
+  if (step === 'success' && placed) return <OrderSuccess order={placed} />
 
   if (!items.length) return <Message title="Кошик порожній" />
 
@@ -338,23 +413,8 @@ export function CartPage() {
         <h2 className="font-serif text-sm uppercase tracking-[1px] text-black">Ваше замовлення</h2>
         <ul className="mt-6 space-y-6 border-b border-[#b6ada3] pb-6">
           {items.map((item) => (
-            <li key={`${item.productId}-${item.size}-${item.color}`} className="flex gap-3">
-              <div className={cn(photo, 'h-[133px] w-[113px] shrink-0')}>
-                {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="113px" className="object-cover" />}
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-serif text-sm text-black">{item.title}</p>
-                  <button type="button" onClick={() => goTo('cart')} className="shrink-0 text-xs text-brown underline underline-offset-2">
-                    Змінити
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-brown">{[item.color, item.size].filter(Boolean).join(' / ')}</p>
-                <div className="mt-auto flex items-baseline justify-between">
-                  <span className="font-script text-sm text-pink">({item.quantity})</span>
-                  <span className="text-[13px] text-brown/50">{formatPrice(item.price * item.quantity)}</span>
-                </div>
-              </div>
+            <li key={`${item.productId}-${item.size}-${item.color}`}>
+              <OrderLine item={item} onChange={() => goTo('cart')} />
             </li>
           ))}
         </ul>

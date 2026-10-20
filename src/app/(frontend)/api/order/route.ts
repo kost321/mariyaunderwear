@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Send the email
+  // Send the emails
   const itemsHtml = items
     .map(
       (item) => `
@@ -173,21 +173,7 @@ export async function POST(req: NextRequest) {
     )
     .join('')
 
-  // The order is already saved: an email failure must not break the response to the customer
-  // (otherwise they would retry and create a duplicate).
-  try {
-    const resend = new Resend(process.env.RESEND_API_KEY)
-    const { error } = await resend.emails.send({
-    from: 'Mariya Underwear <orders@mariyaunderwear.com>',
-    to: notifyRecipients(),
-    subject: `Нове замовлення #${order.id} — ${String(form.customerName).replace(/[\r\n]+/g, ' ')}`,
-    html: `
-      <h2>Нове замовлення #${order.id}</h2>
-      <p><b>Ім'я:</b> ${esc(form.customerName)}</p>
-      <p><b>Телефон:</b> ${esc(form.phone)}</p>
-      <p><b>Місто:</b> ${esc(form.city)}</p>
-      <p><b>Відділення НП:</b> ${esc(form.novaPoshtaBranch)}</p>
-      ${form.comment ? `<p><b>Коментар:</b> ${esc(form.comment)}</p>` : ''}
+  const orderTable = `
       <table style="width:100%;border-collapse:collapse;margin-top:16px">
         <thead>
           <tr style="background:#f5f5f5">
@@ -206,12 +192,54 @@ export async function POST(req: NextRequest) {
           </tr>
         </tfoot>
       </table>
+  `
+
+  const details = `
+      <p><b>Ім'я:</b> ${esc(form.customerName)}</p>
+      <p><b>Телефон:</b> ${esc(form.phone)}</p>
+      ${form.email ? `<p><b>Email:</b> ${esc(form.email)}</p>` : ''}
+      <p><b>Місто:</b> ${esc(form.city)}</p>
+      <p><b>Відділення НП:</b> ${esc(form.novaPoshtaBranch)}</p>
+      ${form.comment ? `<p><b>Коментар:</b> ${esc(form.comment)}</p>` : ''}
+  `
+
+  // The order is already saved: an email failure must not break the response to the customer
+  // (otherwise they would retry and create a duplicate).
+  const resend = new Resend(process.env.RESEND_API_KEY)
+  const emails = [
+    {
+      // To the store
+      to: notifyRecipients(),
+      ...(form.email && { replyTo: form.email }),
+      subject: `Нове замовлення #${order.id} — ${String(form.customerName).replace(/[\r\n]+/g, ' ')}`,
+      html: `<h2>Нове замовлення #${order.id}</h2>${details}${orderTable}`,
+    },
+    // Confirmation to the customer, a separate email so they do not see the store's notification addresses
+    ...(form.email
+      ? [
+          {
+            to: [form.email],
+            replyTo: notifyRecipients()[0],
+            subject: `Ваше замовлення #${order.id} — Mariya Underwear`,
+            html: `
+      <h2>Дякуємо за замовлення #${order.id}!</h2>
+      <p>Ми звʼяжемося з вами найближчим часом, щоб підтвердити замовлення і спосіб оплати.</p>
+      ${details}${orderTable}
     `,
-    })
-    if (error) console.error('[order] Resend відхилив лист:', order.id, error)
-  } catch (err) {
-    console.error('[order] Не вдалося надіслати лист:', order.id, err)
-  }
+          },
+        ]
+      : []),
+  ]
+  await Promise.all(
+    emails.map(async (email) => {
+      try {
+        const { error } = await resend.emails.send({ from: 'Mariya Underwear <orders@mariyaunderwear.com>', ...email })
+        if (error) console.error('[order] Resend відхилив лист:', order.id, email.subject, error)
+      } catch (err) {
+        console.error('[order] Не вдалося надіслати лист:', order.id, email.subject, err)
+      }
+    }),
+  )
 
   return NextResponse.json({ success: true, orderId: order.id })
 }

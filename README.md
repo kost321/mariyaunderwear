@@ -4,7 +4,7 @@ Online store for a Ukrainian lingerie and homewear brand, built from scratch to 
 
 **Live:** [mariyaunderwear.com](https://mariyaunderwear.com/)
 
-![Product page](docs/screenshots/product.png)
+![Home page](docs/screenshots/home.png)
 
 ## Stack
 
@@ -24,7 +24,24 @@ Online store for a Ukrainian lingerie and homewear brand, built from scratch to 
 - Price and per-size stock import from Torgsoft (Excel/CSV), matched by SKU and color
 - SEO: sitemap, robots.txt, JSON-LD product markup, canonical URLs
 
-![Catalog](docs/screenshots/catalog.png)
+## Screenshots
+
+| Catalog with filters | Product page |
+|---|---|
+| ![Catalog](docs/screenshots/catalog.png) | ![Product](docs/screenshots/product.png) |
+| **Size chart** | **Cart** |
+| ![Size chart](docs/screenshots/size-chart.png) | ![Cart](docs/screenshots/cart.png) |
+| **Checkout** | **Torgsoft import in the admin panel** |
+| ![Checkout](docs/screenshots/checkout.png) | ![Torgsoft import](docs/screenshots/admin-import.png) |
+
+![Mobile: home, catalog, product](docs/screenshots/mobile.png)
+
+<details>
+<summary>Products in the Payload admin</summary>
+
+![Admin products](docs/screenshots/admin-products.png)
+
+</details>
 
 ## Run locally
 

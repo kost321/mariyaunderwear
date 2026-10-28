@@ -5,6 +5,8 @@ import type { CartItem, CheckoutForm } from '@/types/shop'
 import { isSizeAvailable } from '@/lib/stock'
 import { esc, notifyRecipients, str } from '@/lib/mail'
 import { createRateLimiter } from '@/lib/rateLimit'
+import { isPaymentMethod, paymentMethodLabel } from '@/lib/payment'
+import { normalizeUaPhone } from '@/lib/phone'
 
 const isRateLimited = createRateLimiter(5, 10 * 60 * 1000)
 
@@ -45,21 +47,30 @@ export async function POST(req: NextRequest) {
   ) {
     return BAD_REQUEST()
   }
-  // Phone: 10-15 digits, other characters only as ordinary separators.
-  const digits = phone.replace(/\D/g, '')
-  if (digits.length < 10 || digits.length > 15 || !/^[\d\s+()-]+$/.test(phone)) {
-    return BAD_REQUEST()
+  // Phone: only Ukrainian numbers, stored as +380XXXXXXXXX (lib/phone).
+  const normalizedPhone = normalizeUaPhone(phone)
+  if (!normalizedPhone) {
+    return NextResponse.json(
+      { error: 'Вкажіть український номер телефону, наприклад +380 67 123 45 67' },
+      { status: 400 },
+    )
   }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return BAD_REQUEST()
   }
+  // Payment method: chosen at checkout; the quick order sends none.
+  const paymentMethod = rawForm.paymentMethod
+  if (paymentMethod !== undefined && !isPaymentMethod(paymentMethod)) {
+    return BAD_REQUEST()
+  }
   const form: CheckoutForm = {
     customerName,
-    phone,
+    phone: normalizedPhone,
     city,
     novaPoshtaBranch,
     email: email || undefined,
     comment,
+    paymentMethod,
   }
 
   for (const item of rawItems) {
@@ -125,6 +136,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // The color must be one the product offers: the color card's own color
+    // or one of the legacy colors array. Empty is allowed (products without colors).
+    const productColors = [product.colorName, ...(product.colors ?? []).map((c) => c.name)].filter(Boolean)
+    if (raw.color && !productColors.includes(raw.color)) {
+      return NextResponse.json(
+        { error: `Колір недоступний: ${product.title}, ${raw.color}` },
+        { status: 400 },
+      )
+    }
+
     items.push({
       productId: String(product.id),
       title: product.title,
@@ -148,6 +169,7 @@ export async function POST(req: NextRequest) {
       comment: [form.city, form.novaPoshtaBranch, form.comment].filter(Boolean).join(' | '),
       totalPrice,
       status: 'new',
+      paymentMethod: form.paymentMethod,
       products: items.map((item) => ({
         product: Number(item.productId),
         titleSnapshot: item.title,
@@ -200,6 +222,7 @@ export async function POST(req: NextRequest) {
       ${form.email ? `<p><b>Email:</b> ${esc(form.email)}</p>` : ''}
       <p><b>Місто:</b> ${esc(form.city)}</p>
       <p><b>Відділення НП:</b> ${esc(form.novaPoshtaBranch)}</p>
+      <p><b>Оплата:</b> ${form.paymentMethod ? esc(paymentMethodLabel(form.paymentMethod)) : 'уточнити під час дзвінка'}</p>
       ${form.comment ? `<p><b>Коментар:</b> ${esc(form.comment)}</p>` : ''}
   `
 
@@ -223,7 +246,11 @@ export async function POST(req: NextRequest) {
             subject: `Ваше замовлення #${order.id} — Mariya Underwear`,
             html: `
       <h2>Дякуємо за замовлення #${order.id}!</h2>
-      <p>Ми звʼяжемося з вами найближчим часом, щоб підтвердити замовлення і спосіб оплати.</p>
+      <p>${
+        form.paymentMethod === 'prepaid'
+          ? 'Ми звʼяжемося з вами найближчим часом, щоб підтвердити замовлення. Реквізити для оплати надішлемо після підтвердження — будь ласка, не переказуйте кошти раніше.'
+          : 'Ми звʼяжемося з вами найближчим часом, щоб підтвердити замовлення і спосіб оплати.'
+      }</p>
       ${details}${orderTable}
     `,
           },

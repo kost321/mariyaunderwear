@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { PAYMENT_METHODS } from '@/lib/payment'
 
 /**
  * Orders: customer orders.
@@ -20,7 +21,16 @@ export const Orders: CollectionConfig = {
   slug: 'orders',
   admin: {
     useAsTitle: 'orderNumber',
-    defaultColumns: ['orderNumber', 'customerName', 'totalPrice', 'status', 'createdAt'],
+    defaultColumns: [
+      'orderNumber',
+      'customerName',
+      'totalPrice',
+      'paymentMethod',
+      'paymentReceived',
+      'ttn',
+      'status',
+      'createdAt',
+    ],
     group: 'Магазин',
   },
   labels: {
@@ -77,6 +87,35 @@ export const Orders: CollectionConfig = {
         { label: 'Виконано', value: 'completed' },
         { label: 'Скасовано', value: 'cancelled' },
       ],
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'paymentMethod',
+      label: 'Спосіб оплати',
+      type: 'select',
+      options: PAYMENT_METHODS.map(({ value, label }) => ({ value, label })),
+      admin: {
+        position: 'sidebar',
+        description: 'Обирає покупець на сайті; менеджер уточнює під час дзвінка.',
+      },
+    },
+    {
+      name: 'paymentReceived',
+      label: 'Оплата отримана',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Передоплата надійшла на рахунок або післяплату отримано від Нової пошти.',
+      },
+    },
+    {
+      name: 'ttn',
+      label: 'ТТН Нової пошти',
+      type: 'text',
+      maxLength: 30,
       admin: {
         position: 'sidebar',
       },

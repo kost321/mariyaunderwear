@@ -7,6 +7,7 @@ import { X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { cn, formatPrice } from '@/lib/utils'
 import type { CartItem, CheckoutForm } from '@/types/shop'
+import { PAYMENT_METHODS, paymentMethodLabel, type PaymentMethod } from '@/lib/payment'
 
 type Step = 'cart' | 'checkout' | 'success'
 
@@ -101,7 +102,13 @@ function OrderLine({ item, onChange }: { item: CartItem; onChange?: () => void }
 }
 
 /** What is left on screen after the order: the cart itself is already cleared. */
-type PlacedOrder = { id: number | string; items: CartItem[]; total: number; address: string }
+type PlacedOrder = {
+  id: number | string
+  items: CartItem[]
+  total: number
+  address: string
+  paymentMethod?: PaymentMethod
+}
 
 /** Thank-you screen: message + full-width band with the order lines and the summary. */
 function OrderSuccess({ order }: { order: PlacedOrder }) {
@@ -133,6 +140,12 @@ function OrderSuccess({ order }: { order: PlacedOrder }) {
               <dt className="shrink-0">Адреса доставки</dt>
               <dd className="text-right text-[10px] text-brown/50">{order.address}</dd>
             </div>
+            {order.paymentMethod && (
+              <div className="flex items-baseline justify-between gap-4">
+                <dt className="shrink-0">Оплата</dt>
+                <dd className="text-right text-[10px] text-brown/50">{paymentMethodLabel(order.paymentMethod)}</dd>
+              </div>
+            )}
           </dl>
           <div className="mt-10 flex items-baseline justify-between border-t border-[#dfdfdf] pt-4 font-serif text-sm text-ink lg:mt-auto">
             <span>Сума</span>
@@ -257,6 +270,7 @@ export function CartPage() {
         items,
         total: totalPrice,
         address: `Нова пошта, ${form.city}, відділення ${form.novaPoshtaBranch}`,
+        paymentMethod: form.paymentMethod,
       })
       clear()
       goTo('success')
@@ -397,8 +411,37 @@ export function CartPage() {
                 </div>
               ))}
             </dl>
+
+            <fieldset className="mt-8">
+              <legend className="font-serif text-sm uppercase text-ink">Спосіб оплати</legend>
+              <div className="mt-3 space-y-3">
+                {PAYMENT_METHODS.map((m) => (
+                  <label
+                    key={m.value}
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 border px-5 py-4 text-xs transition-colors',
+                      form.paymentMethod === m.value ? 'border-ink' : 'border-[#b6ada3] hover:border-brown',
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={m.value}
+                      checked={form.paymentMethod === m.value}
+                      onChange={() => setForm((prev) => ({ ...prev, paymentMethod: m.value }))}
+                      required
+                      className="mt-0.5 accent-ink"
+                    />
+                    <span>
+                      <span className="block text-ink">{m.label}</span>
+                      <span className="mt-1 block text-brown/60">{m.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <p className="mt-4 text-xs leading-[18px] text-brown/60">
-              Спосіб оплати менеджер уточнить, коли зателефонує підтвердити замовлення.
+              Менеджер зателефонує, щоб підтвердити замовлення та спосіб оплати. Онлайн-оплати на сайті немає.
             </p>
 
             {error && <p className="mt-4 text-sm text-destructive">{error}</p>}

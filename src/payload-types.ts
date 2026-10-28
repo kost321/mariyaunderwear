@@ -271,6 +271,15 @@ export interface Order {
   id: number;
   orderNumber?: string | null;
   status: 'new' | 'processing' | 'completed' | 'cancelled';
+  /**
+   * Обирає покупець на сайті; менеджер уточнює під час дзвінка.
+   */
+  paymentMethod?: ('prepaid' | 'cod') | null;
+  /**
+   * Передоплата надійшла на рахунок або післяплату отримано від Нової пошти.
+   */
+  paymentReceived?: boolean | null;
+  ttn?: string | null;
   customerName: string;
   phone: string;
   email?: string | null;
@@ -481,6 +490,9 @@ export interface CategoriesSelect<T extends boolean = true> {
 export interface OrdersSelect<T extends boolean = true> {
   orderNumber?: T;
   status?: T;
+  paymentMethod?: T;
+  paymentReceived?: T;
+  ttn?: T;
   customerName?: T;
   phone?: T;
   email?: T;

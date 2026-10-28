@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { CooperationForm } from '@/components/shop/CooperationForm'
-import { CONTACTS } from '@/lib/contacts'
+import { CONTACTS, phoneHref } from '@/lib/contacts'
 
 export const metadata: Metadata = {
   title: 'Співпраця',
@@ -39,7 +39,7 @@ export default function Cooperation() {
             Якщо вас цікавить співпраця з mariya underwear у форматі дистрибуції, виставок чи оптового продажу
             виробів, будемо раді познайомитися. Заповніть форму звʼязку або зв&apos;яжіться з нами напряму.
           </p>
-          {(CONTACTS.email || CONTACTS.phone) && (
+          {(CONTACTS.email || CONTACTS.wholesalePhone) && (
             <p>
               {CONTACTS.email && (
                 <>
@@ -49,14 +49,14 @@ export default function Cooperation() {
                   </a>
                 </>
               )}
-              {CONTACTS.email && CONTACTS.phone && <br />}
-              {CONTACTS.phone && (
+              {CONTACTS.email && CONTACTS.wholesalePhone && <br />}
+              {CONTACTS.wholesalePhone && (
                 <>
                   Телефон:{' '}
-                  <a href={`tel:${CONTACTS.phone.replace(/[^\d+]/g, '')}`} className="hover:text-ink">
-                    {CONTACTS.phone}
-                  </a>{' '}
-                  (Telegram та WhatsApp)
+                  <a href={`tel:${phoneHref(CONTACTS.wholesalePhone)}`} className="hover:text-ink">
+                    {CONTACTS.wholesalePhone}
+                  </a>
+                  {CONTACTS.wholesaleContact && ` (${CONTACTS.wholesaleContact})`}
                 </>
               )}
             </p>

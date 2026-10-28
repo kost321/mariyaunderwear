@@ -79,7 +79,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       title: product.title,
       description,
       url: `/product/${slug}`,
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      // A page-level openGraph replaces the layout's one, so without a photo fall back to the site image
+      images: [ogImage ? { url: ogImage } : { url: '/brand/og-image.png', width: 1200, height: 630 }],
     },
   }
 }

@@ -29,6 +29,8 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'uk_UA',
     siteName: 'Mariya Underwear',
+    // Link preview (Telegram, Viber, Instagram). Icons come from icon.png / apple-icon.png / app/favicon.ico.
+    images: [{ url: '/brand/og-image.png', width: 1200, height: 630, alt: 'Mariya Underwear' }],
   },
 }
 

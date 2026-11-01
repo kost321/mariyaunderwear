@@ -31,7 +31,8 @@ const CARE_SLOTS = [
 const FALLBACK_FABRICS = ['Шовк', 'Бавовна', 'Мікромасло', 'Віскоза'].map((title) => ({
   title,
   href: null as string | null,
-  imageUrl: null as string | null,
+  imageUrl: undefined as string | undefined,
+  careText: null as string | null,
 }))
 
 export default async function HomePage() {
@@ -41,6 +42,7 @@ export default async function HomePage() {
         title: m.title,
         href: m.slug ? `/catalog?material=${m.slug}` : null,
         imageUrl: getMediaUrl(m.image),
+        careText: m.careText?.trim() || null,
       }))
     : FALLBACK_FABRICS
 
@@ -97,11 +99,23 @@ export default async function HomePage() {
                   {fabric.imageUrl && (
                     <Image src={fabric.imageUrl} alt={fabric.title} fill sizes="(max-width: 640px) 70vw, 317px" className="object-cover" />
                   )}
+                  {/* Care text over the photo on hover (devices with a mouse only) */}
+                  {fabric.careText && (
+                    <div className="absolute inset-0 hidden items-center justify-center bg-ink/70 p-8 text-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:hover)]:flex">
+                      <p className="whitespace-pre-line text-sm leading-6 tracking-[1px] text-white">{fabric.careText}</p>
+                    </div>
+                  )}
                 </div>
                 {!slot.labelAbove && label}
+                {/* Touch screens have no hover: the text goes under the card instead */}
+                {fabric.careText && (
+                  <p className="whitespace-pre-line text-center text-xs leading-5 tracking-[1px] text-brown/70 [@media(hover:hover)]:hidden">
+                    {fabric.careText}
+                  </p>
+                )}
               </>
             )
-            const className = `flex w-[70vw] shrink-0 flex-col gap-3 sm:w-[317px] ${slot.offset}`
+            const className = `group flex w-[70vw] shrink-0 flex-col gap-3 sm:w-[317px] ${slot.offset}`
             return fabric.href ? (
               <Link key={i} href={fabric.href} className={className}>
                 {content}

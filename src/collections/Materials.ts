@@ -69,7 +69,22 @@ export const Materials: CollectionConfig = {
       label: 'Фото тканини',
       type: 'upload',
       relationTo: 'media',
-      admin: { description: 'Для картки на головній сторінці.' },
+      admin: {
+        condition: (data) => Boolean(data?.showOnHome),
+        description: 'Для картки на головній сторінці. Краще без тексту на фото — назва виводиться окремо.',
+      },
+    },
+    {
+      name: 'careText',
+      label: 'Догляд',
+      type: 'textarea',
+      admin: {
+        // Only relevant for the home page block, so shown only when the card is on the home page
+        condition: (data) => Boolean(data?.showOnHome),
+        rows: 4,
+        description:
+          'Коротко, 2–3 речення, напр. "Ручне прання до 30°. Не віджимати. Прасувати з виворіту." На головній з\'являється поверх фото при наведенні мишкою, на телефоні — під назвою тканини.',
+      },
     },
   ],
 }

@@ -47,7 +47,7 @@ A collection is a database table + access rules + admin fields.
   `active: false` hides the product from the site.
 - **`ProductModels.ts`**: a model groups several color cards of one product, which powers the color switcher on the product page.
 - **`Categories.ts`**: product categories (`title`, `slug`, `image`).
-- **`Materials.ts`**: fabric reference list (`title`, `slug`, `showOnHome`, `sortOrder`, `image`). Products link to it (`materials`, hasMany); powers the material line on the product page, the catalog "Матеріал" filter and the fabric block on the home page. The Torgsoft import creates missing materials from the "Матеріал" column.
+- **`Materials.ts`**: fabric reference list (`title`, `slug`, `showOnHome`, `sortOrder`, `image`, `careText`: care advice shown over the home page card on hover, under it on touch screens). Products link to it (`materials`, hasMany); powers the material line on the product page, the catalog "Матеріал" filter and the fabric block on the home page. The Torgsoft import creates missing materials from the "Матеріал" column.
 - **`Orders.ts`**: customer orders. Each line stores a snapshot of title, price, size, color and quantity. `totalPrice` is recalculated on the server. Orders can only be created by the server route `/api/order`.
 - **`Media.ts`**: image library stored in Cloudinary. The database keeps only the filename and URL.
 - **`Users.ts`**: CMS administrators with access to `/admin`. Customers do not register.

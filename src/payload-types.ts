@@ -270,9 +270,13 @@ export interface Material {
    */
   sortOrder?: number | null;
   /**
-   * Для картки на головній сторінці.
+   * Для картки на головній сторінці. Краще без тексту на фото — назва виводиться окремо.
    */
   image?: (number | null) | Media;
+  /**
+   * Коротко, 2–3 речення, напр. "Ручне прання до 30°. Не віджимати. Прасувати з виворіту." На головній з'являється поверх фото при наведенні мишкою, на телефоні — під назвою тканини.
+   */
+  careText?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -530,6 +534,7 @@ export interface MaterialsSelect<T extends boolean = true> {
   showOnHome?: T;
   sortOrder?: T;
   image?: T;
+  careText?: T;
   updatedAt?: T;
   createdAt?: T;
 }

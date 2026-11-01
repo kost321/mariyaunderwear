@@ -11,6 +11,7 @@ import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
 import { useCart } from '@/hooks/useCart'
 import { isProductInStock, isSizeAvailable } from '@/lib/stock'
+import { productMaterials } from '@/lib/catalog'
 import type { CartItem } from '@/types/shop'
 
 const photoFrame = 'relative overflow-hidden rounded-card border border-[#d9d9d9] bg-placeholder/40'
@@ -37,6 +38,7 @@ export function ProductDetails({
   const images = product.images ?? []
   const sizes = product.sizes ?? []
   const colors = product.colors ?? []
+  const materials = productMaterials(product)
 
   // Show the switcher links only if the model has at least 2 color cards.
   const showVariantSwitch = colorVariants.length > 1
@@ -163,6 +165,19 @@ export function ProductDetails({
         <h1 className="font-serif text-sm uppercase leading-[17px] tracking-[1px] text-ink">{product.title}</h1>
         <p className="mt-3 text-sm tracking-[1px] text-brown">{formatPrice(product.price)}</p>
         {product.sku && <p className="mt-6 text-xs tracking-[1px] text-brown/50">Артикул: {product.sku}</p>}
+        {materials.length > 0 && (
+          <p className={cn('text-xs tracking-[1px] text-brown/50', product.sku ? 'mt-1' : 'mt-6')}>
+            Матеріал:{' '}
+            {materials.map((m, i) => (
+              <span key={m.id}>
+                {i > 0 && ', '}
+                <Link href={`/catalog?material=${m.slug}`} className="underline-offset-2 hover:text-brown hover:underline">
+                  {m.title.toLowerCase()}
+                </Link>
+              </span>
+            ))}
+          </p>
+        )}
 
         {/* Colors: variant cards (navigate on click) */}
         {showVariantSwitch && (

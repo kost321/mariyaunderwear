@@ -60,7 +60,7 @@ const STOCK_OPTIONS = [
   { value: 'out', label: 'Немає в наявності' },
 ] as const
 
-/** Left filter panel: size, availability, color, price. On mobile it expands with a button. */
+/** Left filter panel: size, availability, color, material, price. On mobile it expands with a button. */
 export function FilterPanel({ params, facets }: { params: CatalogParams; facets: CatalogFacets }) {
   const { update, pending } = useUpdateParams()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -68,7 +68,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
   const [max, setMax] = useState(params.max?.toString() ?? '')
 
   const activeCount =
-    params.sizes.length + params.colors.length + (params.stock ? 1 : 0) + (params.min || params.max ? 1 : 0)
+    params.sizes.length + params.colors.length + params.materials.length + (params.stock ? 1 : 0) + (params.min || params.max ? 1 : 0)
 
   return (
     <aside className={cn('transition-opacity', pending && 'opacity-60')}>
@@ -157,6 +157,28 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
           </Section>
         )}
 
+        {facets.materials.length > 0 && (
+          <Section title="Матеріал" defaultOpen={params.materials.length > 0}>
+            <ul className="flex flex-col gap-3">
+              {facets.materials.map((material) => (
+                <li key={material.slug}>
+                  <label className="flex cursor-pointer items-center gap-3 text-xs tracking-[2px] text-ink">
+                    <input
+                      type="checkbox"
+                      checked={params.materials.includes(material.slug)}
+                      onChange={() =>
+                        update({ material: toggle(params.materials, material.slug).join(',') || undefined })
+                      }
+                      className="h-[22px] w-[22px] shrink-0 appearance-none border border-[#a3a3a3] bg-white checked:border-ink checked:bg-ink"
+                    />
+                    {material.title}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
         <Section title="Ціна" defaultOpen={Boolean(params.min || params.max)}>
           <form
             className="flex items-center gap-2"
@@ -193,7 +215,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
             onClick={() => {
               setMin('')
               setMax('')
-              update({ size: undefined, color: undefined, stock: undefined, min: undefined, max: undefined })
+              update({ size: undefined, color: undefined, material: undefined, stock: undefined, min: undefined, max: undefined })
             }}
             className="mt-4 text-xs tracking-[1px] text-brown/60 underline-offset-4 hover:underline"
           >

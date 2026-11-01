@@ -1,4 +1,4 @@
-import type { Product } from '@/payload-types'
+import type { Material, Product } from '@/payload-types'
 import { isProductInStock, isSizeAvailable } from '@/lib/stock'
 
 /**
@@ -14,6 +14,8 @@ export type CatalogParams = {
   q?: string
   sizes: string[]
   colors: string[]
+  /** Material slugs. */
+  materials: string[]
   stock?: CatalogStock
   min?: number
   max?: number
@@ -38,6 +40,7 @@ export function parseCatalogParams(raw: RawParams): CatalogParams {
     q: first(raw.q)?.trim() || undefined,
     sizes: list(raw.size),
     colors: list(raw.color),
+    materials: list(raw.material),
     stock: stock === 'in' || stock === 'out' ? stock : undefined,
     min: num(raw.min),
     max: num(raw.max),
@@ -83,10 +86,17 @@ function productColors(p: Product): string[] {
   return productColorList(p).map((c) => c.name)
 }
 
+/** Populated materials of a product (depth ≥ 1); bare ids are skipped. */
+export function productMaterials(p: Pick<Product, 'materials'>): Material[] {
+  return (p.materials ?? []).filter((m): m is Material => typeof m === 'object' && m !== null)
+}
+
 export function filterProducts(products: Product[], params: CatalogParams): Product[] {
   const result = products.filter((p) => {
     if (params.sizes.length && !productSizes(p).some((s) => params.sizes.includes(s))) return false
     if (params.colors.length && !productColors(p).some((c) => params.colors.includes(c))) return false
+    if (params.materials.length && !productMaterials(p).some((m) => m.slug && params.materials.includes(m.slug)))
+      return false
     // With sizes selected, "in stock" means one of the selected sizes is available, not any size
     if (params.stock === 'in' && !inStock(p, params.sizes)) return false
     if (params.stock === 'out' && inStock(p)) return false
@@ -104,6 +114,7 @@ export function filterProducts(products: Product[], params: CatalogParams): Prod
 export type CatalogFacets = {
   sizes: string[]
   colors: { name: string; hex: string | null }[]
+  materials: { slug: string; title: string }[]
   stock: { in: number; out: number }
   priceMin: number
   priceMax: number
@@ -113,10 +124,12 @@ export type CatalogFacets = {
 export function getFacets(products: Product[]): CatalogFacets {
   const sizes = new Set<string>()
   const colors = new Map<string, string | null>()
+  const materials = new Map<string, Material>()
 
   for (const p of products) {
     productSizes(p).forEach((s) => sizes.add(s))
     for (const c of productColorList(p)) if (!colors.get(c.name)) colors.set(c.name, c.hex)
+    for (const m of productMaterials(p)) if (m.slug) materials.set(m.slug, m)
   }
 
   const rank = (s: string) => {
@@ -129,6 +142,12 @@ export function getFacets(products: Product[]): CatalogFacets {
   return {
     sizes: [...sizes].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b)),
     colors: [...colors].map(([name, hex]) => ({ name, hex })).sort((a, b) => a.name.localeCompare(b.name, 'uk')),
+    materials: [...materials.values()]
+      .sort(
+        (a, b) =>
+          (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || a.title.localeCompare(b.title, 'uk'),
+      )
+      .map((m) => ({ slug: m.slug!, title: m.title })),
     stock: { in: inStockCount, out: products.length - inStockCount },
     priceMin: prices.length ? Math.min(...prices) : 0,
     priceMax: prices.length ? Math.max(...prices) : 0,

@@ -70,6 +70,7 @@ export interface Config {
     products: Product;
     'product-models': ProductModel;
     categories: Category;
+    materials: Material;
     orders: Order;
     media: Media;
     users: User;
@@ -83,6 +84,7 @@ export interface Config {
     products: ProductsSelect<false> | ProductsSelect<true>;
     'product-models': ProductModelsSelect<false> | ProductModelsSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    materials: MaterialsSelect<false> | MaterialsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -151,6 +153,10 @@ export interface Product {
    */
   wholesalePrice?: number | null;
   category: number | Category;
+  /**
+   * Тканина товару; можна кілька (напр. мікромасло + мереживо). Показується на сторінці товару та у фільтрі каталогу. Імпорт із Торгсофт заповнює це поле з колонки «Матеріал». Довідник — «Каталог → Матеріали».
+   */
+  materials?: (number | Material)[] | null;
   /**
    * Оберіть модель, щоб зв'язати цей колір з іншими кольорами того самого товару. Порожньо — товар без варіантів кольору. Моделі створюються у розділі «Каталог → Моделі».
    */
@@ -243,6 +249,32 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "materials".
+ */
+export interface Material {
+  id: number;
+  /**
+   * Напр. "Шовк", "Бавовна". Показується на сторінці товару та у фільтрі каталогу.
+   */
+  title: string;
+  /**
+   * Залиште порожнім — згенерується з назви.
+   */
+  slug?: string | null;
+  showOnHome?: boolean | null;
+  /**
+   * Менше число — вище у фільтрі та раніше на головній.
+   */
+  sortOrder?: number | null;
+  /**
+   * Для картки на головній сторінці.
+   */
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Модель об'єднує кольори одного товару. Спочатку створіть модель, потім у кожній картці кольору оберіть її в полі «Модель».
@@ -366,6 +398,10 @@ export interface PayloadLockedDocument {
         value: number | Category;
       } | null)
     | ({
+        relationTo: 'materials';
+        value: number | Material;
+      } | null)
+    | ({
         relationTo: 'orders';
         value: number | Order;
       } | null)
@@ -431,6 +467,7 @@ export interface ProductsSelect<T extends boolean = true> {
   sku?: T;
   wholesalePrice?: T;
   category?: T;
+  materials?: T;
   model?: T;
   colorName?: T;
   colorHex?: T;
@@ -479,6 +516,19 @@ export interface ProductModelsSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "materials_select".
+ */
+export interface MaterialsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  showOnHome?: T;
+  sortOrder?: T;
   image?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -13,6 +13,7 @@ import { ProductDescription } from '@/components/shop/ProductDescription'
 import { ProductCard } from '@/components/shop/ProductCard'
 import type { Product } from '@/payload-types'
 import { isProductInStock } from '@/lib/stock'
+import { productMaterials } from '@/lib/catalog'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -120,6 +121,9 @@ export default async function ProductPage({ params }: Params) {
     name: product.title,
     ...(imageUrls.length > 0 && { image: imageUrls }),
     ...(product.sku && { sku: product.sku }),
+    ...(productMaterials(product).length > 0 && {
+      material: productMaterials(product).map((m) => m.title).join(', '),
+    }),
     ...(toPlainText(product.description) && {
       description: truncate(toPlainText(product.description), 500),
     }),

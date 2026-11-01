@@ -92,6 +92,19 @@ export function TorgsoftImportForm() {
             <li>Не знайдено: {result.notFound.length}</li>
             <li>Неоднозначні (кілька збігів): {result.ambiguous.length}</li>
             <li>Пропущено: {result.skipped.length}</li>
+            {result.createdMaterials?.length > 0 && (
+              <li>
+                Нові матеріали ({result.createdMaterials.length}): {result.createdMaterials.join(', ')}.{' '}
+                <a href="/admin/collections/materials" target="_blank" rel="noreferrer">
+                  довідник
+                </a>
+              </li>
+            )}
+            {result.materialFilled?.length > 0 && (
+              <li>
+                Матеріал проставлено іншим кольорам тих самих артикулів: {result.materialFilled.length}
+              </li>
+            )}
           </ul>
 
           {result.updatedItems.length > 0 && (

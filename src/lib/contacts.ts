@@ -13,8 +13,8 @@ export const CONTACTS = {
   wholesaleContact: 'Марія',
   postcode: '80100',
   address: 'вул. Мазепи, 12, Шептицький, Львівська область',
-  instagram: '',
-  tiktok: '',
+  instagram: 'https://www.instagram.com/mariyaunderwear',
+  tiktok: 'https://www.tiktok.com/@mariyaunderwear',
 }
 
 /** Phone number as digits with a leading "+", for tel: and messenger links. */

@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { PAYMENT_METHODS } from '@/lib/payment'
+import { sendSms, smsText } from '@/lib/turbosms'
 
 /**
  * Orders: customer orders.
@@ -64,6 +65,18 @@ export const Orders: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      // SMS with the TTN once the manager enters it (or corrects it) in the admin.
+      // sendSms never throws, so a TurboSMS failure does not block saving the order.
+      async ({ doc, previousDoc, operation }) => {
+        const ttn = typeof doc.ttn === 'string' ? doc.ttn.trim() : ''
+        const prevTtn = typeof previousDoc?.ttn === 'string' ? previousDoc.ttn.trim() : ''
+        if (operation === 'update' && ttn && ttn !== prevTtn && doc.status !== 'cancelled') {
+          await sendSms(doc.phone, smsText.orderShipped(doc.id, ttn))
+        }
+        return doc
+      },
+    ],
   },
   fields: [
     {
@@ -118,6 +131,7 @@ export const Orders: CollectionConfig = {
       maxLength: 30,
       admin: {
         position: 'sidebar',
+        description: 'Після збереження покупцю піде SMS з цим номером.',
       },
     },
     {

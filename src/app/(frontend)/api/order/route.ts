@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { getPayload } from '@/lib/payload'
-import { sendSms } from '@/lib/turbosms'
+import { sendSms, smsText } from '@/lib/turbosms'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 import { isSizeAvailable } from '@/lib/stock'
 import { esc, notifyRecipients, str } from '@/lib/mail'
@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
       ${form.comment ? `<p><b>Коментар:</b> ${esc(form.comment)}</p>` : ''}
   `
 
-  // The order is already saved: an email failure must not break the response to the customer
+  // The order is already saved: an email or SMS failure must not break the response to the customer
   // (otherwise they would retry and create a duplicate).
   const resend = new Resend(process.env.RESEND_API_KEY)
   const emails = [
@@ -258,8 +258,8 @@ export async function POST(req: NextRequest) {
         ]
       : []),
   ]
-  await Promise.all(
-    emails.map(async (email) => {
+  await Promise.all([
+    ...emails.map(async (email) => {
       try {
         const { error } = await resend.emails.send({ from: 'Mariya Underwear <orders@mariyaunderwear.com>', ...email })
         if (error) console.error('[order] Resend відхилив лист:', order.id, email.subject, error)
@@ -267,11 +267,9 @@ export async function POST(req: NextRequest) {
         console.error('[order] Не вдалося надіслати лист:', order.id, email.subject, err)
       }
     }),
-  )
-
-  // SMS покупцю одразу після підтвердження замовлення. sendSms не кидає
-  // помилок (збій лише пишеться в лог) — замовлення вже збережене.
-  await sendSms(form.phone, `Замовлення №${order.id} прийнято. Дякуємо! Mariya Underwear`)
+    // SMS to the customer right away; sendSms never throws (a failure is only logged).
+    sendSms(form.phone, smsText.orderAccepted(order.id)),
+  ])
 
   return NextResponse.json({ success: true, orderId: order.id })
 }

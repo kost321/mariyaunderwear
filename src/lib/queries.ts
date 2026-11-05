@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { Where } from 'payload'
 import { getPayload } from './payload'
-import type { Product, Category } from '@/payload-types'
+import type { Product, Category, Material } from '@/payload-types'
 
 /**
  * Data access layer. All product/category queries go through these
@@ -105,6 +105,24 @@ export async function getCategories(): Promise<Category[]> {
   })
 
   return result.docs
+}
+
+/** Materials marked "show on home" (fabric block on the home page). */
+export async function getHomeMaterials(): Promise<Material[]> {
+  try {
+    const payload = await getPayload()
+    const result = await payload.find({
+      collection: 'materials',
+      where: { showOnHome: { equals: true } },
+      sort: 'sortOrder',
+      limit: 20,
+      depth: 1,
+    })
+    return result.docs
+  } catch {
+    // The materials table is not created yet (before the migration); fall back to placeholders.
+    return []
+  }
 }
 
 /** Global "Delivery and payment" text (the Settings global). */

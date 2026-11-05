@@ -10,6 +10,11 @@ import * as XLSX from 'xlsx'
  * (colorName): each such Product document gets a new `sizes` array
  * built entirely from the current file (sizes with Quantity=0, or absent
  * from the file for that pair altogether, do not appear in the new array).
+ *
+ * The optional "Матеріал" column sets products.materials: values are split into
+ * parts ("мережево - мікромасло" → two), matched to the Materials collection
+ * case-insensitively, and missing materials are created. An empty cell leaves
+ * the product's materials unchanged.
  */
 
 export interface TorgsoftRow {
@@ -19,6 +24,7 @@ export interface TorgsoftRow {
   stock: number
   price: number
   wholesalePrice: number
+  material: string
 }
 
 export interface TorgsoftImportResult {
@@ -27,10 +33,15 @@ export interface TorgsoftImportResult {
   notFound: { sku: string; colorName: string }[]
   ambiguous: { sku: string; colorName: string; matchedIds: number[] }[]
   skipped: { sku: string; colorName: string; reason: string }[]
+  createdMaterials: string[]
+  /** Other colors of an article (absent from the file) that got the article's material. */
+  materialFilled: { id: number; title: string; sku: string }[]
 }
 
 // Headers as Torgsoft exports them (case/whitespace may vary).
-const HEADER_ALIASES: Record<keyof TorgsoftRow, string[]> = {
+type RequiredColumn = Exclude<keyof TorgsoftRow, 'material'>
+
+const HEADER_ALIASES: Record<RequiredColumn, string[]> = {
   sku: ['артикул'],
   colorName: ['колір', 'колiр', 'цвет'],
   size: ['розмір', 'розмiр', 'размер'],
@@ -39,6 +50,8 @@ const HEADER_ALIASES: Record<keyof TorgsoftRow, string[]> = {
   wholesalePrice: ['ціна опту', 'цiна опту', 'цена опт', 'цена оптовая'],
 }
 
+const MATERIAL_ALIASES = ['матеріал', 'матерiал', 'материал']
+
 function normalizeHeader(h: string): string {
   return h.trim().toLowerCase().replace(/\s+/g, ' ')
 }
@@ -46,8 +59,10 @@ function normalizeHeader(h: string): string {
 function buildColumnIndex(headerRow: unknown[]): Record<keyof TorgsoftRow, number> {
   const normalized = headerRow.map((h) => normalizeHeader(String(h ?? '')))
   const index = {} as Record<keyof TorgsoftRow, number>
+  // Optional: -1 when the export has no material column
+  index.material = normalized.findIndex((h) => MATERIAL_ALIASES.includes(h))
 
-  for (const key of Object.keys(HEADER_ALIASES) as (keyof TorgsoftRow)[]) {
+  for (const key of Object.keys(HEADER_ALIASES) as RequiredColumn[]) {
     const aliases = HEADER_ALIASES[key]
     const foundAt = normalized.findIndex((h) => aliases.includes(h))
     if (foundAt === -1) {
@@ -105,10 +120,43 @@ export function parseTorgsoftFile(buffer: Buffer): TorgsoftRow[] {
       stock: toNumber(row[columnIndex.stock]),
       price: toNumber(row[columnIndex.price]),
       wholesalePrice: toNumber(row[columnIndex.wholesalePrice]),
+      material: columnIndex.material === -1 ? '' : String(row[columnIndex.material] ?? '').trim(),
     })
   }
 
   return result
+}
+
+/** "мережево - мікромасло", "бавовна і мережево" → separate materials. */
+export function splitMaterials(value: string): string[] {
+  return value
+    .split(/\s+-\s+|\s+і\s+|\s+та\s+|\s*[,;+\/]\s*/)
+    .map((part) => part.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+}
+
+const materialKey = (name: string) => name.replace(/\s+/g, ' ').trim().toLowerCase()
+const capitalize = (name: string) => name.charAt(0).toUpperCase() + name.slice(1)
+
+/** Finds materials by name (case-insensitive) and creates the missing ones. */
+async function resolveMaterials(
+  payload: Payload,
+  names: string[],
+  result: TorgsoftImportResult,
+): Promise<Map<string, number>> {
+  const existing = await payload.find({ collection: 'materials', limit: 1000, depth: 0, pagination: false })
+  const byKey = new Map<string, number>()
+  for (const m of existing.docs) byKey.set(materialKey(m.title), m.id as number)
+
+  for (const name of names) {
+    const key = materialKey(name)
+    if (byKey.has(key)) continue
+    const title = capitalize(name.replace(/\s+/g, ' ').trim())
+    const created = await payload.create({ collection: 'materials', data: { title } })
+    byKey.set(key, created.id as number)
+    result.createdMaterials.push(title)
+  }
+  return byKey
 }
 
 function groupKey(sku: string, colorName: string): string {
@@ -125,7 +173,17 @@ export async function runTorgsoftImport(
     notFound: [],
     ambiguous: [],
     skipped: [],
+    createdMaterials: [],
+    materialFilled: [],
   }
+
+  const allMaterialNames = new Map<string, string>()
+  for (const row of rows) {
+    for (const name of splitMaterials(row.material)) allMaterialNames.set(materialKey(name), name)
+  }
+  const materialIds = allMaterialNames.size
+    ? await resolveMaterials(payload, [...allMaterialNames.values()], result)
+    : new Map<string, number>()
 
   const groups = new Map<string, TorgsoftRow[]>()
   for (const row of rows) {
@@ -198,6 +256,13 @@ export async function runTorgsoftImport(
       .filter((r) => r.stock > 0)
       .map((r) => ({ value: r.size, stock: r.stock }))
 
+    // Materials of all rows of the group (one sku+color can list several)
+    const materials = [
+      ...new Set(
+        groupRows.flatMap((r) => splitMaterials(r.material)).map((name) => materialIds.get(materialKey(name))!),
+      ),
+    ]
+
     await payload.update({
       collection: 'products',
       id: product.id,
@@ -205,6 +270,7 @@ export async function runTorgsoftImport(
         price,
         wholesalePrice,
         sizes: newSizes,
+        ...(materials.length ? { materials } : {}),
       },
     })
 
@@ -215,6 +281,34 @@ export async function runTorgsoftImport(
       sku,
       colorName,
     })
+  }
+
+  // Colors missing from the file (e.g. sold out) share the fabric of their article:
+  // fill products of that sku that have no material yet, if the file names exactly one
+  // material set for the sku (0159 "атлас"/"шовк" in different colors stays untouched).
+  const skuMaterials = new Map<string, Set<string>>()
+  for (const row of rows) {
+    const parts = splitMaterials(row.material)
+    if (!row.sku || !parts.length) continue
+    const key = [...new Set(parts.map(materialKey))].sort().join('|')
+    const set = skuMaterials.get(row.sku) ?? new Set<string>()
+    set.add(key)
+    skuMaterials.set(row.sku, set)
+  }
+  for (const [sku, keys] of skuMaterials) {
+    if (keys.size !== 1) continue
+    const materials = [...keys][0].split('|').map((k) => materialIds.get(k)!)
+    const bySku = await payload.find({
+      collection: 'products',
+      where: { sku: { equals: sku } },
+      limit: 1000,
+      depth: 0,
+    })
+    for (const product of bySku.docs) {
+      if (product.materials?.length) continue
+      await payload.update({ collection: 'products', id: product.id, data: { materials } })
+      result.materialFilled.push({ id: product.id as number, title: product.title ?? '', sku })
+    }
   }
 
   return result

@@ -4,59 +4,12 @@ import { getPayload } from '@/lib/payload'
 import { sendSms } from '@/lib/turbosms'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 import { isSizeAvailable } from '@/lib/stock'
+import { esc, notifyRecipients, str } from '@/lib/mail'
+import { createRateLimiter } from '@/lib/rateLimit'
+import { isPaymentMethod, paymentMethodLabel } from '@/lib/payment'
+import { normalizeUaPhone } from '@/lib/phone'
 
-// Limit on orders per IP address (kept in process memory, which is
-// enough for a single Railway instance).
-const RATE_LIMIT = 5
-const RATE_WINDOW_MS = 10 * 60 * 1000
-const hits = new Map<string, number[]>()
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now()
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
-  if (recent.length >= RATE_LIMIT) {
-    hits.set(ip, recent)
-    return true
-  }
-  recent.push(now)
-  hits.set(ip, recent)
-  // Do not let the map grow without bound.
-  if (hits.size > 5000) {
-    for (const [key, times] of hits) {
-      if (times.every((t) => now - t >= RATE_WINDOW_MS)) hits.delete(key)
-    }
-  }
-  return false
-}
-
-/** A string with a length limit; undefined if the value is invalid. */
-function str(value: unknown, max: number): string | undefined {
-  if (value === undefined || value === null || value === '') return ''
-  if (typeof value !== 'string' || value.length > max) return undefined
-  return value.trim()
-}
-
-/**
- * Recipients of the new-order email: ORDER_NOTIFY_EMAIL (one address or
- * several separated by commas). If the variable is unset, the owner's fallback address.
- */
-function notifyRecipients(): string[] {
-  const list = (process.env.ORDER_NOTIFY_EMAIL ?? '')
-    .split(',')
-    .map((email) => email.trim())
-    .filter(Boolean)
-  return list.length > 0 ? list : ['itsmariainthecity@gmail.com']
-}
-
-/** Escapes customer-supplied text before inserting it into the email HTML. */
-function esc(value: unknown): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
+const isRateLimited = createRateLimiter(5, 10 * 60 * 1000)
 
 const BAD_REQUEST = () => NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
 
@@ -95,21 +48,30 @@ export async function POST(req: NextRequest) {
   ) {
     return BAD_REQUEST()
   }
-  // Phone: 10-15 digits, other characters only as ordinary separators.
-  const digits = phone.replace(/\D/g, '')
-  if (digits.length < 10 || digits.length > 15 || !/^[\d\s+()-]+$/.test(phone)) {
-    return BAD_REQUEST()
+  // Phone: only Ukrainian numbers, stored as +380XXXXXXXXX (lib/phone).
+  const normalizedPhone = normalizeUaPhone(phone)
+  if (!normalizedPhone) {
+    return NextResponse.json(
+      { error: 'Вкажіть український номер телефону, наприклад +380 67 123 45 67' },
+      { status: 400 },
+    )
   }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return BAD_REQUEST()
   }
+  // Payment method: chosen at checkout; the quick order sends none.
+  const paymentMethod = rawForm.paymentMethod
+  if (paymentMethod !== undefined && !isPaymentMethod(paymentMethod)) {
+    return BAD_REQUEST()
+  }
   const form: CheckoutForm = {
     customerName,
-    phone,
+    phone: normalizedPhone,
     city,
     novaPoshtaBranch,
     email: email || undefined,
     comment,
+    paymentMethod,
   }
 
   for (const item of rawItems) {
@@ -175,6 +137,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // The color must be one the product offers: the color card's own color
+    // or one of the legacy colors array. Empty is allowed (products without colors).
+    const productColors = [product.colorName, ...(product.colors ?? []).map((c) => c.name)].filter(Boolean)
+    if (raw.color && !productColors.includes(raw.color)) {
+      return NextResponse.json(
+        { error: `Колір недоступний: ${product.title}, ${raw.color}` },
+        { status: 400 },
+      )
+    }
+
     items.push({
       productId: String(product.id),
       title: product.title,
@@ -198,6 +170,7 @@ export async function POST(req: NextRequest) {
       comment: [form.city, form.novaPoshtaBranch, form.comment].filter(Boolean).join(' | '),
       totalPrice,
       status: 'new',
+      paymentMethod: form.paymentMethod,
       products: items.map((item) => ({
         product: Number(item.productId),
         titleSnapshot: item.title,
@@ -209,7 +182,7 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Send the email
+  // Send the emails
   const itemsHtml = items
     .map(
       (item) => `
@@ -223,21 +196,7 @@ export async function POST(req: NextRequest) {
     )
     .join('')
 
-  // The order is already saved: an email failure must not break the response to the customer
-  // (otherwise they would retry and create a duplicate).
-  try {
-    const resend = new Resend(process.env.RESEND_API_KEY)
-    const { error } = await resend.emails.send({
-    from: 'Mariya Underwear <orders@mariyaunderwear.com>',
-    to: notifyRecipients(),
-    subject: `Нове замовлення #${order.id} — ${String(form.customerName).replace(/[\r\n]+/g, ' ')}`,
-    html: `
-      <h2>Нове замовлення #${order.id}</h2>
-      <p><b>Ім'я:</b> ${esc(form.customerName)}</p>
-      <p><b>Телефон:</b> ${esc(form.phone)}</p>
-      <p><b>Місто:</b> ${esc(form.city)}</p>
-      <p><b>Відділення НП:</b> ${esc(form.novaPoshtaBranch)}</p>
-      ${form.comment ? `<p><b>Коментар:</b> ${esc(form.comment)}</p>` : ''}
+  const orderTable = `
       <table style="width:100%;border-collapse:collapse;margin-top:16px">
         <thead>
           <tr style="background:#f5f5f5">
@@ -256,12 +215,59 @@ export async function POST(req: NextRequest) {
           </tr>
         </tfoot>
       </table>
+  `
+
+  const details = `
+      <p><b>Ім'я:</b> ${esc(form.customerName)}</p>
+      <p><b>Телефон:</b> ${esc(form.phone)}</p>
+      ${form.email ? `<p><b>Email:</b> ${esc(form.email)}</p>` : ''}
+      <p><b>Місто:</b> ${esc(form.city)}</p>
+      <p><b>Відділення НП:</b> ${esc(form.novaPoshtaBranch)}</p>
+      <p><b>Оплата:</b> ${form.paymentMethod ? esc(paymentMethodLabel(form.paymentMethod)) : 'уточнити під час дзвінка'}</p>
+      ${form.comment ? `<p><b>Коментар:</b> ${esc(form.comment)}</p>` : ''}
+  `
+
+  // The order is already saved: an email failure must not break the response to the customer
+  // (otherwise they would retry and create a duplicate).
+  const resend = new Resend(process.env.RESEND_API_KEY)
+  const emails = [
+    {
+      // To the store
+      to: notifyRecipients(),
+      ...(form.email && { replyTo: form.email }),
+      subject: `Нове замовлення #${order.id} — ${String(form.customerName).replace(/[\r\n]+/g, ' ')}`,
+      html: `<h2>Нове замовлення #${order.id}</h2>${details}${orderTable}`,
+    },
+    // Confirmation to the customer, a separate email so they do not see the store's notification addresses
+    ...(form.email
+      ? [
+          {
+            to: [form.email],
+            replyTo: notifyRecipients()[0],
+            subject: `Ваше замовлення #${order.id} — Mariya Underwear`,
+            html: `
+      <h2>Дякуємо за замовлення #${order.id}!</h2>
+      <p>${
+        form.paymentMethod === 'prepaid'
+          ? 'Ми звʼяжемося з вами найближчим часом, щоб підтвердити замовлення. Реквізити для оплати надішлемо після підтвердження — будь ласка, не переказуйте кошти раніше.'
+          : 'Ми звʼяжемося з вами найближчим часом, щоб підтвердити замовлення і спосіб оплати.'
+      }</p>
+      ${details}${orderTable}
     `,
-    })
-    if (error) console.error('[order] Resend відхилив лист:', order.id, error)
-  } catch (err) {
-    console.error('[order] Не вдалося надіслати лист:', order.id, err)
-  }
+          },
+        ]
+      : []),
+  ]
+  await Promise.all(
+    emails.map(async (email) => {
+      try {
+        const { error } = await resend.emails.send({ from: 'Mariya Underwear <orders@mariyaunderwear.com>', ...email })
+        if (error) console.error('[order] Resend відхилив лист:', order.id, email.subject, error)
+      } catch (err) {
+        console.error('[order] Не вдалося надіслати лист:', order.id, email.subject, err)
+      }
+    }),
+  )
 
   // SMS покупцю одразу після підтвердження замовлення. sendSms не кидає
   // помилок (збій лише пишеться в лог) — замовлення вже збережене.

@@ -1,6 +1,7 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import type { Product } from '@/payload-types'
-import { getProducts } from '@/lib/queries'
+import { getHomeMaterials, getProducts } from '@/lib/queries'
 import { getMediaAlt, getMediaUrl } from '@/lib/media'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { HeroSection, type HeroImage } from '@/components/shop/home/HeroSection'
@@ -19,16 +20,31 @@ function toImage(product: Product): HeroImage | null {
 
 // "Product care" block: fabric cards in a staircase, as in the design. Even cards have the label above
 // the photo and are shifted down (32px / 63px from the row top), odd ones have it below.
-// TODO: the 4th fabric is a duplicate "бавовна" in the design, the client has to name it; photos are placeholders for now.
-const CARE_FABRICS = [
-  { name: 'Шовк', aspect: 'aspect-[317/389]', labelAbove: false, offset: '' },
-  { name: 'Бавовна', aspect: 'aspect-[317/419]', labelAbove: true, offset: 'mt-8' },
-  { name: 'Мікромасло', aspect: 'aspect-[317/419]', labelAbove: false, offset: '' },
-  { name: 'Бавовна', aspect: 'aspect-[317/389]', labelAbove: true, offset: 'mt-[63px]' },
+// Cards come from Materials with "show on home"; the four slot shapes repeat for more cards.
+const CARE_SLOTS = [
+  { aspect: 'aspect-[317/389]', labelAbove: false, offset: '' },
+  { aspect: 'aspect-[317/419]', labelAbove: true, offset: 'mt-8' },
+  { aspect: 'aspect-[317/419]', labelAbove: false, offset: '' },
+  { aspect: 'aspect-[317/389]', labelAbove: true, offset: 'mt-[63px]' },
 ]
+// Until materials are marked for the home page in the admin
+const FALLBACK_FABRICS = ['Шовк', 'Бавовна', 'Мікромасло', 'Віскоза'].map((title) => ({
+  title,
+  href: null as string | null,
+  imageUrl: undefined as string | undefined,
+  careText: null as string | null,
+}))
 
 export default async function HomePage() {
-  const products = await getProducts()
+  const [products, homeMaterials] = await Promise.all([getProducts(), getHomeMaterials()])
+  const fabrics = homeMaterials.length
+    ? homeMaterials.map((m) => ({
+        title: m.title,
+        href: m.slug ? `/catalog?material=${m.slug}` : null,
+        imageUrl: getMediaUrl(m.image),
+        careText: m.careText?.trim() || null,
+      }))
+    : FALLBACK_FABRICS
 
   const withImages = products.filter((p) => getMediaUrl(p.images?.[0]?.image))
   const heroImages = withImages.slice(0, 8).map(toImage).filter((i): i is HeroImage => i !== null)
@@ -69,15 +85,44 @@ export default async function HomePage() {
 
         {/* Fabric cards: a row that bleeds off the right edge on desktop, like in the design */}
         <div className="-mr-[var(--gutter)] mt-16 flex items-start gap-4 overflow-x-auto pr-[var(--gutter)] [scrollbar-width:none] lg:mt-[124px] lg:gap-9 [&::-webkit-scrollbar]:hidden">
-          {CARE_FABRICS.map((fabric, i) => {
+          {fabrics.map((fabric, i) => {
+            const slot = CARE_SLOTS[i % CARE_SLOTS.length]
             const label = (
-              <p className="text-center font-serif text-[25px] uppercase leading-7 tracking-[2px] text-brown">{fabric.name}</p>
+              <p className="text-center font-serif text-[25px] uppercase leading-7 tracking-[2px] text-brown">{fabric.title}</p>
             )
-            return (
-              <div key={i} className={`flex w-[70vw] shrink-0 flex-col gap-3 sm:w-[317px] ${fabric.offset}`}>
-                {fabric.labelAbove && label}
-                <div aria-hidden className={`${fabric.aspect} rounded-card border border-[#d7d7d7]/60 bg-placeholder`} />
-                {!fabric.labelAbove && label}
+            const content = (
+              <>
+                {slot.labelAbove && label}
+                <div
+                  className={`relative ${slot.aspect} overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder`}
+                >
+                  {fabric.imageUrl && (
+                    <Image src={fabric.imageUrl} alt={fabric.title} fill sizes="(max-width: 640px) 70vw, 317px" className="object-cover" />
+                  )}
+                  {/* Care text over the photo on hover (devices with a mouse only) */}
+                  {fabric.careText && (
+                    <div className="absolute inset-0 hidden items-center justify-center bg-ink/70 p-8 text-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:hover)]:flex">
+                      <p className="whitespace-pre-line text-sm leading-6 tracking-[1px] text-white">{fabric.careText}</p>
+                    </div>
+                  )}
+                </div>
+                {!slot.labelAbove && label}
+                {/* Touch screens have no hover: the text goes under the card instead */}
+                {fabric.careText && (
+                  <p className="whitespace-pre-line text-center text-xs leading-5 tracking-[1px] text-brown/70 [@media(hover:hover)]:hidden">
+                    {fabric.careText}
+                  </p>
+                )}
+              </>
+            )
+            const className = `group flex w-[70vw] shrink-0 flex-col gap-3 sm:w-[317px] ${slot.offset}`
+            return fabric.href ? (
+              <Link key={i} href={fabric.href} className={className}>
+                {content}
+              </Link>
+            ) : (
+              <div key={i} className={className}>
+                {content}
               </div>
             )
           })}

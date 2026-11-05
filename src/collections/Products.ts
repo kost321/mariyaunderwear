@@ -109,6 +109,17 @@ export const Products: CollectionConfig = {
       required: true,
     },
     {
+      name: 'materials',
+      label: 'Матеріал',
+      type: 'relationship',
+      relationTo: 'materials',
+      hasMany: true,
+      admin: {
+        description:
+          'Тканина товару; можна кілька (напр. мікромасло + мереживо). Показується на сторінці товару та у фільтрі каталогу. Імпорт із Торгсофт заповнює це поле з колонки «Матеріал». Довідник — «Каталог → Матеріали».',
+      },
+    },
+    {
       name: 'model',
       label: 'Модель',
       type: 'relationship',

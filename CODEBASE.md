@@ -26,7 +26,7 @@ Payload runs inside the Next.js app, so the storefront, admin panel and API are 
 ## `src/payload.config.ts`
 
 Main Payload CMS config:
-- registers all collections (Products, ProductModels, Categories, Orders, Media, Users) and the `Settings` global
+- registers all collections (Products, ProductModels, Categories, Materials, Orders, Media, Users) and the `Settings` global
 - connects the PostgreSQL adapter (`DATABASE_URI`); schema `push` is on in dev and off in production, where only migrations change the schema
 - connects Cloudinary for photo storage
 - sets the admin language to Ukrainian
@@ -43,10 +43,11 @@ Generated file with TypeScript types for all collections.
 
 A collection is a database table + access rules + admin fields.
 
-- **`Products.ts`**: store products. Key fields: `title`, `slug` (auto-generated with transliteration), `sku`, `price`, `wholesalePrice` (admin-only), `active`, `category`, `model`, `images`, `sizes[]` (`size`, `stock`), `colors`, `description`, `descriptionHtml`, `careHtml`, `sizeChartHtml`, `relatedProducts`.
+- **`Products.ts`**: store products. Key fields: `title`, `slug` (auto-generated with transliteration), `sku`, `price`, `wholesalePrice` (admin-only), `active`, `category`, `materials`, `model`, `images`, `sizes[]` (`size`, `stock`), `colors`, `description`, `descriptionHtml`, `careHtml`, `sizeChartHtml`, `relatedProducts`.
   `active: false` hides the product from the site.
 - **`ProductModels.ts`**: a model groups several color cards of one product, which powers the color switcher on the product page.
 - **`Categories.ts`**: product categories (`title`, `slug`, `image`).
+- **`Materials.ts`**: fabric reference list (`title`, `slug`, `showOnHome`, `sortOrder`, `image`, `careText`: care advice shown over the home page card on hover, under it on touch screens). Products link to it (`materials`, hasMany); powers the material line on the product page, the catalog "Матеріал" filter and the fabric block on the home page. The Torgsoft import creates missing materials from the "Матеріал" column.
 - **`Orders.ts`**: customer orders. Each line stores a snapshot of title, price, size, color and quantity. `totalPrice` is recalculated on the server. Orders can only be created by the server route `/api/order`.
 - **`Media.ts`**: image library stored in Cloudinary. The database keeps only the filename and URL.
 - **`Users.ts`**: CMS administrators with access to `/admin`. Customers do not register.
@@ -57,7 +58,7 @@ A collection is a database table + access rules + admin fields.
 
 ## Custom admin `src/admin/torgsoft-import/`
 
-A custom admin page and sidebar link for importing prices and per-size stock from a Torgsoft Excel/CSV export. The server side lives in `lib/torgsoftImport.ts` and `lib/torgsoftImportEndpoint.ts`.
+A custom admin page and sidebar link for importing prices, per-size stock and materials from a Torgsoft Excel/CSV export. The server side lives in `lib/torgsoftImport.ts` and `lib/torgsoftImportEndpoint.ts`.
 
 ---
 
@@ -66,8 +67,8 @@ A custom admin page and sidebar link for importing prices and per-size stock fro
 The public part of the site.
 
 - **`layout.tsx`**: shared layout (Header, Footer, CartProvider) and site-wide SEO metadata.
-- **`page.tsx`**: home page: hero, collection tabs, "our approach" block. Rendered on every request.
-- **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, price and sorting are applied in memory (`lib/catalog.ts`).
+- **`page.tsx`**: home page: hero, collection tabs, fabric block (Materials with `showOnHome`, placeholders until any are marked). Rendered on every request.
+- **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, material, price and sorting are applied in memory (`lib/catalog.ts`).
 - **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams`, `generateMetadata`, canonical URL and JSON-LD `Product` markup.
 - **`cart/page.tsx`**: cart and checkout.
 - **`api/order/route.ts`**: order endpoint. Validates input, rate-limits by IP, re-reads prices and stock from the database, saves the order and emails the owner.

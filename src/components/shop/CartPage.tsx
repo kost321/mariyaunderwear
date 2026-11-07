@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { X } from 'lucide-react'
@@ -107,30 +107,72 @@ type PlacedOrder = {
   items: CartItem[]
   total: number
   address: string
+  phone: string
   paymentMethod?: PaymentMethod
+}
+
+/** Ordered items in one row; scrolls sideways with a fade and a "›" button while there is more on the right. */
+function OrderItemsRow({ items }: { items: CartItem[] }) {
+  const listRef = useRef<HTMLUListElement>(null)
+  const [more, setMore] = useState(false)
+
+  const update = useCallback(() => {
+    const el = listRef.current
+    if (el) setMore(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+  }, [])
+
+  useEffect(() => {
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [update])
+
+  return (
+    <div className="relative min-w-0 lg:border-r lg:border-[#dfdfdf]">
+      <ul
+        ref={listRef}
+        onScroll={update}
+        className="flex snap-x gap-10 overflow-x-auto pb-2 [scrollbar-width:none] lg:pt-[29px] [&::-webkit-scrollbar]:hidden"
+      >
+        {items.map((item) => (
+          <li key={`${item.productId}-${item.size}-${item.color}`} className="w-[260px] shrink-0 snap-start">
+            <OrderLine item={item} />
+          </li>
+        ))}
+      </ul>
+
+      {more && (
+        <>
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-[133px] bg-gradient-to-r from-white/0 to-white" />
+          <button
+            type="button"
+            onClick={() => listRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
+            aria-label="Показати інші товари"
+            className="absolute right-3 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center lg:right-6 lg:top-[calc(50%+14px)]"
+          >
+            <Image src="/brand/chevron.svg" alt="" width={13} height={7} className="rotate-90" />
+          </button>
+        </>
+      )}
+    </div>
+  )
 }
 
 /** Thank-you screen: message + full-width band with the order lines and the summary. */
 function OrderSuccess({ order }: { order: PlacedOrder }) {
   return (
-    <div className="lg:pt-8">
-      <div className="mx-auto flex max-w-[538px] flex-col items-center border border-[#d9d9d9] px-5 py-8 text-center lg:h-[166px] lg:pb-0 lg:pt-[46px]">
+    <div className="lg:pt-[110px]">
+      <div className="flex flex-col items-center px-5 py-8 text-center lg:p-0">
         <h1 className="font-serif text-2xl uppercase leading-8 tracking-[2px] text-ink lg:text-[32px] lg:leading-10">Дякуємо за замовлення</h1>
         <Link href="/catalog" className="mt-2 uppercase leading-10 text-ink/50 transition-colors hover:text-ink lg:mt-[17px]">
           Повернутись до покупок
         </Link>
       </div>
 
-      <section className="-mx-[var(--gutter)] mt-[43px] grid border-y border-[#d9d9d9] px-[var(--gutter)] py-10 lg:grid-cols-[1fr_327px] lg:gap-x-[38px] lg:pb-[39px] lg:pr-[57px] lg:pt-[41px]">
-        <ul className="grid items-start gap-6 sm:grid-cols-[repeat(2,minmax(0,328px))] sm:gap-x-[97px] lg:min-h-[191px] lg:border-r lg:border-[#dfdfdf] lg:pt-[29px]">
-          {order.items.map((item) => (
-            <li key={`${item.productId}-${item.size}-${item.color}`}>
-              <OrderLine item={item} />
-            </li>
-          ))}
-        </ul>
+      <section className="-mx-[var(--gutter)] mt-6 grid border-y border-[#d9d9d9] px-[var(--gutter)] py-10 lg:mt-[66px] lg:grid-cols-[1fr_327px] lg:gap-x-[38px] lg:pb-[39px] lg:pr-[57px] lg:pt-[41px]">
+        <OrderItemsRow items={order.items} />
 
-        <div className="mt-10 flex flex-col border-t border-[#dfdfdf] pt-6 lg:mt-0 lg:border-t-0 lg:pt-0">
+        <div className="mt-10 flex flex-col border-t border-[#dfdfdf] pt-6 lg:mt-0 lg:min-h-[191px] lg:border-t-0 lg:pt-0">
           <dl className="space-y-2.5 text-xs text-ink">
             <div className="flex items-baseline justify-between gap-4">
               <dt>Номер замовлення</dt>
@@ -139,6 +181,10 @@ function OrderSuccess({ order }: { order: PlacedOrder }) {
             <div className="flex items-baseline justify-between gap-4">
               <dt className="shrink-0">Адреса доставки</dt>
               <dd className="text-right text-[10px] text-brown/50">{order.address}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="shrink-0">Контактний номер</dt>
+              <dd className="text-right text-[10px] text-brown/50">{order.phone}</dd>
             </div>
             {order.paymentMethod && (
               <div className="flex items-baseline justify-between gap-4">
@@ -224,6 +270,8 @@ export function CartPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [placed, setPlaced] = useState<PlacedOrder | null>(null)
+  // Consent to the public offer: required before checkout
+  const [agreed, setAgreed] = useState(false)
   const [form, setForm] = useState<CheckoutForm>({
     customerName: '',
     phone: '',
@@ -270,6 +318,7 @@ export function CartPage() {
         items,
         total: totalPrice,
         address: `Нова пошта, ${form.city}, відділення ${form.novaPoshtaBranch}`,
+        phone: form.phone,
         paymentMethod: form.paymentMethod,
       })
       clear()
@@ -310,7 +359,21 @@ export function CartPage() {
         <aside className="mt-10 border border-[#b6ada3] px-6 py-10 lg:mt-[31px] lg:self-start lg:px-10 lg:py-14">
           <h2 className="mb-6 font-serif text-sm uppercase tracking-[1px] text-ink">Підсумок</h2>
           <Totals total={totalPrice} large />
-          <button type="button" onClick={() => goTo('checkout')} className={cn(pill, 'mt-10')}>
+          <label className="mt-8 flex cursor-pointer items-center gap-2 text-[11px] text-brown/50">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="size-3.5 shrink-0 cursor-pointer accent-brown"
+            />
+            <span>
+              Я погоджуюсь з{' '}
+              <Link href="/oferta" target="_blank" className="underline underline-offset-2 transition-colors hover:text-ink">
+                умовами договору публічної оферти
+              </Link>
+            </span>
+          </label>
+          <button type="button" onClick={() => goTo('checkout')} disabled={!agreed} className={cn(pill, 'mt-4 disabled:cursor-not-allowed')}>
             Оформити замовлення
           </button>
         </aside>

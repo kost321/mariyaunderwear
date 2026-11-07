@@ -315,6 +315,9 @@ export interface Order {
    * Передоплата надійшла на рахунок або післяплату отримано від Нової пошти.
    */
   paymentReceived?: boolean | null;
+  /**
+   * Після збереження покупцю піде SMS з цим номером.
+   */
   ttn?: string | null;
   customerName: string;
   phone: string;

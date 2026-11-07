@@ -160,7 +160,7 @@ export default async function ProductPage({ params }: Params) {
             { html: product.description },
             // "Характеристики:" is already in the admin text itself, so we do not add our own heading
             { html: product.descriptionHtml },
-            { title: 'Рекомендації щодо прання', html: product.careHtml },
+            { title: 'Догляд', html: product.careHtml },
           ]}
         />
       </div>

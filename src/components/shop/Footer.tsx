@@ -35,26 +35,26 @@ function LinkList({ items, slashes }: { items: FooterLink[]; slashes?: boolean }
   )
 }
 
-const contactLabel = 'text-xs font-medium uppercase leading-[1.2]'
-const contactValue = 'text-[10px] leading-none'
+const contactLabel = 'text-xs font-medium uppercase leading-[15.6px]'
+const contactValue = 'mt-1 block text-[10px] leading-[14px]'
 
 function ContactsBlock() {
   return (
     <div className="flex flex-col text-sand">
-      <div className="opacity-60">
+      <div className="flex flex-col gap-2 opacity-60">
         {CONTACTS.phone && (
-          <>
+          <div>
             <p className={contactLabel}>Клієнтська турбота</p>
             <a href={`tel:${phoneHref(CONTACTS.phone)}`} className={`${contactValue} hover:underline`}>
               {CONTACTS.phone}
             </a>
-          </>
+          </div>
         )}
         {CONTACTS.address && (
-          <>
-            <p className={`mt-1 ${contactLabel}`}>Адреса</p>
-            <p className={`max-w-[160px] lowercase ${contactValue}`}>{CONTACTS.address}</p>
-          </>
+          <div>
+            <p className={contactLabel}>Адреса</p>
+            <p className={`lowercase ${contactValue}`}>{CONTACTS.address}</p>
+          </div>
         )}
       </div>
 
@@ -73,25 +73,16 @@ function Column({ title, children }: { title: string; children: React.ReactNode 
 }
 
 export function Footer() {
-  const year = new Date().getFullYear()
-
   return (
     <footer className="relative mt-20 bg-ink text-sand lg:mt-32">
       <div className="container flex min-h-[190px] flex-col">
-        <div className="flex flex-wrap gap-x-10 gap-y-8 pt-10 lg:gap-x-[181px] lg:pl-[117px] lg:pt-[35px]">
-          <div className="w-[214px]">
-            <Column title="Інформація">
-              <LinkList items={INFO_LINKS} slashes />
-            </Column>
-          </div>
+        <div className="grid grid-cols-1 gap-y-8 pb-10 pt-10 sm:grid-cols-2 sm:gap-x-10 lg:pb-[35px] lg:pt-[35px]">
+          <Column title="Інформація">
+            <LinkList items={INFO_LINKS} slashes />
+          </Column>
           <Column title="Контакти і соцмережі">
             <ContactsBlock />
           </Column>
-        </div>
-
-        <div className="mt-auto flex flex-col gap-2 pb-6 pt-16 lg:pt-5 text-[10px] font-medium lowercase text-sand/40 sm:flex-row sm:justify-center sm:gap-24">
-          <p>© {year} — Mariya Underwear</p>
-          <p>Всі права захищені</p>
         </div>
       </div>
 

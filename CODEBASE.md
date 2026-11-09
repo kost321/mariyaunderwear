@@ -13,9 +13,6 @@ Payload runs inside the Next.js app, so the storefront, admin panel and API are 
 | `package.json` | Dependencies and scripts: `dev`, `build`, `start` (runs DB migrations before starting) |
 | `railway.toml` | Railway deploy config; start command `sh scripts/start.sh` |
 | `scripts/start.sh` | Start script: `payload migrate` first, then `next start` |
-| `scripts/import-tilda.mjs` | One-off import of products from a Tilda CSV |
-| `scripts/migrate-to-cloudinary.mjs` | One-off migration of local photos to Cloudinary |
-| `scripts/diagnose-delete.mjs` | Diagnostic for product deletion errors (runs in a rolled-back transaction) |
 | `tsconfig.json` | TypeScript config, alias `@/` → `src/` |
 | `.env` / `.env.example` | Environment variables (`.env` is not committed) |
 | `docker-compose.yml` | Local PostgreSQL for development |
@@ -89,7 +86,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 ## Components `src/components/`
 
-- **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `RichText`, `ScrollToTop`.
+- **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `ScrollToTop`.
 - **`shop/catalog/`**: `CatalogFilters`.
 - **`shop/home/`**: `HeroSection`, `ProductSlider`, `ArrowButton`.
 - **`ui/button.tsx`**: base button with style variants (CVA).

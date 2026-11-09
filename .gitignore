@@ -32,7 +32,7 @@ yarn-error.log*
 /postgres-data
 
 # Raw data for one-off product imports, not needed in the repo
-scripts/data/
+local-data/
 
 # local data: DB dumps and Torgsoft exports
 *.dump

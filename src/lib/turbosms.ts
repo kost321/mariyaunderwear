@@ -12,6 +12,7 @@
  * Texts: keep them within 70 Cyrillic characters, otherwise one message is billed as two.
  */
 import { normalizeUaPhone } from '@/lib/phone'
+import { reportFailure } from '@/lib/sentry'
 
 const API_URL = 'https://api.turbosms.ua/message/send.json'
 
@@ -49,12 +50,14 @@ export async function sendSms(phone: string, text: string): Promise<boolean> {
     const result = json?.response_result?.[0]
     if (!res.ok || result?.response_code !== 0) {
       console.error('[turbosms] Помилка відправки:', res.status, JSON.stringify(json))
+      reportFailure('sms', `HTTP ${res.status}, response_code ${result?.response_code}`)
       return false
     }
     console.info('[turbosms] SMS прийнято:', recipient, result.message_id)
     return true
   } catch (err) {
     console.error('[turbosms] Помилка запиту:', err)
+    reportFailure('sms', err)
     return false
   }
 }

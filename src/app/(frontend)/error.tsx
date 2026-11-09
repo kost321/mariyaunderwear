@@ -1,5 +1,6 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
 import { useEffect } from 'react'
 import { HomeLink, StatusScreen, primaryButton } from '@/components/shop/StatusScreen'
 
@@ -7,6 +8,7 @@ import { HomeLink, StatusScreen, primaryButton } from '@/components/shop/StatusS
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error(error)
+    Sentry.captureException(error)
   }, [error])
 
   return (

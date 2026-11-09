@@ -20,6 +20,7 @@
     "@payloadcms/plugin-cloud-storage": "3.93.0",
     "@payloadcms/richtext-lexical": "3.93.0",
     "@payloadcms/ui": "3.93.0",
+    "@sentry/nextjs": "11.11.0",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
@@ -44,7 +45,7 @@
     "typescript": "5.7.3"
   },
   "engines": {
-    "node": "^18.20.2 || >=20.9.0"
+    "node": "22.x"
   },
   "overrides": {
     "sharp": "$sharp",

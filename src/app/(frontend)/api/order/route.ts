@@ -8,6 +8,7 @@ import { esc, notifyRecipients, str } from '@/lib/mail'
 import { createRateLimiter } from '@/lib/rateLimit'
 import { isPaymentMethod, paymentMethodLabel } from '@/lib/payment'
 import { normalizeUaPhone } from '@/lib/phone'
+import { reportFailure } from '@/lib/sentry'
 
 const isRateLimited = createRateLimiter(5, 10 * 60 * 1000)
 
@@ -262,9 +263,13 @@ export async function POST(req: NextRequest) {
     ...emails.map(async (email) => {
       try {
         const { error } = await resend.emails.send({ from: 'Mariya Underwear <orders@mariyaunderwear.com>', ...email })
-        if (error) console.error('[order] Resend відхилив лист:', order.id, email.subject, error)
+        if (error) {
+          console.error('[order] Resend відхилив лист:', order.id, email.subject, error)
+          reportFailure('order-email', error)
+        }
       } catch (err) {
         console.error('[order] Не вдалося надіслати лист:', order.id, email.subject, err)
+        reportFailure('order-email', err)
       }
     }),
     // SMS to the customer right away; sendSms never throws (a failure is only logged).

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { esc, notifyRecipients, str } from '@/lib/mail'
 import { createRateLimiter } from '@/lib/rateLimit'
+import { reportFailure } from '@/lib/sentry'
 
 // Limit on cooperation requests per IP address
 const isRateLimited = createRateLimiter(3, 10 * 60 * 1000)
@@ -56,10 +57,12 @@ export async function POST(req: NextRequest) {
     })
     if (error) {
       console.error('[cooperation] Resend відхилив лист:', error)
+      reportFailure('cooperation-email', error)
       return NextResponse.json({ error: 'send failed' }, { status: 502 })
     }
   } catch (err) {
     console.error('[cooperation] Не вдалося надіслати лист:', err)
+    reportFailure('cooperation-email', err)
     return NextResponse.json({ error: 'send failed' }, { status: 502 })
   }
 

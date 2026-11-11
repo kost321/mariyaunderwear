@@ -6,6 +6,8 @@ import { getMediaAlt, getMediaUrl } from '@/lib/media'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { HeroSection, type HeroImage } from '@/components/shop/home/HeroSection'
 import { ProductSlider } from '@/components/shop/home/ProductSlider'
+import { TrustStrip } from '@/components/shop/home/TrustStrip'
+import { CONTACTS } from '@/lib/contacts'
 
 // The home page is built from products, so it is rendered on every request: during the build
 // on Railway the DB is unavailable (postgres.railway.internal exists only at runtime)
@@ -45,6 +47,13 @@ function heroImages(products: Product[]): HeroImage[] {
     .filter((i): i is HeroImage => i !== null)
 }
 
+// "About the brand": a neutral draft for the owner to rewrite. It states nothing the site does not
+// already say elsewhere (Ukrainian brand, home wear and sleepwear).
+const ABOUT_TEXT = [
+  'Mariya Underwear — український бренд жіночого домашнього одягу та білизни для сну.',
+  'Ми обираємо приємні до тіла тканини й уважно ставимося до посадки, щоб у наших речах було затишно щодня — вдома, уві сні та в хвилини відпочинку.',
+]
+
 // "Product care" block: fabric cards in a staircase, as in the design. Even cards have the label above
 // the photo and are shifted down (32px / 63px from the row top), odd ones have it below.
 // Cards come from Materials with "show on home"; the four slot shapes repeat for more cards.
@@ -77,7 +86,11 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-24 lg:space-y-[150px]">
-      <HeroSection images={heroImages(products)} />
+      {/* The trust row sits closer to the hero than the regular section spacing */}
+      <div className="space-y-12 lg:space-y-16">
+        <HeroSection images={heroImages(products)} />
+        <TrustStrip />
+      </div>
 
       {newest.length > 0 && (
         <section>
@@ -151,6 +164,35 @@ export default async function HomePage() {
               </div>
             )
           })}
+        </div>
+      </section>
+
+      <section aria-labelledby="about" className="mx-auto max-w-[760px] text-center">
+        <h2 id="about" className="heading-section text-black">
+          Про бренд
+        </h2>
+        <div className="mt-8 space-y-4 text-base leading-7 text-brown">
+          {ABOUT_TEXT.map((p) => (
+            <p key={p}>{p}</p>
+          ))}
+        </div>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
+          <Link
+            href="/catalog"
+            className="flex h-11 w-[220px] items-center justify-center rounded-card bg-ink text-sm uppercase tracking-[1px] text-white transition-colors hover:bg-ink/90"
+          >
+            До каталогу
+          </Link>
+          {CONTACTS.instagram && (
+            <a
+              href={CONTACTS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-11 w-[220px] items-center justify-center rounded-card border border-brown/50 text-sm uppercase tracking-[1px] text-brown transition-colors hover:border-ink hover:text-ink"
+            >
+              Ми в Instagram
+            </a>
+          )}
         </div>
       </section>
     </div>

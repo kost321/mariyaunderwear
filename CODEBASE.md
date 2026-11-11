@@ -64,7 +64,7 @@ A custom admin page and sidebar link for importing prices, per-size stock and ma
 The public part of the site.
 
 - **`layout.tsx`**: shared layout (Header, Footer, CartProvider) and site-wide SEO metadata.
-- **`page.tsx`**: home page: hero, collection tabs, fabric block (Materials with `showOnHome`, placeholders until any are marked). Rendered on every request.
+- **`page.tsx`**: home page: hero with the store headline (the only H1), trust row (delivery, payment, returns, made in Ukraine), "Новинки" slider, fabric block (Materials with `showOnHome`, placeholders until any are marked), "Про бренд" (draft text in `ABOUT_TEXT`). Rendered on every request.
 - **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, material, price and sorting are applied in memory (`lib/catalog.ts`).
 - **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams`, `generateMetadata`, canonical URL and JSON-LD `Product` markup.
 - **`cart/page.tsx`**: cart and checkout.
@@ -88,7 +88,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 - **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `ScrollToTop`.
 - **`shop/catalog/`**: `CatalogFilters`.
-- **`shop/home/`**: `HeroSection`, `ProductSlider`, `ArrowButton`.
+- **`shop/home/`**: `HeroSection`, `TrustStrip` (store promises under the hero; keep in sync with `/delivery` and the checkout), `ProductSlider`, `ArrowButton`.
 - **`ui/button.tsx`**: base button with style variants (CVA).
 
 ## Hooks `src/hooks/`
@@ -99,7 +99,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 | File | Purpose |
 |------|---------|
-| `queries.ts` | All database queries through the Payload Local API (products, categories, color variants, settings) |
+| `queries.ts` | All database queries through the Payload Local API (products, categories, color variants, settings). `getNonEmptyCategories` feeds the menu, catalog chips and sitemap, so empty categories stay hidden |
 | `catalog.ts` | In-memory catalog filters and facets |
 | `media.ts` | `getMediaUrl`: builds a Cloudinary URL from a Media object |
 | `payload.ts` | Payload initialization for server code (Local API) |

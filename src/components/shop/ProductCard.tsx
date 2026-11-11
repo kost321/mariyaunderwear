@@ -29,7 +29,8 @@ export function ProductCard({
   const extraColors = product.colorName ? 0 : (product.colors?.length ?? 0) - 1
 
   return (
-    <Link href={`/product/${product.slug}`} className={cn('group block', className)}>
+    // flex-col + flex-1 below: cards in a row share the row height, so the mobile price can sit at the bottom
+    <Link href={`/product/${product.slug}`} className={cn('group flex flex-col', className)}>
       <div className="relative aspect-[3/4] overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40">
         {url ? (
           <Image
@@ -48,23 +49,27 @@ export function ProductCard({
         </span>
       </div>
 
-      {/* On narrow cards the price goes under the title, from sm it goes to the right */}
-      <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3 sm:pr-2">
-        <div className="min-w-0">
-          {(category || swatch) && (
-            <div className="flex items-center gap-4 text-xs text-brown/50">
-              {category && <span className="truncate">{category}</span>}
-              {swatch && (
-                <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-light text-black/65">
-                  <span className="h-3 w-3 border border-brown/30" style={{ backgroundColor: swatch }} />
-                  {extraColors > 0 && `+${extraColors}`}
-                </span>
-              )}
-            </div>
-          )}
-          <h3 className="mt-1 font-serif text-sm leading-[17px] text-ink sm:text-base sm:leading-[19px]">{product.title}</h3>
+      <div className="mt-3 flex flex-1 flex-col">
+        {(category || swatch) && (
+          <div className="flex items-center gap-4 text-xs text-brown/50">
+            {category && <span className="truncate">{category}</span>}
+            {swatch && (
+              <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-light text-black/65">
+                <span className="h-3 w-3 border border-brown/30" style={{ backgroundColor: swatch }} />
+                {extraColors > 0 && `+${extraColors}`}
+              </span>
+            )}
+          </div>
+        )}
+        {/*
+          The price sits at the same height in every card of a row, however many lines the title takes:
+          on narrow cards it goes under the title and is pushed to the bottom of the card (mt-auto);
+          from sm it goes to the right, lined up with the FIRST line of the title (items-baseline).
+        */}
+        <div className="mt-1 flex flex-1 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:pr-2">
+          <h3 className="min-w-0 font-serif text-sm leading-[17px] text-ink sm:text-base sm:leading-[19px]">{product.title}</h3>
+          <p className="mt-auto shrink-0 whitespace-nowrap font-serif text-sm leading-[17px] text-ink/50 sm:mt-0 sm:text-base sm:leading-[19px]">{formatPrice(product.price)}</p>
         </div>
-        <p className="shrink-0 whitespace-nowrap font-serif text-sm leading-[17px] text-ink/50 sm:text-base sm:leading-[19px]">{formatPrice(product.price)}</p>
       </div>
     </Link>
   )

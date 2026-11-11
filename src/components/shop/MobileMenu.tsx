@@ -2,8 +2,9 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { X } from 'lucide-react'
+import { Instagram, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CONTACTS } from '@/lib/contacts'
 
 export type MenuCategory = { slug: string; title: string }
 
@@ -73,6 +74,19 @@ export function MobileMenu({
               ))}
             </ul>
           </div>
+        )}
+
+        {/* On narrow phones the header has no room for the Instagram icon, so it lives here */}
+        {CONTACTS.instagram && (
+          <a
+            href={CONTACTS.instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-auto flex items-center gap-3 pt-10 text-base text-brown hover:text-ink"
+          >
+            <Instagram className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+            Ми в Instagram
+          </a>
         )}
       </aside>
     </div>

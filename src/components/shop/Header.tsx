@@ -3,14 +3,16 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Search, ShoppingBag, X } from 'lucide-react'
+import { Instagram, Search, ShoppingBag, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
+import { CONTACTS } from '@/lib/contacts'
+import { cn } from '@/lib/utils'
 import { MobileMenu, type MenuCategory } from './MobileMenu'
 
-// Order from the mockup. The mockup's "Бестселери" is called "Новинки" until products get a
-// bestseller flag: the link leads to the newest products.
+// No "Головна": the logo in the centre already leads home. The mockup's "Бестселери" is called
+// "Новинки" until products get a bestseller flag: the link leads to the newest products.
+// Used by the desktop nav and the burger menu.
 export const NAV_LINKS = [
-  { href: '/', label: 'Головна' },
   { href: '/catalog?sort=new', label: 'Новинки' },
   { href: '/catalog', label: 'Каталог' },
 ]
@@ -58,10 +60,11 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
           </nav>
         </div>
 
-        <Link href="/" aria-label="Mariya Underwear — на головну" className="justify-self-center">
+        {/* The only link home: aria-label names it for screen readers, so the image itself is decorative */}
+        <Link href="/" aria-label="Mariya Underwear, на головну" className="justify-self-center">
           <Image
             src="/brand/logo.jpg"
-            alt="Mariya underwear"
+            alt=""
             width={164}
             height={53}
             priority
@@ -70,6 +73,21 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
         </Link>
 
         <div className="flex items-center gap-4 justify-self-end lg:gap-6">
+          {/*
+            Many orders of a small Ukrainian brand come through Instagram Direct, so the profile is one tap away.
+            From sm only: on narrow phones three icons do not fit beside the centred logo; there it is in the burger menu.
+          */}
+          {CONTACTS.instagram && (
+            <a
+              href={CONTACTS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className={cn(iconButton, 'hidden sm:flex')}
+            >
+              <Instagram className="h-6 w-6 lg:h-[26px] lg:w-[26px]" strokeWidth={1.25} aria-hidden />
+            </a>
+          )}
           <button
             type="button"
             onClick={() => setSearchOpen((o) => !o)}

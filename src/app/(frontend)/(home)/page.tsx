@@ -9,6 +9,7 @@ import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import { TrustStrip } from '@/components/shop/home/TrustStrip'
 import { JsonLd, storeLd } from '@/components/shop/JsonLd'
 import { CONTACTS } from '@/lib/contacts'
+import { cn } from '@/lib/utils'
 
 // The home page is built from products, so it is rendered on every request: during the build
 // on Railway the DB is unavailable (postgres.railway.internal exists only at runtime)
@@ -84,6 +85,10 @@ export default async function HomePage() {
     : FALLBACK_FABRICS
 
   const newest = products.slice(0, 12)
+  const hero = heroImages(products)
+  // "Про бренд" photo: the first one the hero does not show on its first screen (slots 0-3), so it does not repeat;
+  // with four photos or fewer, the last one. Swap for a dedicated brand photo when there is one.
+  const aboutImage = hero[4] ?? hero[hero.length - 1]
 
   return (
     <>
@@ -93,7 +98,7 @@ export default async function HomePage() {
       <div className="space-y-20 lg:space-y-28">
         {/* The trust row sits closer to the hero than the regular section spacing */}
         <div className="space-y-12 lg:space-y-16">
-          <HeroSection images={heroImages(products)} />
+          <HeroSection images={hero} />
           <TrustStrip />
         </div>
 
@@ -175,32 +180,53 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section aria-labelledby="about" className="mx-auto max-w-[760px] text-center">
-          <h2 id="about" className="heading-section text-black">
-            Про бренд
-          </h2>
-          <div className="mt-8 space-y-4 text-base leading-7 text-brown">
-            {ABOUT_TEXT.map((p) => (
-              <p key={p}>{p}</p>
-            ))}
-          </div>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
-            <Link
-              href="/catalog"
-              className="flex h-11 w-[220px] items-center justify-center rounded-card bg-ink text-sm text-white transition-colors hover:bg-ink/90"
-            >
-              До каталогу
+        {/* Tinted band with a photo: plain centred text on white looked empty */}
+        <section
+          aria-labelledby="about"
+          className={cn(
+            'grid items-center gap-8 overflow-hidden rounded-card bg-[#f4efeb] p-6 sm:p-10 lg:gap-16 lg:p-14',
+            aboutImage && 'lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]',
+          )}
+        >
+          {aboutImage && (
+            <Link href={aboutImage.href} className="relative block aspect-[4/5] overflow-hidden rounded-card bg-placeholder/40">
+              <Image
+                src={aboutImage.url}
+                alt={aboutImage.alt}
+                fill
+                sizes="(max-width: 1024px) 90vw, 460px"
+                quality={90}
+                className="object-cover"
+              />
             </Link>
-            {CONTACTS.instagram && (
-              <a
-                href={CONTACTS.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-11 w-[220px] items-center justify-center rounded-card border border-brown/50 text-sm text-brown transition-colors hover:border-ink hover:text-ink"
+          )}
+          <div>
+            <h2 id="about" className="heading-section text-black">
+              Про бренд
+            </h2>
+            <div className="mt-6 max-w-[560px] space-y-4 text-base leading-7 text-brown lg:mt-8">
+              {ABOUT_TEXT.map((p) => (
+                <p key={p}>{p}</p>
+              ))}
+            </div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:gap-4">
+              <Link
+                href="/catalog"
+                className="flex h-11 w-[220px] items-center justify-center rounded-card bg-ink text-sm text-white transition-colors hover:bg-ink/90"
               >
-                Ми в Instagram
-              </a>
-            )}
+                До каталогу
+              </Link>
+              {CONTACTS.instagram && (
+                <a
+                  href={CONTACTS.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-11 w-[220px] items-center justify-center rounded-card border border-brown/50 text-sm text-brown transition-colors hover:border-ink hover:text-ink"
+                >
+                  Ми в Instagram
+                </a>
+              )}
+            </div>
           </div>
         </section>
       </div>

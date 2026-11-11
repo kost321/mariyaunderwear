@@ -18,7 +18,7 @@ const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 export const metadata: Metadata = {
   metadataBase: new URL(serverUrl),
   title: {
-    default: 'Нічні сорочки та домашній одяг із шовку Армані — Mariya Underwear',
+    default: 'Жіночі нічні сорочки та домашній одяг — Mariya Underwear',
     template: '%s — Mariya Underwear',
   },
   description:

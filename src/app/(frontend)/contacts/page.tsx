@@ -62,7 +62,7 @@ export default function Contacts() {
 
           {(CONTACTS.instagram || CONTACTS.tiktok) && (
             <Section title="Соцмережі">
-              <SocialLinks items={['instagram', 'tiktok']} size={37} gap={5} />
+              <SocialLinks items={['instagram', 'tiktok']} size={26} gap={8} />
             </Section>
           )}
         </div>

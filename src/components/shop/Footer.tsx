@@ -57,7 +57,7 @@ function ContactsBlock() {
         )}
       </div>
 
-      <SocialLinks items={['instagram', 'email', 'tiktok']} size={26} gap={6} tone="light" className="mt-4" />
+      <SocialLinks items={['instagram', 'email', 'tiktok']} size={22} gap={4} tone="light" className="mt-3" />
     </div>
   )
 }

@@ -71,8 +71,8 @@ export function ProductCard({
           from sm it goes to the right, lined up with the FIRST line of the title (items-baseline).
         */}
         <div className="mt-1 flex flex-1 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:pr-2">
-          <h3 className="min-w-0 font-serif text-sm leading-[17px] text-ink sm:text-base sm:leading-[19px]">{product.title}</h3>
-          <p className="mt-auto shrink-0 whitespace-nowrap font-serif text-sm leading-[17px] text-ink/50 sm:mt-0 sm:text-base sm:leading-[19px]">{formatPrice(product.price)}</p>
+          <h3 className="min-w-0 text-sm leading-5 text-ink sm:text-[15px] sm:leading-[22px]">{product.title}</h3>
+          <p className="mt-auto shrink-0 whitespace-nowrap text-sm leading-5 text-brown sm:mt-0 sm:text-[15px] sm:leading-[22px]">{formatPrice(product.price)}</p>
         </div>
       </div>
     </Link>

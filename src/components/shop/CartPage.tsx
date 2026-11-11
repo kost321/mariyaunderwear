@@ -32,7 +32,7 @@ function Message({ title }: { title: string }) {
     <div className="flex flex-col items-center gap-5 py-24 text-center">
       <h1 className="font-serif text-2xl uppercase tracking-[2px] text-ink lg:text-[32px]">{title}</h1>
       <Link href="/catalog" className={cn(pill, 'mt-4 w-[265px]')}>
-        Перейти до каталогу
+        До каталогу
       </Link>
     </div>
   )
@@ -45,7 +45,7 @@ function NextButton({ children, disabled }: { children: React.ReactNode; disable
       <button
         type="submit"
         disabled={disabled}
-        className="flex h-11 w-full items-center justify-between rounded-card bg-cream/70 px-6 font-serif text-sm text-ink transition-colors hover:bg-cream disabled:opacity-60 sm:w-[231px]"
+        className="flex h-11 w-full items-center justify-between rounded-card bg-cream/70 px-6 text-sm text-ink transition-colors hover:bg-cream disabled:opacity-60 sm:w-[231px]"
       >
         {children}
         <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100" />
@@ -85,7 +85,7 @@ function OrderLine({ item, onChange }: { item: CartItem; onChange?: () => void }
       </div>
       <div className="flex min-w-0 flex-1 flex-col py-4">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-serif text-sm text-black">{item.title}</p>
+          <p className="text-sm text-black">{item.title}</p>
           {onChange && (
             <button type="button" onClick={onChange} className="shrink-0 text-xs text-brown underline underline-offset-2">
               Змінити
@@ -251,10 +251,10 @@ function BagItem({
       </div>
       <div className="mt-3 flex items-end justify-between gap-3 pr-[41px]">
         <div className="min-w-0">
-          {item.color && <p className="font-serif text-xs text-brown/50">{item.color}</p>}
-          <p className="mt-1 font-serif text-sm text-ink">{item.title}</p>
+          {item.color && <p className="text-xs text-brown/70">{item.color}</p>}
+          <p className="mt-1 text-sm text-ink">{item.title}</p>
         </div>
-        <p className="shrink-0 whitespace-nowrap font-serif text-sm text-ink/50">{formatPrice(item.price * item.quantity)}</p>
+        <p className="shrink-0 whitespace-nowrap text-sm text-brown">{formatPrice(item.price * item.quantity)}</p>
       </div>
     </div>
   )

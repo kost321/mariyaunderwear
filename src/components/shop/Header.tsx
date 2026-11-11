@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { ShoppingBag } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { MobileMenu, type MenuCategory } from './MobileMenu'
 
@@ -57,17 +58,12 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
         <Link
           href="/cart"
           aria-label={totalCount > 0 ? `Кошик, товарів: ${totalCount}` : 'Кошик'}
-          className="relative justify-self-end"
+          // A thin bag icon in a 44px tap area: the old icon sat in a thick grey ring
+          className="relative -m-2 flex h-11 w-11 items-center justify-center justify-self-end text-ink transition-opacity hover:opacity-70"
         >
-          <Image
-            src="/brand/bag.svg"
-            alt=""
-            width={50}
-            height={50}
-            className="h-10 w-10 lg:h-[50px] lg:w-[50px]"
-          />
+          <ShoppingBag className="h-6 w-6 lg:h-7 lg:w-7" strokeWidth={1.25} aria-hidden />
           {totalCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-pink px-1 text-[11px] font-medium text-ink">
+            <span className="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 text-[11px] font-medium text-white">
               {totalCount}
             </span>
           )}

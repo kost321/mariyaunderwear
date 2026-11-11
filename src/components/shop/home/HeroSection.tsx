@@ -46,7 +46,7 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
         </form>
 
         <h1 className="mt-10 font-serif text-[28px] uppercase leading-[32px] tracking-[1.5px] text-ink-text lg:mt-12 lg:text-[34px] lg:leading-[40px]">
-          Жіночі нічні сорочки та домашній одяг із шовку Армані
+          Жіночі нічні сорочки та домашній одяг
         </h1>
         <p className="mt-4 text-sm leading-6 text-brown lg:text-base">Виготовлено в Україні. Розміри S–2XL</p>
 
@@ -60,7 +60,7 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
             href="/catalog"
             className="flex h-11 w-[265px] items-center justify-between rounded-card bg-ink pl-7 pr-5 text-base text-white transition-colors hover:bg-ink/90"
           >
-            До магазину
+            До каталогу
             {/* The arrow file is brown; brightness-0 + invert turns it white on the dark button */}
             <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100 brightness-0 invert" />
           </Link>

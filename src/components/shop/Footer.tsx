@@ -12,15 +12,15 @@ const INFO_LINKS: FooterLink[] = [
   { href: '/#care', label: 'Догляд' },
   { href: '/oferta', label: 'Договір публічної оферти' },
   { href: '/privacy', label: 'Політика конфіденційності' },
-  { href: '/delivery', label: 'FAQ' },
+  { href: '/delivery', label: 'Оплата і доставка' },
 ]
 
-/** Column of links; `slashes` separates items with "/", as in the "Інформація" column of the design. */
-function LinkList({ items, slashes }: { items: FooterLink[]; slashes?: boolean }) {
+/** Column of links. */
+function LinkList({ items }: { items: FooterLink[] }) {
   return (
-    <ul className="flex flex-col text-xs font-medium uppercase leading-[15.6px] text-sand">
-      {items.map((item, i) => (
-        <li key={item.label} className="flex gap-1">
+    <ul className="flex flex-col gap-1.5 text-xs font-medium uppercase leading-[15.6px] text-sand">
+      {items.map((item) => (
+        <li key={item.label}>
           {!item.href ? (
             <span className="opacity-60">{item.label}</span>
           ) : (
@@ -28,7 +28,6 @@ function LinkList({ items, slashes }: { items: FooterLink[]; slashes?: boolean }
               {item.label}
             </Link>
           )}
-          {slashes && i < items.length - 1 && <span className="text-[#988b82] opacity-30">/</span>}
         </li>
       ))}
     </ul>
@@ -78,7 +77,7 @@ export function Footer() {
       <div className="container flex min-h-[190px] flex-col">
         <div className="grid grid-cols-1 gap-y-8 pb-10 pt-10 sm:grid-cols-2 sm:gap-x-10 lg:pb-[35px] lg:pt-[35px]">
           <Column title="Інформація">
-            <LinkList items={INFO_LINKS} slashes />
+            <LinkList items={INFO_LINKS} />
           </Column>
           <Column title="Контакти і соцмережі">
             <ContactsBlock />

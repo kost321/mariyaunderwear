@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import Link from 'next/link'
 
 const button =
@@ -10,7 +9,7 @@ export const primaryButton = `${button} bg-ink text-sand`
 export const secondaryButton = `${button} border-2 border-ink/50 text-ink/50`
 
 /**
- * Full-page status screens from the mockup (error / 404 / loading):
+ * Full-page status screens from the mockup (error / 404):
  * huge pale word, a short explanation and optional buttons.
  */
 export function StatusScreen({
@@ -20,7 +19,7 @@ export function StatusScreen({
   children,
 }: {
   title: string
-  /** Smaller second line under the title ("not found") */
+  /** Smaller second line under the title ("сторінку не знайдено") */
   subtitle?: string
   text: React.ReactNode
   children?: React.ReactNode
@@ -29,7 +28,7 @@ export function StatusScreen({
     <div className="flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
       <h1 className="font-serif uppercase leading-none tracking-[2px] text-ink/50">
         <span className="block text-[72px] sm:text-[128px]">{title}</span>
-        {subtitle && <span className="mt-1 block text-[40px] sm:mt-0 sm:text-[72px]">{subtitle}</span>}
+        {subtitle && <span className="mt-2 block text-[28px] sm:text-[44px]">{subtitle}</span>}
       </h1>
       <div className="mt-6 text-sm leading-[26px] text-brown/50">{text}</div>
       {children && (
@@ -46,25 +45,5 @@ export function HomeLink() {
     <Link href="/" className={secondaryButton}>
       На головну
     </Link>
-  )
-}
-
-/**
- * Loading screen for loading.tsx. Used only on pages that never return 404 (home, catalog):
- * a loading.tsx makes Next stream the page, so notFound() below it would answer 200 instead of 404.
- * The spinner turns in 12 steps, one per petal.
- */
-export function LoadingScreen() {
-  return (
-    <StatusScreen title="loading" text={<p role="status">Зачекайте, будь ласка, ми готуємо сторінку</p>}>
-      <Image
-        src="/brand/spinner.png"
-        alt=""
-        width={65}
-        height={65}
-        priority
-        className="opacity-80 [animation:spin_1s_steps(12)_infinite] motion-reduce:animate-none"
-      />
-    </StatusScreen>
   )
 }

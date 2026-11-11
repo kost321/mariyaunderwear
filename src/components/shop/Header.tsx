@@ -6,11 +6,11 @@ import Link from 'next/link'
 import { useCart } from '@/hooks/useCart'
 import { MobileMenu, type MenuCategory } from './MobileMenu'
 
-// Order and names from the mockup. There is no bestseller flag on products yet,
-// so "Бестселери" leads to the newest products (the former "Новинки" link).
+// Order from the mockup. The mockup's "Бестселери" is called "Новинки" until products get a
+// bestseller flag: the link leads to the newest products.
 export const NAV_LINKS = [
   { href: '/', label: 'Головна' },
-  { href: '/catalog?sort=new', label: 'Бестселери' },
+  { href: '/catalog?sort=new', label: 'Новинки' },
   { href: '/catalog', label: 'Каталог' },
 ]
 

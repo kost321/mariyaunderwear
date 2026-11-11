@@ -44,8 +44,11 @@ export default async function FrontendLayout({
 
   return (
     <html lang="uk" className={`${sans.variable} ${serif.variable}`}>
-      {/* Room under the footer for the fixed mobile "Add to cart" bar (73px) on product pages */}
-      <body className="flex min-h-screen flex-col bg-background font-sans has-[[data-sticky-buy]]:pb-[73px] lg:has-[[data-sticky-buy]]:pb-0">
+      {/*
+        has-[...]: room under the footer for the fixed mobile "Add to cart" bar (73px) on product pages.
+        overflow-x-clip: 100vw in .bleed-right includes a classic scrollbar (Windows); clip stops a sideways page scroll.
+      */}
+      <body className="flex min-h-screen flex-col overflow-x-clip bg-background font-sans has-[[data-sticky-buy]]:pb-[73px] lg:has-[[data-sticky-buy]]:pb-0">
         <CartProvider>
           <Header categories={categories} />
           <main className="container flex-1 py-8">{children}</main>

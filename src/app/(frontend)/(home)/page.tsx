@@ -125,8 +125,8 @@ export default async function HomePage() {
             </p>
           </div>
 
-          {/* Fabric cards: a row that bleeds off the right edge on desktop, like in the design */}
-          <div className="-mr-[var(--gutter)] mt-16 flex items-start gap-4 overflow-x-auto pr-[var(--gutter)] [scrollbar-width:none] lg:mt-[124px] lg:gap-9 [&::-webkit-scrollbar]:hidden">
+          {/* Fabric cards: a row that bleeds off the right edge of the window, like in the design */}
+          <div className="bleed-right mt-16 flex items-start gap-4 overflow-x-auto [scrollbar-width:none] lg:mt-[124px] lg:gap-9 [&::-webkit-scrollbar]:hidden">
             {fabrics.map((fabric, i) => {
               const slot = CARE_SLOTS[i % CARE_SLOTS.length]
               const label = (

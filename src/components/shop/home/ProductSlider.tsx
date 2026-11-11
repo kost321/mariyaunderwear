@@ -19,7 +19,7 @@ export function ProductSlider({ children }: { children: React.ReactNode }) {
     <div>
       <div
         ref={track}
-        className="-mr-[var(--gutter)] flex snap-x snap-mandatory gap-4 overflow-x-auto pr-[var(--gutter)] [scrollbar-width:none] lg:gap-[27px] [&::-webkit-scrollbar]:hidden [&>*]:w-[70vw] [&>*]:shrink-0 [&>*]:snap-start sm:[&>*]:w-[304px]"
+        className="bleed-right flex snap-x snap-mandatory gap-4 overflow-x-auto [scrollbar-width:none] lg:gap-[27px] [&::-webkit-scrollbar]:hidden [&>*]:w-[70vw] [&>*]:shrink-0 [&>*]:snap-start sm:[&>*]:w-[304px]"
       >
         {children}
       </div>

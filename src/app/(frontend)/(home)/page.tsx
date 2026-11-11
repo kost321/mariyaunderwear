@@ -125,8 +125,8 @@ export default async function HomePage() {
             </p>
           </div>
 
-          {/* Fabric cards: a row that bleeds off the right edge of the window, like in the design */}
-          <div className="bleed-right mt-16 flex items-start gap-4 overflow-x-auto [scrollbar-width:none] lg:mt-[124px] lg:gap-9 [&::-webkit-scrollbar]:hidden">
+          {/* Fabric cards: on desktop four whole cards within the content; on mobile the row runs to the screen edge */}
+          <div className="-mr-[var(--gutter)] mt-16 flex items-start gap-4 overflow-x-auto pr-[var(--gutter)] [scrollbar-width:none] lg:mr-0 lg:mt-[124px] lg:gap-9 lg:pr-0 [&::-webkit-scrollbar]:hidden">
             {fabrics.map((fabric, i) => {
               const slot = CARE_SLOTS[i % CARE_SLOTS.length]
               const label = (
@@ -157,7 +157,7 @@ export default async function HomePage() {
                   )}
                 </>
               )
-              const className = `group flex w-[70vw] shrink-0 flex-col gap-3 sm:w-[317px] ${slot.offset}`
+              const className = `group flex w-[70vw] shrink-0 flex-col gap-3 sm:w-[317px] lg:w-[calc((100%-3*36px)/4)] ${slot.offset}`
               return fabric.href ? (
                 <Link key={i} href={fabric.href} className={className}>
                   {content}

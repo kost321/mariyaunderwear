@@ -35,17 +35,6 @@
 }
 
 @layer components {
-  /*
-   * Horizontal scroll row that runs to the right edge of the window, not of the container:
-   * on screens wider than the container (1280px) the cards otherwise stop at an invisible wall.
-   * The parent is centred, so its right edge is (100vw - 100%) / 2 away from the window edge;
-   * the padding keeps the last card aligned with the container when scrolled to the end.
-   */
-  .bleed-right {
-    margin-right: calc(50% - 50vw);
-    padding-right: calc(50vw - 50%);
-  }
-
   /* Section heading from the design: Podkova 55px, 2px letter spacing, uppercase. */
   .heading-section {
     @apply font-serif text-[32px] uppercase leading-[34px] tracking-[2px] lg:text-[55px] lg:leading-10;

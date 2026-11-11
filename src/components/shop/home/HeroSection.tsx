@@ -50,7 +50,7 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
           <br />
           колекція
         </h1>
-        <p className="mt-2 font-script text-xl leading-6 tracking-[2px] text-brown">
+        <p className="mt-2 font-serif text-xl leading-6 tracking-[2px] text-brown">
           Літо
           <br />
           2026

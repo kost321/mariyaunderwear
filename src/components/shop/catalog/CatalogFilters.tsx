@@ -79,7 +79,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
         className="flex items-center gap-3 font-serif text-base tracking-[2px] text-ink lg:pointer-events-none"
       >
         Фільтри
-        {activeCount > 0 && <span className="font-script text-lg text-pink">({activeCount})</span>}
+        {activeCount > 0 && <span className="font-sans text-xs tracking-normal text-brown/80">({activeCount})</span>}
         <ChevronRight
           className={cn('h-4 w-4 transition-transform lg:hidden', mobileOpen && 'rotate-90')}
           strokeWidth={1.5}

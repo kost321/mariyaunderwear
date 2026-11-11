@@ -58,7 +58,7 @@ export default async function HomePage() {
         <section>
           <h2 className="heading-section text-black">
             Новинки
-            <span className="ml-2 align-top font-script text-xl normal-case text-pink">({newest.length})</span>
+            <span className="ml-3 align-top font-sans text-base normal-case tracking-normal text-brown/80">({newest.length})</span>
           </h2>
           {/* As in the design: "see all" on its own row under the heading, 70px from heading to cards */}
           <div className="mb-[9px] mt-[21px] flex justify-end">

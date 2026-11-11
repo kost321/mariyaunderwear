@@ -138,8 +138,7 @@ export default async function ProductPage({ params }: Params) {
   }
 
   return (
-    // pb-20 leaves room for the fixed "Add to cart" button on mobile
-    <article className="pb-20 lg:pb-0">
+    <article>
       {/* Escape "<" so the product text cannot close the script tag */}
       <script
         type="application/ld+json"

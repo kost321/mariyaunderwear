@@ -296,7 +296,8 @@ export function ProductDetails({
         </button>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-white/95 p-2 backdrop-blur lg:hidden">
+      {/* data-sticky-buy: the layout adds bottom padding to <body> so the bar does not cover the footer */}
+      <div data-sticky-buy className="fixed inset-x-0 bottom-0 z-30 bg-white/95 p-2 backdrop-blur lg:hidden">
         {addButton('h-[57px] rounded-none')}
       </div>
 

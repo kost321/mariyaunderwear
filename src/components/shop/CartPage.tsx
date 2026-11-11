@@ -93,7 +93,7 @@ function OrderLine({ item, onChange }: { item: CartItem; onChange?: () => void }
         </div>
         <p className="mt-2 text-xs text-brown">{[item.color, item.size].filter(Boolean).join(' / ')}</p>
         <div className="mt-auto flex items-baseline justify-between">
-          <span className="font-script text-sm text-pink">({item.quantity})</span>
+          <span className="text-xs text-brown/80">× {item.quantity}</span>
           <span className="text-[13px] text-brown/50">{formatPrice(item.price * item.quantity)}</span>
         </div>
       </div>
@@ -527,7 +527,7 @@ export function CartPage() {
       </section>
 
       <aside className="relative mt-12 border border-[#b6ada3] px-5 py-8 lg:mt-[188px] lg:self-start lg:px-10 lg:py-10">
-        <span className="absolute right-4 top-2 font-script text-sm tracking-[1px] text-pink">({totalCount})</span>
+        <span className="absolute right-4 top-2 text-xs text-brown/80">({totalCount})</span>
         <h2 className="font-serif text-sm uppercase tracking-[1px] text-black">Ваше замовлення</h2>
         <ul className="mt-6 space-y-6 border-b border-[#b6ada3] pb-6">
           {items.map((item) => (

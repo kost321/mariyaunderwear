@@ -7,6 +7,58 @@ import { cn, plural } from '@/lib/utils'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { FilterPanel, SortSelect } from '@/components/shop/catalog/CatalogFilters'
 
+const catalogUrl = (query: Record<string, string | undefined>) => {
+  const qs = new URLSearchParams(Object.entries(query).filter((e): e is [string, string] => Boolean(e[1]))).toString()
+  return qs ? `/catalog?${qs}` : '/catalog'
+}
+
+/**
+ * Nothing matched: say why (search or filters) and offer a way back to the products,
+ * instead of a bare "not found".
+ */
+function EmptyResult({ params }: { params: ReturnType<typeof parseCatalogParams> }) {
+  const hasFilters =
+    params.sizes.length > 0 ||
+    params.colors.length > 0 ||
+    params.materials.length > 0 ||
+    Boolean(params.stock || params.min || params.max)
+  const [title, hint] = !params.q
+    ? ['Немає товарів з такими фільтрами', 'Спробуйте прибрати частину фільтрів або подивіться весь каталог.']
+    : hasFilters
+      ? [`За запитом «${params.q}» з такими фільтрами нічого немає`, 'Спробуйте скинути фільтри — можливо, товар є в іншому розмірі чи кольорі.']
+      : [`За запитом «${params.q}» нічого не знайшли`, 'Перевірте написання або спробуйте коротше слово, наприклад «сорочка».']
+  const button =
+    'flex h-11 min-w-[200px] items-center justify-center rounded-card px-6 text-sm uppercase tracking-[1px] transition-colors'
+
+  return (
+    <div className="flex flex-col items-center py-16 text-center">
+      <p className="font-serif text-lg uppercase tracking-[1px] text-ink">{title}</p>
+      <p className="mt-3 max-w-[420px] text-sm leading-6 text-brown">{hint}</p>
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        {params.q && hasFilters ? (
+          <Link
+            href={catalogUrl({ category: params.category, q: params.q })}
+            className={`${button} border border-brown/50 text-brown hover:border-ink hover:text-ink`}
+          >
+            Скинути фільтри
+          </Link>
+        ) : null}
+        {!params.q && hasFilters && params.category ? (
+          <Link
+            href={catalogUrl({ category: params.category })}
+            className={`${button} border border-brown/50 text-brown hover:border-ink hover:text-ink`}
+          >
+            Скинути фільтри
+          </Link>
+        ) : null}
+        <Link href="/catalog" className={`${button} bg-ink text-white hover:bg-ink/90`}>
+          Усі товари
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
 /**
@@ -123,7 +175,7 @@ export default async function CatalogPage({
             ))}
           </div>
         ) : (
-          <p className="py-16 text-center text-brown/60">Товари не знайдено.</p>
+          <EmptyResult params={params} />
         )}
       </div>
     </div>

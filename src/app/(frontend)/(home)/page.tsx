@@ -4,7 +4,8 @@ import type { Product } from '@/payload-types'
 import { getHomeMaterials, getProducts } from '@/lib/queries'
 import { getMediaAlt, getMediaUrl } from '@/lib/media'
 import { ProductCard } from '@/components/shop/ProductCard'
-import { HeroSection, type HeroItem } from '@/components/shop/home/HeroSection'
+import { HeroSection, type HeroItem, type HeroVariant } from '@/components/shop/home/HeroSection'
+import { HeroVariantSwitch } from '@/components/shop/home/HeroVariantSwitch'
 import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import { TrustStrip } from '@/components/shop/home/TrustStrip'
 import { JsonLd, storeLd } from '@/components/shop/JsonLd'
@@ -67,7 +68,16 @@ const FALLBACK_FABRICS = ['Шовк', 'Бавовна', 'Мікромасло', 
   careText: null as string | null,
 }))
 
-export default async function HomePage() {
+const HERO_VARIANTS: HeroVariant[] = ['a', 'b', 'c']
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  // Client demo: /?hero=a|b|c picks the first-screen layout and shows the switch; without it, layout "a"
+  const heroParam = (await searchParams).hero
+  const heroVariant = HERO_VARIANTS.find((v) => v === heroParam)
   const [products, homeMaterials] = await Promise.all([getProducts(), getHomeMaterials()])
   const fabrics = homeMaterials.length
     ? homeMaterials.map((m) => ({
@@ -94,11 +104,12 @@ export default async function HomePage() {
     <>
       {/* Outside the spaced container: as its first child the script would push the hero down by the section gap */}
       <JsonLd data={storeLd()} />
+      {heroVariant && <HeroVariantSwitch active={heroVariant} />}
       {/* Section rhythm: 150px from the mockup left a hole under the trust row, which already ends in a divider */}
       <div className="space-y-20 lg:space-y-28">
         {/* The trust row sits closer to the hero than the regular section spacing */}
         <div className="space-y-12 lg:space-y-16">
-          <HeroSection items={hero} />
+          <HeroSection items={hero} variant={heroVariant ?? 'a'} />
           <TrustStrip />
         </div>
 

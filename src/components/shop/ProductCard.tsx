@@ -44,7 +44,11 @@ export function ProductCard({
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-brown/60">немає фото</div>
         )}
-        <span className="absolute bottom-3 left-1/2 flex h-[34px] w-[34px] -translate-x-1/2 items-center justify-center rounded-full bg-brown/50 text-ink transition-colors group-hover:bg-ink group-hover:text-white">
+        {/*
+          Solid white with a shadow: the old semi-transparent brown looked dark on the grey placeholder
+          but melted into photos. White stays visible on light and dark garments alike.
+        */}
+        <span className="absolute bottom-3 left-1/2 flex h-[34px] w-[34px] -translate-x-1/2 items-center justify-center rounded-full bg-white text-ink shadow-[0_2px_8px_rgba(64,56,52,0.25)] transition-colors group-hover:bg-ink group-hover:text-white">
           <Plus className="h-4 w-4" strokeWidth={1.25} />
         </span>
       </div>

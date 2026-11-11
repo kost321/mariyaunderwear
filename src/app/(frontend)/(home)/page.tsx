@@ -4,7 +4,7 @@ import type { Product } from '@/payload-types'
 import { getHomeMaterials, getProducts } from '@/lib/queries'
 import { getMediaAlt, getMediaUrl } from '@/lib/media'
 import { ProductCard } from '@/components/shop/ProductCard'
-import { HeroSection, type HeroImage } from '@/components/shop/home/HeroSection'
+import { HeroSection, type HeroItem } from '@/components/shop/home/HeroSection'
 import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import { TrustStrip } from '@/components/shop/home/TrustStrip'
 import { JsonLd, storeLd } from '@/components/shop/JsonLd'
@@ -15,7 +15,9 @@ import { cn } from '@/lib/utils'
 // on Railway the DB is unavailable (postgres.railway.internal exists only at runtime)
 export const dynamic = 'force-dynamic'
 
-function toImage(product: Product): HeroImage | null {
+type Photo = { url: string; alt: string; href: string }
+
+function toPhoto(product: Product): Photo | null {
   const media = product.images?.[0]?.image
   const url = getMediaUrl(media)
   if (!url) return null
@@ -25,28 +27,20 @@ function toImage(product: Product): HeroImage | null {
 const modelId = (p: Product) => (typeof p.model === 'object' && p.model !== null ? p.model.id : p.model)
 
 /**
- * Hero photos: one per model first, so the first screen shows the range rather than one item in
- * every color; other colors of a model only fill the slots left when there are fewer models than
- * photos. Products without a model count as models of their own. Each product appears once.
+ * Hero: the newest product with a photo, plus the other colors of its model (each color card is a
+ * separate product linked by `model`). The newest stays first, so it is the photo shown on load;
+ * the swatches switch between the colors.
  */
-function heroImages(products: Product[]): HeroImage[] {
-  const withImages = products.filter((p) => getMediaUrl(p.images?.[0]?.image))
-  const seenModels = new Set<number | string>()
-  const leads: Product[] = []
-  const rest: Product[] = []
-  for (const p of withImages) {
-    const id = modelId(p)
-    if (id == null || !seenModels.has(id)) {
-      if (id != null) seenModels.add(id)
-      leads.push(p)
-    } else {
-      rest.push(p)
-    }
-  }
-  return [...leads, ...rest]
-    .slice(0, 8)
-    .map(toImage)
-    .filter((i): i is HeroImage => i !== null)
+function heroItems(withImages: Product[]): HeroItem[] {
+  const lead = withImages[0]
+  if (!lead) return []
+  const leadModel = modelId(lead)
+  const colors = leadModel == null ? [lead] : [lead, ...withImages.filter((p) => p.id !== lead.id && modelId(p) === leadModel)]
+  return colors.flatMap((p) => {
+    const photo = toPhoto(p)
+    if (!photo) return []
+    return [{ ...photo, name: p.colorName ?? undefined, hex: p.colorHex ?? undefined }]
+  })
 }
 
 // "About the brand": a neutral draft for the owner to rewrite. It states nothing the site does not
@@ -85,10 +79,16 @@ export default async function HomePage() {
     : FALLBACK_FABRICS
 
   const newest = products.slice(0, 12)
-  const hero = heroImages(products)
-  // "Про бренд" photo: the first one the hero does not show on its first screen (slots 0-3), so it does not repeat;
-  // with four photos or fewer, the last one. Swap for a dedicated brand photo when there is one.
-  const aboutImage = hero[4] ?? hero[hero.length - 1]
+  const withImages = products.filter((p) => getMediaUrl(p.images?.[0]?.image))
+  const hero = heroItems(withImages)
+  // "Про бренд" photo: not the one the hero shows on load. Another model first, otherwise another color.
+  // Swap for a dedicated brand photo when there is one.
+  const lead = withImages[0]
+  const aboutProduct =
+    withImages.find((p) => p.id !== lead?.id && modelId(p) !== modelId(lead)) ??
+    withImages.find((p) => p.id !== lead?.id) ??
+    lead
+  const aboutImage = aboutProduct ? toPhoto(aboutProduct) : null
 
   return (
     <>
@@ -98,7 +98,7 @@ export default async function HomePage() {
       <div className="space-y-20 lg:space-y-28">
         {/* The trust row sits closer to the hero than the regular section spacing */}
         <div className="space-y-12 lg:space-y-16">
-          <HeroSection images={hero} />
+          <HeroSection items={hero} />
           <TrustStrip />
         </div>
 

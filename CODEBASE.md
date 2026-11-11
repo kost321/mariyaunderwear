@@ -64,7 +64,7 @@ A custom admin page and sidebar link for importing prices, per-size stock and ma
 The public part of the site.
 
 - **`layout.tsx`**: shared layout (Header, Footer, CartProvider) and site-wide SEO metadata.
-- **`page.tsx`**: home page: hero with the store headline (the only H1), trust row (delivery, payment, returns, made in Ukraine), "Новинки" slider, fabric block (Materials with `showOnHome`, placeholders until any are marked), "Про бренд" (draft text in `ABOUT_TEXT`). Rendered on every request.
+- **`page.tsx`**: home page: hero (store description as the only H1 in a small line, short phrase in large type, one photo of the newest model with color swatches that switch it), trust row (delivery, payment, returns, made in Ukraine), "Новинки" slider, fabric block (Materials with `showOnHome`, placeholders until any are marked), "Про бренд" (draft text in `ABOUT_TEXT`). Rendered on every request.
 - **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, material, price and sorting are applied in memory (`lib/catalog.ts`).
 - **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams`, `generateMetadata`, canonical URL and JSON-LD `Product` markup.
 - **`cart/page.tsx`**: cart and checkout.
@@ -89,7 +89,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 - **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `ScrollToTop`.
 - **`shop/JsonLd.tsx`**: structured data for Google: `JsonLd` (escaped script tag), `storeLd` (store + site search, home page), `breadcrumbsLd` (category and product pages).
 - **`shop/catalog/`**: `CatalogFilters`.
-- **`shop/home/`**: `HeroSection`, `TrustStrip` (store promises under the hero; keep in sync with `/delivery` and the checkout), `ProductSlider`, `ArrowButton`.
+- **`shop/home/`**: `HeroSection` (first screen; search moved to the header's search icon), `TrustStrip` (store promises under the hero; keep in sync with `/delivery` and the checkout), `ProductSlider`, `ArrowButton`.
 - **`ui/button.tsx`**: base button with style variants (CVA).
 
 ## Hooks `src/hooks/`

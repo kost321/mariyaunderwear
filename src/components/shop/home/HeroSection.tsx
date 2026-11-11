@@ -20,8 +20,8 @@ function Photo({ image, sizes, className }: { image?: HeroImage; sizes: string; 
 }
 
 /**
- * First screen of the home page: search, "New collection", 2 small + 2 large photos
- * and arrows that cycle through the photos.
+ * First screen of the home page: search, the store headline (the page's only H1), 2 small + 2 large
+ * photos and arrows that cycle through the photos. No season in the headline: it goes stale.
  */
 export function HeroSection({ images }: { images: HeroImage[] }) {
   const [offset, setOffset] = useState(0)
@@ -45,29 +45,24 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
           />
         </form>
 
-        <h1 className="mt-12 font-serif text-[40px] uppercase leading-[40px] tracking-[2px] text-ink-text lg:mt-[80px] lg:text-5xl">
-          Нова
-          <br />
-          колекція
+        <h1 className="mt-10 font-serif text-[28px] uppercase leading-[32px] tracking-[1.5px] text-ink-text lg:mt-12 lg:text-[34px] lg:leading-[40px]">
+          Жіночі нічні сорочки та домашній одяг із шовку Армані
         </h1>
-        <p className="mt-2 font-serif text-xl leading-6 tracking-[2px] text-brown">
-          Літо
-          <br />
-          2026
-        </p>
+        <p className="mt-4 text-sm leading-6 text-brown lg:text-base">Виготовлено в Україні. Розміри S–2XL</p>
 
-        <div className="mt-auto hidden grid-cols-2 gap-9 pt-10 lg:grid">
+        <div className="mt-auto hidden grid-cols-2 gap-9 pt-8 lg:grid">
           <Photo image={at(0)} sizes="540px" className="h-[185px]" />
           <Photo image={at(1)} sizes="540px" className="h-[185px]" />
         </div>
 
-        <div className="mt-8 flex items-center justify-between lg:mt-[61px]">
+        <div className="mt-8 flex items-center justify-between lg:mt-10">
           <Link
             href="/catalog"
-            className="flex h-10 w-[265px] items-center justify-between rounded-card bg-cream/70 pl-7 pr-5 text-base text-brown transition-colors hover:bg-cream"
+            className="flex h-11 w-[265px] items-center justify-between rounded-card bg-ink pl-7 pr-5 text-base text-white transition-colors hover:bg-ink/90"
           >
             До магазину
-            <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100" />
+            {/* The arrow file is brown; brightness-0 + invert turns it white on the dark button */}
+            <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100 brightness-0 invert" />
           </Link>
           {canScroll && (
             <div className="hidden gap-3 lg:flex">

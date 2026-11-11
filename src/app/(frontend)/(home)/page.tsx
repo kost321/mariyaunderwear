@@ -18,6 +18,33 @@ function toImage(product: Product): HeroImage | null {
   return { url, alt: getMediaAlt(media, product.title), href: `/product/${product.slug}` }
 }
 
+const modelId = (p: Product) => (typeof p.model === 'object' && p.model !== null ? p.model.id : p.model)
+
+/**
+ * Hero photos: one per model first, so the first screen shows the range rather than one item in
+ * every color; other colors of a model only fill the slots left when there are fewer models than
+ * photos. Products without a model count as models of their own. Each product appears once.
+ */
+function heroImages(products: Product[]): HeroImage[] {
+  const withImages = products.filter((p) => getMediaUrl(p.images?.[0]?.image))
+  const seenModels = new Set<number | string>()
+  const leads: Product[] = []
+  const rest: Product[] = []
+  for (const p of withImages) {
+    const id = modelId(p)
+    if (id == null || !seenModels.has(id)) {
+      if (id != null) seenModels.add(id)
+      leads.push(p)
+    } else {
+      rest.push(p)
+    }
+  }
+  return [...leads, ...rest]
+    .slice(0, 8)
+    .map(toImage)
+    .filter((i): i is HeroImage => i !== null)
+}
+
 // "Product care" block: fabric cards in a staircase, as in the design. Even cards have the label above
 // the photo and are shifted down (32px / 63px from the row top), odd ones have it below.
 // Cards come from Materials with "show on home"; the four slot shapes repeat for more cards.
@@ -46,13 +73,11 @@ export default async function HomePage() {
       }))
     : FALLBACK_FABRICS
 
-  const withImages = products.filter((p) => getMediaUrl(p.images?.[0]?.image))
-  const heroImages = withImages.slice(0, 8).map(toImage).filter((i): i is HeroImage => i !== null)
   const newest = products.slice(0, 12)
 
   return (
     <div className="space-y-24 lg:space-y-[150px]">
-      <HeroSection images={heroImages} />
+      <HeroSection images={heroImages(products)} />
 
       {newest.length > 0 && (
         <section>

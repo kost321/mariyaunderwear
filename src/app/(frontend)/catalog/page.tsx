@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getProducts, getNonEmptyCategories } from '@/lib/queries'
 import { filterProducts, getFacets, parseCatalogParams } from '@/lib/catalog'
-import { cn } from '@/lib/utils'
+import { cn, plural } from '@/lib/utils'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { FilterPanel, SortSelect } from '@/components/shop/catalog/CatalogFilters'
 
@@ -111,7 +111,7 @@ export default async function CatalogPage({
         <div className="mb-6 flex items-center justify-between text-sm text-brown/60">
           <p>
             {params.q ? `Пошук «${params.q}»: ` : ''}
-            {products.length} товарів
+            {products.length} {plural(products.length, ['товар', 'товари', 'товарів'])}
           </p>
           <SortSelect value={params.sort} />
         </div>

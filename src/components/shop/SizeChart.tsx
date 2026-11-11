@@ -34,7 +34,7 @@ export function SizeChart({ html }: { html?: string | null }) {
         onClick={() => setOpen(true)}
         className="text-[10px] uppercase text-brown/50 transition-colors hover:text-brown"
       >
-        Розмірна таблиця | Як обрати розмір
+        Розмірна таблиця
       </button>
 
       {open && (

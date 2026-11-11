@@ -89,7 +89,8 @@ export default async function HomePage() {
     <>
       {/* Outside the spaced container: as its first child the script would push the hero down by the section gap */}
       <JsonLd data={storeLd()} />
-      <div className="space-y-24 lg:space-y-[150px]">
+      {/* Section rhythm: 150px from the mockup left a hole under the trust row, which already ends in a divider */}
+      <div className="space-y-20 lg:space-y-28">
         {/* The trust row sits closer to the hero than the regular section spacing */}
         <div className="space-y-12 lg:space-y-16">
           <HeroSection images={heroImages(products)} />
@@ -98,13 +99,16 @@ export default async function HomePage() {
 
         {newest.length > 0 && (
           <section>
-            <h2 className="heading-section text-black">
-              Новинки
-              <span className="ml-3 align-top font-sans text-base normal-case tracking-normal text-brown/80">({newest.length})</span>
-            </h2>
-            {/* As in the design: "see all" on its own row under the heading, 70px from heading to cards */}
-            <div className="mb-[9px] mt-[21px] flex justify-end">
-              <Link href="/catalog?sort=new" className="text-base leading-10 text-brown hover:text-ink">
+            {/* "See all" on the heading's line, on its baseline, instead of a row of its own */}
+            <div className="mb-8 flex items-baseline justify-between gap-4 lg:mb-10">
+              <h2 className="heading-section text-black">
+                Новинки
+                <span className="ml-3 align-top font-sans text-base normal-case tracking-normal text-brown/80">({newest.length})</span>
+              </h2>
+              <Link
+                href="/catalog?sort=new"
+                className="shrink-0 text-base text-brown underline-offset-4 transition-colors hover:text-ink hover:underline"
+              >
                 Дивитись усі
               </Link>
             </div>

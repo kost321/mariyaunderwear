@@ -30,7 +30,7 @@ export function TrustStrip() {
         const body = (
           <>
             <Icon className="h-6 w-6 text-brown" strokeWidth={1.25} aria-hidden />
-            <p className="mt-3 font-serif text-sm uppercase tracking-[1px] text-ink lg:text-base">{title}</p>
+            <p className="mt-3 font-serif text-base text-ink lg:text-lg">{title}</p>
             <p className="mt-1 text-xs leading-5 text-brown lg:text-sm">{text}</p>
           </>
         )

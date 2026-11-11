@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 const button =
-  'flex h-[49px] w-full max-w-[257px] items-center justify-center rounded-card font-serif text-[15px] uppercase transition-opacity hover:opacity-80'
+  'flex h-[49px] w-full max-w-[257px] items-center justify-center rounded-card text-sm transition-opacity hover:opacity-80'
 
 /** Dark filled pill ("спробувати ще раз", "до каталогу"). */
 export const primaryButton = `${button} bg-ink text-sand`

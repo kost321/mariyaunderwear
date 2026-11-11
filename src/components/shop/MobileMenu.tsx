@@ -52,7 +52,7 @@ export function MobileMenu({
           <X className="h-6 w-6" strokeWidth={1.5} />
         </button>
 
-        <nav className="mt-6 flex flex-col gap-5 font-serif text-2xl uppercase tracking-[2px] text-ink-text">
+        <nav className="mt-6 flex flex-col gap-5 font-serif text-2xl text-ink-text">
           {links.map((link) => (
             <Link key={link.href} href={link.href} onClick={onClose}>
               {link.label}
@@ -62,8 +62,8 @@ export function MobileMenu({
 
         {categories.length > 0 && (
           <div className="mt-10">
-            <p className="text-[10px] font-bold uppercase tracking-[0.4px] text-pink">Категорії</p>
-            <ul className="mt-4 flex flex-col gap-3 text-base tracking-[1px] text-brown">
+            <p className="text-sm text-brown/70">Категорії</p>
+            <ul className="mt-4 flex flex-col gap-3 text-base text-brown">
               {categories.map((c) => (
                 <li key={c.slug}>
                   <Link href={`/catalog?category=${c.slug}`} onClick={onClose} className="hover:opacity-70">

@@ -18,7 +18,7 @@ const INFO_LINKS: FooterLink[] = [
 /** Column of links. */
 function LinkList({ items }: { items: FooterLink[] }) {
   return (
-    <ul className="flex flex-col gap-1.5 text-xs font-medium uppercase leading-[15.6px] text-sand">
+    <ul className="flex flex-col gap-2 text-sm leading-5 text-sand">
       {items.map((item) => (
         <li key={item.label}>
           {!item.href ? (
@@ -34,8 +34,8 @@ function LinkList({ items }: { items: FooterLink[] }) {
   )
 }
 
-const contactLabel = 'text-xs font-medium uppercase leading-[15.6px]'
-const contactValue = 'mt-1 block text-xs leading-4'
+const contactLabel = 'text-sm leading-5'
+const contactValue = 'mt-0.5 block text-sm leading-5 text-sand/80'
 
 function ContactsBlock() {
   return (
@@ -52,7 +52,7 @@ function ContactsBlock() {
         {CONTACTS.address && (
           <div>
             <p className={contactLabel}>Адреса</p>
-            <p className={`lowercase ${contactValue}`}>{CONTACTS.address}</p>
+            <p className={contactValue}>{CONTACTS.address}</p>
           </div>
         )}
       </div>
@@ -65,7 +65,7 @@ function ContactsBlock() {
 function Column({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-5">
-      <p className="text-[10px] font-bold uppercase leading-[14px] tracking-[0.4px] text-sand/60">{title}</p>
+      <p className="text-sm font-medium leading-5 text-sand/60">{title}</p>
       {children}
     </section>
   )

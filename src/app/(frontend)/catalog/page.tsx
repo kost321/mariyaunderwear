@@ -29,7 +29,7 @@ function EmptyResult({ params }: { params: ReturnType<typeof parseCatalogParams>
       ? [`За запитом «${params.q}» з такими фільтрами нічого немає`, 'Спробуйте скинути фільтри — можливо, товар є в іншому розмірі чи кольорі.']
       : [`За запитом «${params.q}» нічого не знайшли`, 'Перевірте написання або спробуйте коротше слово, наприклад «сорочка».']
   const button =
-    'flex h-11 min-w-[200px] items-center justify-center rounded-card px-6 text-sm uppercase tracking-[1px] transition-colors'
+    'flex h-11 min-w-[200px] items-center justify-center rounded-card px-6 text-sm transition-colors'
 
   return (
     <div className="flex flex-col items-center py-16 text-center">
@@ -108,7 +108,7 @@ export default async function CatalogPage({
 
   const chip = (active: boolean) =>
     cn(
-      'flex h-[22px] min-w-[101px] shrink-0 items-center justify-center border px-3 text-[10px] uppercase transition-colors',
+      'flex h-[22px] min-w-[101px] shrink-0 items-center justify-center border px-3 text-xs transition-colors',
       active ? 'border-ink bg-ink text-white' : 'border-brown/60 text-brown hover:border-ink',
     )
 
@@ -125,7 +125,7 @@ export default async function CatalogPage({
       )}
       {/* Heading above the grid: on desktop it sits in the right column */}
       <div className="text-center lg:col-start-2 lg:text-left">
-        <nav aria-label="Хлібні крихти" className="text-xs tracking-[1px] text-brown/60">
+        <nav aria-label="Хлібні крихти" className="text-xs text-brown/60">
           <Link href="/" className="hover:text-brown">
             Головна
           </Link>
@@ -147,7 +147,7 @@ export default async function CatalogPage({
             defaultValue={params.q}
             placeholder="Пошук"
             aria-label="Пошук товарів"
-            className="h-[50px] w-full rounded-card bg-cream/70 pl-12 pr-6 text-xs tracking-[2px] text-brown placeholder:text-right placeholder:text-brown focus:outline-none focus:ring-1 focus:ring-brown/40"
+            className="h-[50px] w-full rounded-card bg-cream/70 pl-12 pr-6 text-xs text-brown placeholder:text-right placeholder:text-brown focus:outline-none focus:ring-1 focus:ring-brown/40"
           />
         </form>
 

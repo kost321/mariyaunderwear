@@ -113,7 +113,7 @@ export function PhotoLightbox({
       </div>
 
       {count > 1 && (
-        <p className="absolute inset-x-0 bottom-5 text-center text-xs tracking-[2px] text-white/70">
+        <p className="absolute inset-x-0 bottom-5 text-center text-xs text-white/70">
           {index + 1} / {count}
         </p>
       )}

@@ -34,7 +34,7 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
           >
             <Image src="/brand/burger.svg" alt="" width={28} height={18} />
           </button>
-          <nav className="hidden items-center gap-9 text-base tracking-[2px] text-brown lg:flex">
+          <nav className="hidden items-center gap-9 text-base text-brown lg:flex">
             {NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href} className="transition-opacity hover:opacity-70">
                 {link.label}

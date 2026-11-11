@@ -45,7 +45,7 @@ function Section({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between text-sm tracking-[2px] text-brown"
+        className="flex w-full items-center justify-between text-sm text-brown"
       >
         {title}
         <ChevronRight className={cn('h-4 w-4 text-ink transition-transform', open && '-rotate-90')} strokeWidth={1.5} />
@@ -76,7 +76,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
         type="button"
         onClick={() => setMobileOpen((o) => !o)}
         aria-expanded={mobileOpen}
-        className="flex items-center gap-3 font-serif text-base tracking-[2px] text-ink lg:pointer-events-none"
+        className="flex items-center gap-3 font-serif text-base text-ink lg:pointer-events-none"
       >
         Фільтри
         {activeCount > 0 && <span className="font-sans text-xs tracking-normal text-brown/80">({activeCount})</span>}
@@ -89,7 +89,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
       <div className={cn('mt-6 lg:block', mobileOpen ? 'block' : 'hidden')}>
         {facets.sizes.length > 0 && (
           <div className="border-b border-dashed border-[#c9c9c9] pb-5">
-            <p className="text-sm tracking-[2px] text-brown">Розмір</p>
+            <p className="text-sm text-brown">Розмір</p>
             <div className="mt-3 flex flex-wrap gap-1">
               {facets.sizes.map((size) => {
                 const on = params.sizes.includes(size)
@@ -116,7 +116,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
           <ul className="flex flex-col gap-3">
             {STOCK_OPTIONS.map((option) => (
               <li key={option.value}>
-                <label className="flex cursor-pointer items-center gap-3 text-xs tracking-[2px] text-ink">
+                <label className="flex cursor-pointer items-center gap-3 text-xs text-ink">
                   <input
                     type="checkbox"
                     checked={params.stock === option.value}
@@ -138,7 +138,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
                 const on = params.colors.includes(color.name)
                 return (
                   <li key={color.name}>
-                    <label className="flex cursor-pointer items-center gap-3 text-xs tracking-[2px] text-ink">
+                    <label className="flex cursor-pointer items-center gap-3 text-xs text-ink">
                       <input
                         type="checkbox"
                         checked={on}
@@ -162,7 +162,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
             <ul className="flex flex-col gap-3">
               {facets.materials.map((material) => (
                 <li key={material.slug}>
-                  <label className="flex cursor-pointer items-center gap-3 text-xs tracking-[2px] text-ink">
+                  <label className="flex cursor-pointer items-center gap-3 text-xs text-ink">
                     <input
                       type="checkbox"
                       checked={params.materials.includes(material.slug)}
@@ -217,7 +217,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
               setMax('')
               update({ size: undefined, color: undefined, material: undefined, stock: undefined, min: undefined, max: undefined })
             }}
-            className="mt-4 text-xs tracking-[1px] text-brown/60 underline-offset-4 hover:underline"
+            className="mt-4 text-xs text-brown/60 underline-offset-4 hover:underline"
           >
             Скинути фільтри
           </button>

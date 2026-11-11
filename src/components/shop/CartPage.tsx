@@ -22,7 +22,7 @@ type CheckoutStep = (typeof CHECKOUT_STEPS)[number]['id']
 
 const photo = 'relative overflow-hidden rounded-card border border-[#d9d9d9] bg-placeholder/40'
 const pill =
-  'flex h-10 w-full items-center justify-center rounded-card bg-cream/70 text-xs uppercase tracking-[1px] text-ink transition-colors hover:bg-cream disabled:opacity-60'
+  'flex h-10 w-full items-center justify-center rounded-card bg-cream/70 text-sm text-ink transition-colors hover:bg-cream disabled:opacity-60'
 const field =
   'h-11 w-full border border-[#b6ada3] px-5 text-xs text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none'
 
@@ -58,7 +58,7 @@ function NextButton({ children, disabled }: { children: React.ReactNode; disable
 function Totals({ total, large }: { total: number; large?: boolean }) {
   return (
     <>
-      <dl className="space-y-1.5 text-xs tracking-[1px] text-brown">
+      <dl className="space-y-1.5 text-xs text-brown">
         <div className="flex justify-between">
           <dt>Сума</dt>
           <dd className="font-serif text-ink/50">{formatPrice(total)}</dd>
@@ -70,7 +70,7 @@ function Totals({ total, large }: { total: number; large?: boolean }) {
       </dl>
       <div className="mt-4 flex items-baseline justify-between border-t border-[#b6ada3] pt-4">
         <span className={cn('font-serif uppercase tracking-[1px] text-ink', large ? 'text-base' : 'text-sm')}>Разом</span>
-        <span className="font-serif text-base tracking-[1px] text-brown">{formatPrice(total)}</span>
+        <span className="font-serif text-base text-brown">{formatPrice(total)}</span>
       </div>
     </>
   )
@@ -165,7 +165,7 @@ function OrderSuccess({ order }: { order: PlacedOrder }) {
     <div className="lg:pt-[110px]">
       <div className="flex flex-col items-center px-5 py-8 text-center lg:p-0">
         <h1 className="font-serif text-2xl uppercase leading-8 tracking-[2px] text-ink lg:text-[32px] lg:leading-10">Дякуємо за замовлення</h1>
-        <Link href="/catalog" className="mt-2 uppercase leading-10 text-ink/50 transition-colors hover:text-ink lg:mt-[17px]">
+        <Link href="/catalog" className="mt-2 leading-10 text-brown underline underline-offset-4 transition-colors hover:text-ink lg:mt-[17px]">
           Повернутись до покупок
         </Link>
       </div>
@@ -382,7 +382,7 @@ export function CartPage() {
             onClick={() => goTo('checkout')}
             disabled={!agreed}
             aria-describedby={agreed ? undefined : 'consent-hint'}
-            className="mt-4 flex h-10 w-full items-center justify-center rounded-card bg-ink text-xs uppercase tracking-[1px] text-white transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink"
+            className="mt-4 flex h-10 w-full items-center justify-center rounded-card bg-ink text-sm text-white transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink"
           >
             Оформити замовлення
           </button>
@@ -407,7 +407,7 @@ export function CartPage() {
         <h1 className="mt-10 font-serif text-[32px] uppercase tracking-[2px] text-ink">Оформлення</h1>
 
         {/* Step tabs: completed ones can be reopened, the next ones only via the button */}
-        <nav aria-label="Кроки оформлення" className="mt-8 flex gap-11 text-sm uppercase sm:text-base">
+        <nav aria-label="Кроки оформлення" className="mt-8 flex gap-11 text-sm sm:text-base">
           {CHECKOUT_STEPS.map((s, i) => {
             const current = s.id === checkoutStep
             return (

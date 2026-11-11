@@ -179,7 +179,7 @@ export function QuickOrderModal({
               </p>
             )}
 
-            <Button type="submit" disabled={loading} className="h-11 w-full rounded-card bg-ink uppercase tracking-[1px]">
+            <Button type="submit" disabled={loading} className="h-11 w-full rounded-card bg-ink text-sm">
               {loading ? 'Відправляємо…' : 'Замовити'}
             </Button>
           </form>

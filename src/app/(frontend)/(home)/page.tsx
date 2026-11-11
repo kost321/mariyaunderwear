@@ -144,7 +144,7 @@ export default async function HomePage() {
                     {/* Care text over the photo on hover (devices with a mouse only) */}
                     {fabric.careText && (
                       <div className="absolute inset-0 hidden items-center justify-center bg-ink/70 p-8 text-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:hover)]:flex">
-                        <p className="whitespace-pre-line text-sm leading-6 tracking-[1px] text-white">{fabric.careText}</p>
+                        <p className="whitespace-pre-line text-sm leading-6 text-white">{fabric.careText}</p>
                       </div>
                     )}
                   </div>
@@ -183,7 +183,7 @@ export default async function HomePage() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
             <Link
               href="/catalog"
-              className="flex h-11 w-[220px] items-center justify-center rounded-card bg-ink text-sm uppercase tracking-[1px] text-white transition-colors hover:bg-ink/90"
+              className="flex h-11 w-[220px] items-center justify-center rounded-card bg-ink text-sm text-white transition-colors hover:bg-ink/90"
             >
               До каталогу
             </Link>
@@ -192,7 +192,7 @@ export default async function HomePage() {
                 href={CONTACTS.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-11 w-[220px] items-center justify-center rounded-card border border-brown/50 text-sm uppercase tracking-[1px] text-brown transition-colors hover:border-ink hover:text-ink"
+                className="flex h-11 w-[220px] items-center justify-center rounded-card border border-brown/50 text-sm text-brown transition-colors hover:border-ink hover:text-ink"
               >
                 Ми в Instagram
               </a>

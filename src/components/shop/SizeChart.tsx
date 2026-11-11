@@ -32,7 +32,7 @@ export function SizeChart({ html }: { html?: string | null }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-[10px] uppercase text-brown/50 transition-colors hover:text-brown"
+        className="text-xs text-brown/80 underline underline-offset-2 transition-colors hover:text-brown"
       >
         Розмірна таблиця
       </button>

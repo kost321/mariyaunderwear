@@ -41,7 +41,7 @@ export function HeroSection({ images }: { images: HeroImage[] }) {
             name="q"
             placeholder="Пошук"
             aria-label="Пошук товарів"
-            className="h-[50px] w-full rounded-card bg-cream/70 pl-12 pr-6 text-xs tracking-[2px] text-brown placeholder:text-right placeholder:text-brown focus:outline-none focus:ring-1 focus:ring-brown/40"
+            className="h-[50px] w-full rounded-card bg-cream/70 pl-12 pr-6 text-xs text-brown placeholder:text-right placeholder:text-brown focus:outline-none focus:ring-1 focus:ring-brown/40"
           />
         </form>
 

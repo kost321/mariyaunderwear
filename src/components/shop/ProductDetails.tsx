@@ -101,7 +101,7 @@ export function ProductDetails({
       active ? 'border-ink ring-1 ring-ink ring-offset-2' : 'border-brown/30 hover:scale-105',
     )
 
-  const label = 'text-xs tracking-[2px] text-ink'
+  const label = 'text-xs text-ink'
 
   const addButton = (className?: string) => (
     <button
@@ -109,7 +109,7 @@ export function ProductDetails({
       onClick={handleAddToCart}
       disabled={allSoldOut}
       className={cn(
-        'h-10 w-full rounded-card bg-ink text-xs uppercase tracking-[1px] text-white transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ink',
+        'h-10 w-full rounded-card bg-ink text-sm text-white transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ink',
         className,
       )}
     >
@@ -163,10 +163,10 @@ export function ProductDetails({
       {/* PRODUCT CARD: framed on desktop, as in the design */}
       <div className="mt-8 lg:mt-0 lg:w-[340px] lg:border lg:border-brown lg:px-10 lg:pb-3 lg:pt-14">
         <h1 className="font-serif text-sm uppercase leading-[17px] tracking-[1px] text-ink">{product.title}</h1>
-        <p className="mt-3 text-sm tracking-[1px] text-brown">{formatPrice(product.price)}</p>
-        {product.sku && <p className="mt-6 text-xs tracking-[1px] text-brown/80">Артикул: {product.sku}</p>}
+        <p className="mt-3 text-sm text-brown">{formatPrice(product.price)}</p>
+        {product.sku && <p className="mt-6 text-xs text-brown/80">Артикул: {product.sku}</p>}
         {materials.length > 0 && (
-          <p className={cn('text-xs tracking-[1px] text-brown/80', product.sku ? 'mt-1' : 'mt-6')}>
+          <p className={cn('text-xs text-brown/80', product.sku ? 'mt-1' : 'mt-6')}>
             Матеріал:{' '}
             {materials.map((m, i) => (
               <span key={m.id}>
@@ -290,7 +290,7 @@ export function ProductDetails({
           type="button"
           onClick={() => setQuickOpen(true)}
           disabled={allSoldOut}
-          className="mt-2 h-10 w-full rounded-card border border-brown/40 text-xs uppercase tracking-[1px] text-brown transition-colors hover:border-brown disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 h-10 w-full rounded-card border border-brown/40 text-sm text-brown transition-colors hover:border-brown disabled:cursor-not-allowed disabled:opacity-50"
         >
           Купити в 1 клік
         </button>

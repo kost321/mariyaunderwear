@@ -15,11 +15,14 @@ export function SocialLinks({
   size,
   gap,
   className = '',
+  tone = 'dark',
 }: {
   items: (keyof typeof ALL)[]
   size: number
   gap: number
   className?: string
+  /** `light` for dark backgrounds (footer), `dark` for white pages */
+  tone?: 'dark' | 'light'
 }) {
   const links = items.map((key) => ALL[key]).filter((s) => s.href)
   if (!links.length) return null
@@ -35,7 +38,7 @@ export function SocialLinks({
               {...(s.href.startsWith('http') && { target: '_blank', rel: 'noopener noreferrer' })}
               aria-label={s.label}
               title={s.label}
-              className="block bg-brown/50 transition-colors hover:bg-brown"
+              className={`block transition-colors ${tone === 'light' ? 'bg-sand/80 hover:bg-white' : 'bg-brown/50 hover:bg-brown'}`}
               style={{ width: size, height: size, mask, WebkitMask: mask }}
             />
           </li>

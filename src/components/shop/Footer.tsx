@@ -22,9 +22,9 @@ function LinkList({ items }: { items: FooterLink[] }) {
       {items.map((item) => (
         <li key={item.label}>
           {!item.href ? (
-            <span className="opacity-60">{item.label}</span>
+            <span>{item.label}</span>
           ) : (
-            <Link href={item.href} className="opacity-60 transition-opacity hover:opacity-100">
+            <Link href={item.href} className="transition-colors hover:text-white">
               {item.label}
             </Link>
           )}
@@ -35,12 +35,12 @@ function LinkList({ items }: { items: FooterLink[] }) {
 }
 
 const contactLabel = 'text-xs font-medium uppercase leading-[15.6px]'
-const contactValue = 'mt-1 block text-[10px] leading-[14px]'
+const contactValue = 'mt-1 block text-xs leading-4'
 
 function ContactsBlock() {
   return (
     <div className="flex flex-col text-sand">
-      <div className="flex flex-col gap-2 opacity-60">
+      <div className="flex flex-col gap-3">
         {CONTACTS.phone && (
           <div>
             <p className={contactLabel}>Клієнтська турбота</p>
@@ -57,7 +57,7 @@ function ContactsBlock() {
         )}
       </div>
 
-      <SocialLinks items={['instagram', 'email', 'tiktok']} size={26} gap={3.5} className="mt-4" />
+      <SocialLinks items={['instagram', 'email', 'tiktok']} size={26} gap={6} tone="light" className="mt-4" />
     </div>
   )
 }
@@ -65,7 +65,7 @@ function ContactsBlock() {
 function Column({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-5">
-      <p className="text-[10px] font-bold uppercase leading-[14px] tracking-[0.4px] text-pink opacity-40">{title}</p>
+      <p className="text-[10px] font-bold uppercase leading-[14px] tracking-[0.4px] text-sand/60">{title}</p>
       {children}
     </section>
   )

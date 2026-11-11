@@ -62,7 +62,7 @@ export default async function HomePage() {
           </h2>
           {/* As in the design: "see all" on its own row under the heading, 70px from heading to cards */}
           <div className="mb-[9px] mt-[21px] flex justify-end">
-            <Link href="/catalog?sort=new" className="text-base leading-10 text-brown/50 hover:text-brown">
+            <Link href="/catalog?sort=new" className="text-base leading-10 text-brown hover:text-ink">
               Дивитись усі
             </Link>
           </div>
@@ -77,7 +77,7 @@ export default async function HomePage() {
       <section id="care" className="scroll-mt-8">
         <div className="text-center">
           <h2 className="heading-section text-black">Догляд за виробами</h2>
-          <p className="mx-auto mt-[13px] max-w-[685px] text-base leading-[18px] tracking-[2px] text-brown/50">
+          <p className="mx-auto mt-4 max-w-[685px] text-base leading-6 text-brown">
             Правильний догляд зберігає м&apos;якість тканини та форму виробу. Ніжне прання при 30°, без відбілювачів,
             сушіння в розправленому вигляді — і ваші речі довго залишатимуться як нові.
           </p>
@@ -109,7 +109,7 @@ export default async function HomePage() {
                 {!slot.labelAbove && label}
                 {/* Touch screens have no hover: the text goes under the card instead */}
                 {fabric.careText && (
-                  <p className="whitespace-pre-line text-center text-xs leading-5 tracking-[1px] text-brown/70 [@media(hover:hover)]:hidden">
+                  <p className="whitespace-pre-line text-center text-xs leading-5 text-brown [@media(hover:hover)]:hidden">
                     {fabric.careText}
                   </p>
                 )}

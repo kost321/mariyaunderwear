@@ -359,7 +359,7 @@ export function CartPage() {
         <aside className="mt-10 border border-[#b6ada3] px-6 py-10 lg:mt-[31px] lg:self-start lg:px-10 lg:py-14">
           <h2 className="mb-6 font-serif text-sm uppercase tracking-[1px] text-ink">Підсумок</h2>
           <Totals total={totalPrice} large />
-          <label className="mt-8 flex cursor-pointer items-center gap-2 text-[11px] text-brown/50">
+          <label className="mt-8 flex cursor-pointer items-center gap-2 text-[11px] text-brown/80">
             <input
               type="checkbox"
               checked={agreed}
@@ -373,9 +373,21 @@ export function CartPage() {
               </Link>
             </span>
           </label>
-          <button type="button" onClick={() => goTo('checkout')} disabled={!agreed} className={cn(pill, 'mt-4 disabled:cursor-not-allowed')}>
+          <button
+            type="button"
+            onClick={() => goTo('checkout')}
+            disabled={!agreed}
+            aria-describedby={agreed ? undefined : 'consent-hint'}
+            className="mt-4 flex h-10 w-full items-center justify-center rounded-card bg-ink text-xs uppercase tracking-[1px] text-white transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink"
+          >
             Оформити замовлення
           </button>
+          {/* Without this hint a disabled button looks broken: say what is missing */}
+          {!agreed && (
+            <p id="consent-hint" className="mt-2 text-center text-[11px] text-brown/80">
+              Поставте позначку згоди з офертою
+            </p>
+          )}
         </aside>
       </div>
     )

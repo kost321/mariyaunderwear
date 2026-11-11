@@ -109,7 +109,7 @@ export function ProductDetails({
       onClick={handleAddToCart}
       disabled={allSoldOut}
       className={cn(
-        'h-10 w-full rounded-card bg-cream/70 text-xs uppercase tracking-[1px] text-brown transition-colors hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-cream/70',
+        'h-10 w-full rounded-card bg-ink text-xs uppercase tracking-[1px] text-white transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ink',
         className,
       )}
     >
@@ -164,9 +164,9 @@ export function ProductDetails({
       <div className="mt-8 lg:mt-0 lg:w-[340px] lg:border lg:border-brown lg:px-10 lg:pb-3 lg:pt-14">
         <h1 className="font-serif text-sm uppercase leading-[17px] tracking-[1px] text-ink">{product.title}</h1>
         <p className="mt-3 text-sm tracking-[1px] text-brown">{formatPrice(product.price)}</p>
-        {product.sku && <p className="mt-6 text-xs tracking-[1px] text-brown/50">Артикул: {product.sku}</p>}
+        {product.sku && <p className="mt-6 text-xs tracking-[1px] text-brown/80">Артикул: {product.sku}</p>}
         {materials.length > 0 && (
-          <p className={cn('text-xs tracking-[1px] text-brown/50', product.sku ? 'mt-1' : 'mt-6')}>
+          <p className={cn('text-xs tracking-[1px] text-brown/80', product.sku ? 'mt-1' : 'mt-6')}>
             Матеріал:{' '}
             {materials.map((m, i) => (
               <span key={m.id}>

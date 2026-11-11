@@ -2,7 +2,8 @@ type Section = { title?: string; html?: string | null }
 
 /**
  * Description, composition and care under the product gallery (design "Products2"): plain
- * letter-spaced text, no accordion. Sections with empty html are not shown.
+ * text, no accordion. Full-strength color and no letter spacing: the pale spaced text of the
+ * design was hard to read on phones. Sections with empty html are not shown.
  *
  * HTML is rendered as is (dangerouslySetInnerHTML); the source is trusted
  * (the store admin), same as in SizeChart / RawHtml.
@@ -12,7 +13,7 @@ export function ProductDescription({ sections }: { sections: Section[] }) {
   if (visible.length === 0) return null
 
   return (
-    <div className="space-y-10 text-sm leading-[18px] tracking-[1px] text-brown/50 lg:text-base lg:tracking-[2px]">
+    <div className="space-y-10 text-sm leading-6 text-brown lg:text-base lg:leading-7">
       {visible.map((section, i) => (
         <section key={section.title ?? i}>
           {section.title && <h2>{section.title}:</h2>}

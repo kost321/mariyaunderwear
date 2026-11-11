@@ -17,7 +17,8 @@ export type HeroItem = { url: string; alt: string; href: string; name?: string; 
 export type HeroVariant = 'a' | 'b' | 'c'
 
 // Product photos are shot on a flat #eaeaec backdrop (square 1600px): a panel of the same colour
-// makes photo and panel read as one wide banner in variant c.
+// makes photo and panel read as one wide banner in variant c. Keep lg:bg-[#eaeaec] in variant c in sync
+// (Tailwind needs the class written out literally).
 const STUDIO_BACKDROP = 'bg-[#eaeaec]'
 
 const photoFrame = 'relative block overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40'
@@ -67,7 +68,6 @@ function HeroText({
                   onClick={() => onSelect(i)}
                   aria-pressed={i === active}
                   aria-label={item.name ?? item.alt}
-                  title={item.name}
                   className={cn(
                     'h-7 w-7 rounded-full border border-brown/30 transition-transform',
                     i === active ? 'ring-1 ring-ink ring-offset-2' : 'hover:scale-110',
@@ -77,7 +77,9 @@ function HeroText({
               ) : null,
             )}
           </div>
-          <span className="text-sm text-brown/80">
+          {/* The selected colour is named here, not in a hover tooltip that floats away from the swatch */}
+          <span className="text-sm text-brown/80" aria-live="polite">
+            {items[active]?.name && <span className="text-ink">{items[active].name} · </span>}
             {swatchCount} {plural(swatchCount, ['колір', 'кольори', 'кольорів'])}
           </span>
         </div>
@@ -119,14 +121,19 @@ export function HeroSection({ items, variant = 'a' }: { items: HeroItem[]; varia
 
   if (variant === 'c') {
     return (
-      <section className={cn('relative overflow-hidden rounded-card', STUDIO_BACKDROP)}>
-        {text('relative z-10 p-6 sm:p-10 lg:max-w-[560px] lg:py-20 lg:pl-16 lg:pr-0')}
+      // Mobile: a regular photo on top and the text below on white (flex-col-reverse), no big grey panel.
+      // Desktop: one wide panel in the backdrop colour, text on the left, the model filling the right half.
+      <section className="flex flex-col-reverse gap-6 lg:relative lg:block lg:overflow-hidden lg:rounded-card lg:bg-[#eaeaec]">
+        {text('lg:relative lg:z-10 lg:max-w-[50%] lg:py-20 lg:pl-16 xl:max-w-[700px]')}
         {current && (
-          // Mobile: the photo under the text; desktop: anchored to the right edge at full panel height
           <Link
             href={current.href}
-            // Both edges fade into the panel: some photos have a backdrop a shade off #eaeaec or a light vignette, which would show a box
-            className="relative block aspect-square w-full lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-[56%] lg:[mask-image:linear-gradient(to_right,transparent,black_30%,black_80%,transparent)]"
+            // Desktop: both edges fade into the panel, as some photos have a backdrop a shade off #eaeaec or a light vignette
+            className={cn(
+              'relative block aspect-[4/5] overflow-hidden rounded-card',
+              STUDIO_BACKDROP,
+              'lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-1/2 lg:rounded-none xl:w-[58%] lg:bg-transparent lg:[mask-image:linear-gradient(to_right,transparent,black_25%,black_85%,transparent)]',
+            )}
           >
             <Image
               key={current.url}
@@ -135,8 +142,9 @@ export function HeroSection({ items, variant = 'a' }: { items: HeroItem[]; varia
               fill
               priority
               quality={90}
-              sizes="(max-width: 1024px) 100vw, 660px"
-              className="object-cover object-center lg:object-contain lg:object-right"
+              sizes="(max-width: 1024px) 100vw, 720px"
+              // The model is centred in a square shot: cover + a top anchor makes her fill the panel height
+              className="object-cover object-[50%_20%] lg:object-[50%_10%]"
             />
           </Link>
         )}

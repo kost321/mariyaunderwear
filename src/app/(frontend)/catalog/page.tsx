@@ -1,15 +1,37 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { getProducts, getCategories } from '@/lib/queries'
+import { getProducts, getNonEmptyCategories } from '@/lib/queries'
 import { filterProducts, getFacets, parseCatalogParams } from '@/lib/catalog'
 import { cn } from '@/lib/utils'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { FilterPanel, SortSelect } from '@/components/shop/catalog/CatalogFilters'
 
-export const metadata: Metadata = {
-  title: 'Каталог',
-  description: 'Каталог одягу Mariya Underwear — нічні сорочки, піжами, халати, комплекти.',
+type SearchParams = Promise<Record<string, string | string[] | undefined>>
+
+/**
+ * Title and description per category ("Нічні сорочки — Mariya Underwear"). Filtered and sorted
+ * views point their canonical URL at the category (or the whole catalog), so Google does not
+ * index them as duplicates.
+ */
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const { category } = parseCatalogParams(await searchParams)
+  const active = category
+    ? (await getNonEmptyCategories().catch(() => [])).find((c) => c.slug === category)
+    : undefined
+  if (!active?.slug) {
+    return {
+      title: 'Каталог',
+      description:
+        'Каталог Mariya Underwear: жіночі нічні сорочки, піжами, халати та комплекти для дому й сну. Доставка Новою поштою.',
+      alternates: { canonical: '/catalog' },
+    }
+  }
+  return {
+    title: active.title,
+    description: `${active.title} від Mariya Underwear — жіночий домашній одяг і білизна для сну. Доставка Новою поштою по Україні.`,
+    alternates: { canonical: `/catalog?category=${encodeURIComponent(active.slug)}` },
+  }
 }
 
 // The catalog fetches data on the server on every request.
@@ -17,16 +39,15 @@ export const metadata: Metadata = {
 export default async function CatalogPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: SearchParams
 }) {
   const raw = await searchParams
   const params = parseCatalogParams(raw)
-  const showNew = raw.sort === 'new'
 
   // Fetch products and categories from Payload in parallel (Local API).
   const [baseProducts, categories] = await Promise.all([
     getProducts({ categorySlug: params.category, q: params.q, limit: 1000 }),
-    getCategories(),
+    getNonEmptyCategories(),
   ])
   const facets = getFacets(baseProducts)
   const products = filterProducts(baseProducts, params)
@@ -70,10 +91,7 @@ export default async function CatalogPage({
 
         {categories.length > 0 && (
           <div className="-mx-[var(--gutter)] grid auto-cols-max grid-flow-col grid-rows-2 gap-x-3.5 gap-y-1 overflow-x-auto px-[var(--gutter)] [scrollbar-width:none] lg:mx-0 lg:px-0">
-            <Link href="/catalog?sort=new" className={chip(showNew && !params.category)}>
-              Новинки
-            </Link>
-            <Link href="/catalog" className={chip(!showNew && !params.category)}>
+            <Link href="/catalog" className={chip(!params.category)}>
               Усі товари
             </Link>
             {categories.map((cat) => (

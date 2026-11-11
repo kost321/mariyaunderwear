@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getPayload } from '@/lib/payload'
+import { getNonEmptyCategories } from '@/lib/queries'
 
 const base = (process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
 
@@ -9,7 +10,7 @@ const base = (process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').rep
 export const dynamic = 'force-dynamic'
 
 /**
- * /sitemap.xml: home, catalog, categories and all active products.
+ * /sitemap.xml: home, catalog, non-empty categories and all active products.
  * If the DB is unavailable, return only the static URLs instead of crashing.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -25,8 +26,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const payload = await getPayload()
+    // Only categories with products: an empty category is a thin "0 товарів" page
     const [categories, products] = await Promise.all([
-      payload.find({ collection: 'categories', limit: 100, depth: 0, pagination: false }),
+      getNonEmptyCategories(),
       payload.find({
         collection: 'products',
         where: { active: { equals: true } },
@@ -36,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
     ])
 
-    for (const category of categories.docs) {
+    for (const category of categories) {
       if (!category.slug) continue
       entries.push({
         url: `${base}/catalog?category=${encodeURIComponent(category.slug)}`,

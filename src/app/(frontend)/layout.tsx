@@ -3,7 +3,7 @@ import { Inter, Podkova } from 'next/font/google'
 import { CartProvider } from '@/hooks/useCart'
 import { Header } from '@/components/shop/Header'
 import { Footer } from '@/components/shop/Footer'
-import { getCategories } from '@/lib/queries'
+import { getNonEmptyCategories } from '@/lib/queries'
 import './globals.css'
 
 // Two typefaces: Inter for text (the design's Almarai has no Cyrillic) and Podkova for headings,
@@ -18,10 +18,11 @@ const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 export const metadata: Metadata = {
   metadataBase: new URL(serverUrl),
   title: {
-    default: 'Mariya Underwear — магазин одягу',
+    default: 'Нічні сорочки та домашній одяг із шовку Армані — Mariya Underwear',
     template: '%s — Mariya Underwear',
   },
-  description: 'Інтернет-магазин жіночого одягу Mariya Underwear. Нічні сорочки, піжами, халати, комплекти.',
+  description:
+    'Інтернет-магазин Mariya Underwear: жіночі нічні сорочки, піжами, халати та комплекти. Виготовлено в Україні, доставка Новою поштою.',
   openGraph: {
     type: 'website',
     locale: 'uk_UA',
@@ -36,8 +37,8 @@ export default async function FrontendLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Categories for the side menu; if the DB is unavailable the menu renders without them and the site does not crash
-  const categories = (await getCategories().catch(() => [])).flatMap((c) =>
+  // Categories with products for the side menu; if the DB is unavailable the menu renders without them and the site does not crash
+  const categories = (await getNonEmptyCategories().catch(() => [])).flatMap((c) =>
     c.slug ? [{ slug: c.slug, title: c.title }] : [],
   )
 

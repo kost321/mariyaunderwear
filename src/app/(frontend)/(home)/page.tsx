@@ -7,6 +7,7 @@ import { ProductCard } from '@/components/shop/ProductCard'
 import { HeroSection, type HeroImage } from '@/components/shop/home/HeroSection'
 import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import { TrustStrip } from '@/components/shop/home/TrustStrip'
+import { JsonLd, storeLd } from '@/components/shop/JsonLd'
 import { CONTACTS } from '@/lib/contacts'
 
 // The home page is built from products, so it is rendered on every request: during the build
@@ -86,6 +87,7 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-24 lg:space-y-[150px]">
+      <JsonLd data={storeLd()} />
       {/* The trust row sits closer to the hero than the regular section spacing */}
       <div className="space-y-12 lg:space-y-16">
         <HeroSection images={heroImages(products)} />

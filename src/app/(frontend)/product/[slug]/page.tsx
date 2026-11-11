@@ -14,6 +14,7 @@ import { ProductCard } from '@/components/shop/ProductCard'
 import type { Product } from '@/payload-types'
 import { isProductInStock } from '@/lib/stock'
 import { productMaterials } from '@/lib/catalog'
+import { JsonLd, SITE_URL, breadcrumbsLd } from '@/components/shop/JsonLd'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -38,8 +39,6 @@ export async function generateStaticParams() {
   }
 }
 
-const serverUrl = (process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
-
 /** HTML description → plain text (for meta description and JSON-LD). */
 function toPlainText(html?: string | null): string {
   return (html ?? '')
@@ -53,6 +52,10 @@ function toPlainText(html?: string | null): string {
     .replace(/\s+/g, ' ')
     .trim()
 }
+
+// Google shows about 60 characters of a title: the " — Mariya Underwear" suffix is added only when it still fits
+const TITLE_SUFFIX = ' — Mariya Underwear'
+const TITLE_MAX = 60
 
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
@@ -73,7 +76,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     : `${product.title} — купити в магазині Mariya Underwear.`
 
   return {
-    title: product.title,
+    title:
+      product.title.length + TITLE_SUFFIX.length <= TITLE_MAX ? product.title : { absolute: product.title },
     description,
     alternates: { canonical: `/product/${slug}` },
     openGraph: {
@@ -109,6 +113,16 @@ export default async function ProductPage({ params }: Params) {
     (item): item is Product => typeof item === 'object' && item !== null,
   )
 
+  // Breadcrumbs for search results: Головна › category › product
+  const category = typeof product.category === 'object' && product.category !== null ? product.category : null
+  const breadcrumbs = [
+    { name: 'Головна', url: '/' },
+    ...(category?.slug
+      ? [{ name: category.title, url: `/catalog?category=${encodeURIComponent(category.slug)}` }]
+      : [{ name: 'Каталог', url: '/catalog' }]),
+    { name: product.title, url: `/product/${slug}` },
+  ]
+
   // Structured data for Google (price, availability, photos in search results).
   // Same rule as the page and the order API (lib/stock): empty stock = not in stock.
   const outOfStock = !isProductInStock(product.sizes)
@@ -130,7 +144,7 @@ export default async function ProductPage({ params }: Params) {
     brand: { '@type': 'Brand', name: 'Mariya Underwear' },
     offers: {
       '@type': 'Offer',
-      url: `${serverUrl}/product/${slug}`,
+      url: `${SITE_URL}/product/${slug}`,
       priceCurrency: 'UAH',
       price: product.price,
       availability: outOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
@@ -139,11 +153,8 @@ export default async function ProductPage({ params }: Params) {
 
   return (
     <article>
-      {/* Escape "<" so the product text cannot close the script tag */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
-      />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbsLd(breadcrumbs)} />
       <nav className="mb-6 hidden lg:block">
         <Link href="/catalog" aria-label="Назад до каталогу" className="inline-block transition-opacity hover:opacity-70">
           <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="h-[14px] w-[61px]" />

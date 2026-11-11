@@ -87,6 +87,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 ## Components `src/components/`
 
 - **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `ScrollToTop`.
+- **`shop/JsonLd.tsx`**: structured data for Google: `JsonLd` (escaped script tag), `storeLd` (store + site search, home page), `breadcrumbsLd` (category and product pages).
 - **`shop/catalog/`**: `CatalogFilters`.
 - **`shop/home/`**: `HeroSection`, `TrustStrip` (store promises under the hero; keep in sync with `/delivery` and the checkout), `ProductSlider`, `ArrowButton`.
 - **`ui/button.tsx`**: base button with style variants (CVA).

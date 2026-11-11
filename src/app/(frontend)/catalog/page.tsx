@@ -6,6 +6,7 @@ import { filterProducts, getFacets, parseCatalogParams } from '@/lib/catalog'
 import { cn, plural } from '@/lib/utils'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { FilterPanel, SortSelect } from '@/components/shop/catalog/CatalogFilters'
+import { JsonLd, breadcrumbsLd } from '@/components/shop/JsonLd'
 
 const catalogUrl = (query: Record<string, string | undefined>) => {
   const qs = new URLSearchParams(Object.entries(query).filter((e): e is [string, string] => Boolean(e[1]))).toString()
@@ -113,6 +114,15 @@ export default async function CatalogPage({
 
   return (
     <div className="lg:grid lg:grid-cols-[265px_1fr] lg:gap-x-10">
+      {activeCategory?.slug && (
+        <JsonLd
+          data={breadcrumbsLd([
+            { name: 'Головна', url: '/' },
+            { name: 'Каталог', url: '/catalog' },
+            { name: activeCategory.title, url: `/catalog?category=${encodeURIComponent(activeCategory.slug)}` },
+          ])}
+        />
+      )}
       {/* Heading above the grid: on desktop it sits in the right column */}
       <div className="text-center lg:col-start-2 lg:text-left">
         <nav aria-label="Хлібні крихти" className="text-xs tracking-[1px] text-brown/60">

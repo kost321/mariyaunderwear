@@ -18,6 +18,8 @@ export const CONTACTS = {
   wholesaleAddress: 'Шептицький, вул. Мазепи, 12',
   postcode: '80100',
   address: 'вул. Мазепи, 12, Шептицький, Львівська область',
+  /** The same address split into parts, for Google structured data (components/shop/JsonLd) */
+  addressParts: { street: 'вул. Мазепи, 12', city: 'Шептицький', region: 'Львівська область' },
   instagram: 'https://www.instagram.com/mariyaunderwear',
   tiktok: 'https://www.tiktok.com/@mariyaunderwear',
 }

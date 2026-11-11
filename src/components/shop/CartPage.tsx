@@ -8,6 +8,7 @@ import { useCart } from '@/hooks/useCart'
 import { cn, formatPrice } from '@/lib/utils'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 import { PAYMENT_METHODS, paymentMethodLabel, type PaymentMethod } from '@/lib/payment'
+import { normalizeUaPhone, PHONE_ERROR } from '@/lib/phone'
 
 type Step = 'cart' | 'checkout' | 'success'
 
@@ -269,6 +270,8 @@ export function CartPage() {
   const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // Checked on the first step: otherwise a typo only surfaces after delivery and payment are filled in
+  const [phoneError, setPhoneError] = useState('')
   const [placed, setPlaced] = useState<PlacedOrder | null>(null)
   // Consent to the public offer: required before checkout
   const [agreed, setAgreed] = useState(false)
@@ -294,6 +297,7 @@ export function CartPage() {
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    if (e.target.name === 'phone') setPhoneError('')
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
@@ -426,12 +430,36 @@ export function CartPage() {
             className="mt-10"
             onSubmit={(e) => {
               e.preventDefault()
+              if (!normalizeUaPhone(form.phone)) {
+                setPhoneError(PHONE_ERROR)
+                e.currentTarget.querySelector<HTMLInputElement>('input[name=phone]')?.focus()
+                return
+              }
               goToCheckoutStep('shipping')
             }}
           >
             <h2 className="font-serif text-sm uppercase text-ink">Контактні дані</h2>
             <div className="mt-3 space-y-4">
-              <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Телефон, +380…" autoComplete="tel" required aria-label="Телефон" className={field} />
+              <div>
+                <input
+                  name="phone"
+                  type="tel"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder="Телефон, +380…"
+                  autoComplete="tel"
+                  required
+                  aria-label="Телефон"
+                  aria-invalid={phoneError ? true : undefined}
+                  aria-describedby={phoneError ? 'phone-error' : undefined}
+                  className={cn(field, phoneError && 'border-destructive')}
+                />
+                {phoneError && (
+                  <p id="phone-error" role="alert" className="mt-1.5 text-xs text-destructive">
+                    {phoneError}
+                  </p>
+                )}
+              </div>
               <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Email (необов'язково)" autoComplete="email" aria-label="Email" className={field} />
             </div>
 

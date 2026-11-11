@@ -7,7 +7,7 @@ import { isSizeAvailable } from '@/lib/stock'
 import { esc, notifyRecipients, str } from '@/lib/mail'
 import { createRateLimiter } from '@/lib/rateLimit'
 import { isPaymentMethod, paymentMethodLabel } from '@/lib/payment'
-import { normalizeUaPhone } from '@/lib/phone'
+import { normalizeUaPhone, PHONE_ERROR } from '@/lib/phone'
 import { reportFailure } from '@/lib/sentry'
 
 const isRateLimited = createRateLimiter(5, 10 * 60 * 1000)
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   const normalizedPhone = normalizeUaPhone(phone)
   if (!normalizedPhone) {
     return NextResponse.json(
-      { error: 'Вкажіть український номер телефону, наприклад +380 67 123 45 67' },
+      { error: PHONE_ERROR },
       { status: 400 },
     )
   }

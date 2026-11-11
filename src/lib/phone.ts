@@ -20,3 +20,6 @@ export function normalizeUaPhone(input: string): string | null {
   if (!national || national.startsWith('0')) return null
   return `+380${national}`
 }
+
+/** Shown by the order API and by the forms before sending, so the wording is the same everywhere. */
+export const PHONE_ERROR = 'Вкажіть український номер телефону, наприклад +380 67 123 45 67'

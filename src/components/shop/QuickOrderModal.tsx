@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import type { CartItem } from '@/types/shop'
+import { normalizeUaPhone, PHONE_ERROR } from '@/lib/phone'
 
 /**
  * "Quick order": a modal with a minimal form (name + phone).
@@ -56,6 +57,11 @@ export function QuickOrderModal({
     e.preventDefault()
     if (!name.trim() || !phone.trim()) {
       setError("Вкажіть ім'я та телефон.")
+      return
+    }
+    // Same check as the order API, so a typo is caught before the request
+    if (!normalizeUaPhone(phone)) {
+      setError(PHONE_ERROR)
       return
     }
     setLoading(true)
@@ -156,7 +162,10 @@ export function QuickOrderModal({
                 id="qo-phone"
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  setPhone(e.target.value)
+                  setError('')
+                }}
                 autoComplete="tel"
                 placeholder="+380"
                 className="h-11 w-full border border-[#a3a3a3] px-4 text-sm text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none"
@@ -164,7 +173,11 @@ export function QuickOrderModal({
               />
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
 
             <Button type="submit" disabled={loading} className="h-11 w-full rounded-card bg-ink uppercase tracking-[1px]">
               {loading ? 'Відправляємо…' : 'Замовити'}

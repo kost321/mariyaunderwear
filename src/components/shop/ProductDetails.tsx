@@ -8,6 +8,7 @@ import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { cn, colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
 import { sortByColor } from '@/lib/colors'
+import { QuantityStepper } from '@/components/shop/QuantityStepper'
 import { SizeChart } from '@/components/shop/SizeChart'
 import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
@@ -477,29 +478,7 @@ export function ProductDetails({
         {!allSoldOut && (
           <div className="mt-5 flex items-center justify-between">
             <p className={label}>Кількість</p>
-            <div className="flex items-center rounded-full border border-[#a3a3a3] px-1 text-sm text-ink">
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                disabled={quantity <= 1}
-                className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
-                aria-label="Зменшити кількість"
-              >
-                −
-              </button>
-              <span className="min-w-6 text-center tabular-nums" aria-live="polite">
-                {quantity}
-              </span>
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
-                disabled={quantity >= maxQuantity}
-                className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
-                aria-label="Збільшити кількість"
-              >
-                +
-              </button>
-            </div>
+            <QuantityStepper value={quantity} onChange={setQuantity} max={maxQuantity} />
           </div>
         )}
 

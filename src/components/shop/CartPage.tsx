@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { X } from 'lucide-react'
+import { ArrowLeft, Check, ShoppingBag, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
-import { cn, formatPrice } from '@/lib/utils'
+import { cn, colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
+import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
+import { QuantityStepper } from '@/components/shop/QuantityStepper'
+import { primaryButton } from '@/components/shop/StatusScreen'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 import { PAYMENT_METHODS, paymentMethodLabel, type PaymentMethod } from '@/lib/payment'
 import { normalizeUaPhone, PHONE_ERROR } from '@/lib/phone'
@@ -21,22 +24,27 @@ const CHECKOUT_STEPS = [
 type CheckoutStep = (typeof CHECKOUT_STEPS)[number]['id']
 
 const photo = 'relative overflow-hidden rounded-card bg-placeholder/40'
-const pill =
-  'flex h-10 w-full items-center justify-center rounded-card bg-cream/70 text-sm text-ink transition-colors hover:bg-cream disabled:opacity-60'
 const field =
   'h-11 w-full border border-[#b6ada3] px-5 text-xs text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none'
 
-/** Empty cart: heading + button to the catalog. */
-function Message({ title }: { title: string }) {
+/** Empty cart: what happened and the way back to the catalog, instead of a blank page. */
+function EmptyCart() {
   return (
-    <div className="flex flex-col items-center gap-5 py-24 text-center">
-      <h1 className="font-serif text-2xl uppercase tracking-[2px] text-ink lg:text-[32px]">{title}</h1>
-      <Link href="/catalog" className={cn(pill, 'mt-4 w-[265px]')}>
+    <div className="flex min-h-[50vh] flex-col items-center justify-center py-16 text-center">
+      <ShoppingBag className="h-12 w-12 text-sand" strokeWidth={1} aria-hidden />
+      <h1 className="heading-page mt-5">Кошик порожній</h1>
+      <p className="mt-4 max-w-[420px] text-balance text-base leading-7 text-brown">
+        Перегляньте каталог і додайте те, що сподобалося: товари збережуться тут до оформлення.
+      </p>
+      <Link href="/catalog" className={cn(primaryButton, 'mt-8')}>
         До каталогу
       </Link>
     </div>
   )
 }
+
+/** "Чайна роза · M": colour in sentence case and the size, as on the catalog cards. */
+const variantLine = (item: CartItem) => [item.color && colorLabel(item.color), item.size].filter(Boolean).join(' · ')
 
 /** "Next" button with an arrow, like "Shipping →" in the design. */
 function NextButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
@@ -54,23 +62,23 @@ function NextButton({ children, disabled }: { children: React.ReactNode; disable
   )
 }
 
-/** "Summary" block: subtotal, delivery, total. */
-function Totals({ total, large }: { total: number; large?: boolean }) {
+/** "Summary" block: subtotal, delivery, total. Amounts in the body font; the total larger and bolder. */
+function Totals({ total }: { total: number }) {
   return (
     <>
-      <dl className="space-y-1.5 text-xs text-brown">
-        <div className="flex justify-between">
+      <dl className="space-y-2 text-sm text-brown">
+        <div className="flex justify-between gap-4">
           <dt>Сума</dt>
-          <dd className="font-serif text-ink/50">{formatPrice(total)}</dd>
+          <dd className="tabular-nums text-ink">{formatPrice(total)}</dd>
         </div>
         <div className="flex justify-between gap-4">
           <dt>Доставка</dt>
-          <dd className="text-right text-[10px] text-brown/50">за тарифами Нової пошти</dd>
+          <dd className="text-right">за тарифами Нової пошти</dd>
         </div>
       </dl>
-      <div className="mt-4 flex items-baseline justify-between border-t border-[#b6ada3] pt-4">
-        <span className={cn('font-serif uppercase tracking-[1px] text-ink', large ? 'text-base' : 'text-sm')}>Разом</span>
-        <span className="font-serif text-base text-brown">{formatPrice(total)}</span>
+      <div className="mt-4 flex items-baseline justify-between gap-4 border-t border-brown/15 pt-4 text-ink">
+        <span className="text-base font-medium">Разом</span>
+        <span className="text-xl font-semibold tabular-nums">{formatPrice(total)}</span>
       </div>
     </>
   )
@@ -204,7 +212,10 @@ function OrderSuccess({ order }: { order: PlacedOrder }) {
   )
 }
 
-/** Cart line: large photo; on the right remove, size, color, quantity. */
+/**
+ * Cart line: a small photo on the left; title, colour · size, the quantity capsule (same as on the product
+ * page), the amount and remove on the right. Several products stay readable as a list.
+ */
 function BagItem({
   item,
   onRemove,
@@ -214,54 +225,75 @@ function BagItem({
   onRemove: () => void
   onQuantity: (q: number) => void
 }) {
+  const title = shortProductTitle(item.title)
   return (
-    <div>
-      <div className="flex gap-4">
-        <Link href={`/product/${item.slug}`} className={cn(photo, 'aspect-[265/313] flex-1')}>
-          {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="(max-width: 1024px) 90vw, 540px" className="object-cover" />}
-        </Link>
-        <div className="flex w-[25px] flex-col items-center gap-6 text-sm text-ink">
-          <button type="button" onClick={onRemove} aria-label={`Прибрати ${item.title}`} className="text-brown/70 hover:text-ink">
-            <X className="h-5 w-5" strokeWidth={1.25} />
+    <li className="flex gap-4 py-5 sm:gap-5">
+      <Link href={`/product/${item.slug}`} className={cn(photo, 'aspect-[4/5] w-24 shrink-0 rounded-2xl sm:w-28')}>
+        {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="112px" className="object-cover" />}
+      </Link>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Link href={`/product/${item.slug}`} className="text-[15px] leading-6 text-ink underline-offset-4 hover:underline">
+              {title}
+            </Link>
+            <p className="mt-1 text-sm text-brown">{variantLine(item)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={`Прибрати з кошика: ${title}`}
+            className="-mr-2 -mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-brown transition-colors [@media(hover:hover)]:hover:bg-cream [@media(hover:hover)]:hover:text-ink"
+          >
+            <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
           </button>
-          {item.size && <span className="mt-6">{item.size}</span>}
-          <div className="flex flex-col border border-brown/60 text-xs">
-            <button
-              type="button"
-              onClick={() => onQuantity(item.quantity + 1)}
-              aria-label="Збільшити кількість"
-              className="h-[22px] w-[25px]"
-            >
-              +
-            </button>
-            <span className="h-[22px] w-[25px] border-y border-brown/60 text-center leading-[20px] tabular-nums" aria-live="polite">
-              {item.quantity}
-            </span>
-            <button
-              type="button"
-              onClick={() => onQuantity(item.quantity - 1)}
-              disabled={item.quantity <= 1}
-              aria-label="Зменшити кількість"
-              className="h-[22px] w-[25px] disabled:opacity-30"
-            >
-              −
-            </button>
+        </div>
+        <div className="mt-auto flex items-center justify-between gap-3 pt-3">
+          <QuantityStepper value={item.quantity} onChange={onQuantity} label={`Кількість: ${title}`} />
+          <div className="text-right">
+            <p className="text-[15px] font-medium tabular-nums text-ink">{formatPrice(item.price * item.quantity)}</p>
+            {item.quantity > 1 && <p className="text-xs tabular-nums text-brown">{formatPrice(item.price)} за шт.</p>}
           </div>
         </div>
       </div>
-      <div className="mt-3 flex items-end justify-between gap-3 pr-[41px]">
-        <div className="min-w-0">
-          {item.color && <p className="text-xs text-brown/70">{item.color}</p>}
-          <p className="mt-1 text-sm text-ink">{item.title}</p>
-        </div>
-        <p className="shrink-0 whitespace-nowrap text-sm text-brown">{formatPrice(item.price * item.quantity)}</p>
+    </li>
+  )
+}
+
+/** How long "Товар видалено · Повернути" stays on screen */
+const UNDO_MS = 5000
+
+/** Short note at the bottom of the screen after a line is removed, with a way to put it back. */
+function RemovedToast({ onUndo, onClose }: { onUndo: () => void; onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, UNDO_MS)
+    return () => clearTimeout(timer)
+  }, [onClose])
+
+  return (
+    // Pinned to the very bottom (above the iPhone home bar), so on phones it covers as little as possible.
+    // Light with a border and a shadow: readable over the white page, the beige summary and the dark footer.
+    // The strip itself lets clicks through, only the toast catches them.
+    <div
+      role="status"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+12px)] z-50 flex justify-center px-4 lg:bottom-6"
+    >
+      <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-brown/15 bg-white py-1.5 pl-5 pr-1.5 text-sm text-ink shadow-[0_8px_24px_rgba(64,54,51,0.18)]">
+        <span>Товар видалено</span>
+        <button
+          type="button"
+          onClick={onUndo}
+          className="rounded-full px-3 py-1.5 font-medium underline underline-offset-4 transition-colors hover:bg-[#f4efeb]"
+        >
+          Повернути
+        </button>
       </div>
     </div>
   )
 }
 
 export function CartPage() {
-  const { items, totalCount, totalPrice, removeItem, updateQuantity, clear } = useCart()
+  const { items, ready, totalCount, totalPrice, removeItem, restoreItem, updateQuantity, clear } = useCart()
   const [step, setStep] = useState<Step>('cart')
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('info')
   // Furthest step reached; you can also go back to it via the tab
@@ -275,6 +307,28 @@ export function CartPage() {
   const [placed, setPlaced] = useState<PlacedOrder | null>(null)
   // Consent to the public offer: required before checkout
   const [agreed, setAgreed] = useState(false)
+  // "Оформити замовлення" stays clickable; pressed without the consent it points at the checkbox
+  const [consentMissing, setConsentMissing] = useState(false)
+  const consentRef = useRef<HTMLInputElement>(null)
+  // Last removed line, until the toast closes: a stray click on the cross does not cost the purchase
+  const [removed, setRemoved] = useState<{ item: CartItem; index: number; at: number } | null>(null)
+  const closeToast = useCallback(() => setRemoved(null), [])
+
+  function remove(index: number) {
+    setRemoved({ item: items[index], index, at: Date.now() })
+    removeItem(index)
+  }
+
+  const toast = removed && (
+    <RemovedToast
+      key={removed.at}
+      onUndo={() => {
+        restoreItem(removed.item, removed.index)
+        setRemoved(null)
+      }}
+      onClose={closeToast}
+    />
+  )
   const [form, setForm] = useState<CheckoutForm>({
     customerName: '',
     phone: '',
@@ -285,6 +339,7 @@ export function CartPage() {
   })
 
   function goTo(next: Step) {
+    setRemoved(null)
     setStep(next)
     window.scrollTo({ top: 0 })
   }
@@ -340,59 +395,100 @@ export function CartPage() {
 
   if (step === 'success' && placed) return <OrderSuccess order={placed} />
 
-  if (!items.length) return <Message title="Кошик порожній" />
+  // Until the cart is read from localStorage, show nothing rather than a flash of "Кошик порожній"
+  if (!ready) return <div className="min-h-[50vh]" />
+  if (!items.length)
+    return (
+      <>
+        <EmptyCart />
+        {toast}
+      </>
+    )
 
   // STEP 1: cart
   if (step === 'cart') {
     return (
-      <div className="lg:grid lg:grid-cols-[712px_306px] lg:justify-between lg:pt-[60px]">
-        <section>
-          <h1 className="border-b border-[#b6ada3] pb-4 font-serif text-base uppercase text-ink">Кошик</h1>
-          <div className="grid gap-x-10 gap-y-12 border-b border-[#b6ada3] py-5 sm:grid-cols-2">
-            {items.map((item, i) => (
-              <BagItem
-                key={`${item.productId}-${item.size}-${item.color}`}
-                item={item}
-                onRemove={() => removeItem(i)}
-                onQuantity={(q) => updateQuantity(i, q)}
-              />
-            ))}
-          </div>
-        </section>
+      <div className="pb-6">
+        <Breadcrumbs items={[{ name: 'Головна', href: '/' }, { name: 'Кошик' }]} />
+        <h1 className="heading-page mt-2">
+          Кошик <span className="text-brown/60">({totalCount})</span>
+        </h1>
 
-        <aside className="mt-10 border border-[#b6ada3] px-6 py-10 lg:mt-[31px] lg:self-start lg:px-10 lg:py-14">
-          <h2 className="mb-6 font-serif text-sm uppercase tracking-[1px] text-ink">Підсумок</h2>
-          <Totals total={totalPrice} large />
-          <label className="mt-8 flex cursor-pointer items-center gap-2 text-[11px] text-brown/80">
-            <input
-              type="checkbox"
-              checked={agreed}
-              onChange={(e) => setAgreed(e.target.checked)}
-              className="size-3.5 shrink-0 cursor-pointer accent-brown"
-            />
-            <span>
-              Я погоджуюсь з{' '}
-              <Link href="/oferta" target="_blank" className="underline underline-offset-2 transition-colors hover:text-ink">
-                умовами договору публічної оферти
-              </Link>
-            </span>
-          </label>
-          <button
-            type="button"
-            onClick={() => goTo('checkout')}
-            disabled={!agreed}
-            aria-describedby={agreed ? undefined : 'consent-hint'}
-            className="mt-4 flex h-10 w-full items-center justify-center rounded-card bg-ink text-sm text-white transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink"
-          >
-            Оформити замовлення
-          </button>
-          {/* Without this hint a disabled button looks broken: say what is missing */}
-          {!agreed && (
-            <p id="consent-hint" className="mt-2 text-center text-[11px] text-brown/80">
-              Поставте позначку згоди з офертою
-            </p>
-          )}
-        </aside>
+        <div className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-16">
+          <section aria-label="Товари в кошику">
+            <ul className="divide-y divide-brown/15 border-y border-brown/15">
+              {items.map((item, i) => (
+                <BagItem
+                  key={`${item.productId}-${item.size}-${item.color}`}
+                  item={item}
+                  onRemove={() => remove(i)}
+                  onQuantity={(q) => updateQuantity(i, q)}
+                />
+              ))}
+            </ul>
+            <Link
+              href="/catalog"
+              className="mt-5 inline-flex items-center gap-2 text-sm text-brown underline-offset-4 transition-colors hover:text-ink hover:underline"
+            >
+              <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+              Продовжити покупки
+            </Link>
+          </section>
+
+          <aside className="mt-10 rounded-card bg-[#f4efeb] px-6 py-6 lg:sticky lg:top-8 lg:mt-0 lg:px-8 lg:py-7">
+            <h2 className="mb-5 text-lg font-medium text-ink">Підсумок</h2>
+            <Totals total={totalPrice} />
+            <label className="mt-6 flex cursor-pointer items-start gap-2.5 text-[13px] leading-5 text-brown">
+              {/* Own box instead of the native one: its border turns brick red when the consent is missing */}
+              <span className="relative mt-px flex size-[18px] shrink-0">
+                <input
+                  ref={consentRef}
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => {
+                    setAgreed(e.target.checked)
+                    if (e.target.checked) setConsentMissing(false)
+                  }}
+                  aria-invalid={consentMissing || undefined}
+                  aria-describedby={consentMissing ? 'consent-error' : undefined}
+                  className="peer size-full cursor-pointer appearance-none rounded-[5px] border border-brown/60 bg-white transition-colors checked:border-ink checked:bg-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink aria-[invalid=true]:border-[1.5px] aria-[invalid=true]:border-destructive"
+                />
+                <Check
+                  className="pointer-events-none absolute inset-0 m-auto hidden h-3 w-3 text-white peer-checked:block"
+                  strokeWidth={3}
+                  aria-hidden
+                />
+              </span>
+              <span>
+                Я погоджуюсь з{' '}
+                <Link href="/oferta" target="_blank" className="underline underline-offset-2 transition-colors hover:text-ink">
+                  умовами договору публічної оферти
+                </Link>
+              </span>
+            </label>
+            {consentMissing && (
+              <p id="consent-error" role="alert" className="mt-2 text-[13px] text-destructive">
+                Поставте позначку, щоб продовжити
+              </p>
+            )}
+            {/* Always clickable: a greyed-out button looks broken. Without the consent it points at the checkbox */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!agreed) {
+                  setConsentMissing(true)
+                  consentRef.current?.focus()
+                  return
+                }
+                goTo('checkout')
+              }}
+              className="mt-4 flex h-12 w-full items-center justify-center rounded-card bg-ink text-[15px] text-white transition-colors hover:bg-ink/90"
+            >
+              Оформити замовлення
+            </button>
+          </aside>
+        </div>
+        {toast}
       </div>
     )
   }

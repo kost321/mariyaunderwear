@@ -15,7 +15,8 @@
     --muted-foreground: 27 18% 37%;
     --accent: 15 33% 95%;
     --accent-foreground: 20 10% 23%;
-    --destructive: 0 84% 60%;
+    /* Muted brick red (#B3402E): reads as an error, stays in the warm palette */
+    --destructive: 8 59% 44%;
     --destructive-foreground: 0 0% 98%;
     --border: 27 22% 77%;
     --input: 27 22% 77%;

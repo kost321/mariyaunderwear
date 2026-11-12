@@ -1,7 +1,5 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
-import Link from 'next/link'
 import {
   getProductBySlug,
   getAllProductSlugs,
@@ -15,6 +13,8 @@ import type { Product } from '@/payload-types'
 import { isProductInStock } from '@/lib/stock'
 import { productMaterials } from '@/lib/catalog'
 import { JsonLd, SITE_URL, breadcrumbsLd } from '@/components/shop/JsonLd'
+import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
+import { modelName } from '@/lib/utils'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -155,13 +155,17 @@ export default async function ProductPage({ params }: Params) {
     <article>
       <JsonLd data={jsonLd} />
       <JsonLd data={breadcrumbsLd(breadcrumbs)} />
-      <nav className="mb-6 hidden lg:block">
-        <Link href="/catalog" aria-label="Назад до каталогу" className="inline-block transition-opacity hover:opacity-70">
-          <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="h-[14px] w-[61px]" />
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { name: 'Головна', href: '/' },
+          { name: 'Каталог', href: '/catalog' },
+          { name: modelName(product.title) },
+        ]}
+      />
+      <div className="mt-4 lg:mt-6">
+        <ProductDetails product={product} colorVariants={colorVariants} />
+      </div>
 
-      <ProductDetails product={product} colorVariants={colorVariants} />
 
       {/* Description, composition and care: under the gallery at full block width, as in the design */}
       <div className="mx-auto mt-12 lg:mt-[100px] lg:max-w-[911px]">

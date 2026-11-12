@@ -67,3 +67,8 @@ export function shortProductTitle(title: string): string {
   const glued = name.replace(/«([^»]{1,22})»/, (m) => m.replace(/ /g, '\u00A0'))
   return glued.charAt(0).toUpperCase() + glued.slice(1)
 }
+
+/** The model name alone, for breadcrumbs: «Ранкова ніжність» → "Ранкова ніжність"; titles without one stay short. */
+export function modelName(title: string): string {
+  return title.match(/«([^»]+)»/)?.[1].trim() ?? shortProductTitle(title)
+}

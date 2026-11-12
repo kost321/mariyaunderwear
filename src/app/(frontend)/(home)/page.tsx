@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Product } from '@/payload-types'
 import { getHomeMaterials, getProducts } from '@/lib/queries'
+import { availableFirst } from '@/lib/catalog'
 import { getMediaAlt, getMediaUrl } from '@/lib/media'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { HeroSection, type HeroItem, type HeroVariant } from '@/components/shop/home/HeroSection'
@@ -88,7 +89,8 @@ export default async function HomePage({
       }))
     : FALLBACK_FABRICS
 
-  const newest = products.slice(0, 12)
+  // Newest first, but what can be ordered now goes ahead of sold-out cards
+  const newest = availableFirst(products.slice(0, 12))
   const withImages = products.filter((p) => getMediaUrl(p.images?.[0]?.image))
   const hero = heroItems(withImages)
   // "Про бренд" photo: not the one the hero shows on load. Another model first, otherwise another color.

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
-import { formatPrice, cn } from '@/lib/utils'
+import { cn, colorLabel, formatPrice } from '@/lib/utils'
 import { SizeChart } from '@/components/shop/SizeChart'
 import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
@@ -183,7 +183,7 @@ export function ProductDetails({
         {showVariantSwitch && (
           <div className="mt-10">
             <p className={label}>
-              Колір{product.colorName ? `: ${product.colorName}` : ''}
+              Колір{product.colorName ? `: ${colorLabel(product.colorName)}` : ''}
             </p>
             <div className="mt-3 flex flex-wrap gap-1">
               {colorVariants.map((v) => {
@@ -205,7 +205,7 @@ export function ProductDetails({
         {/* Colors: selection inside a single card (model not split into variants) */}
         {!showVariantSwitch && colors.length > 0 && (
           <div className="mt-10">
-            <p className={label}>Колір{color ? `: ${color}` : ''}</p>
+            <p className={label}>Колір{color ? `: ${colorLabel(color)}` : ''}</p>
             <div className="mt-3 flex flex-wrap gap-1">
               {colors.map((c) => (
                 <button
@@ -227,7 +227,7 @@ export function ProductDetails({
         {sizes.length > 0 && (
           <div className="mt-5">
             <p className={label}>Розмір</p>
-            <div className="mt-2 flex flex-wrap gap-1">
+            <div className="mt-2 flex flex-wrap gap-2">
               {sizes.map((s) => (
                 <button
                   key={s.id ?? s.value}
@@ -237,7 +237,7 @@ export function ProductDetails({
                   aria-pressed={size === s.value}
                   title={soldOut(s) ? 'Немає в наявності' : undefined}
                   className={cn(
-                    'flex h-9 min-w-[35px] items-center justify-center border px-1.5 text-[10px] transition-colors',
+                    'flex h-9 min-w-9 items-center justify-center rounded-full border px-2.5 text-xs transition-colors',
                     soldOut(s)
                       ? 'cursor-not-allowed border-[#d4d4d4] text-brown/40 line-through'
                       : size === s.value
@@ -259,7 +259,7 @@ export function ProductDetails({
         {/* Quantity */}
         <div className="mt-5 flex items-center justify-between">
           <p className={label}>Кількість</p>
-          <div className="flex items-center border border-[#a3a3a3] text-sm text-ink">
+          <div className="flex items-center rounded-full border border-[#a3a3a3] px-1 text-sm text-ink">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}

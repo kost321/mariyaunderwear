@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { getProducts, getNonEmptyCategories } from '@/lib/queries'
 import { filterProducts, getFacets, parseCatalogParams } from '@/lib/catalog'
@@ -22,7 +21,7 @@ function EmptyResult({ params }: { params: ReturnType<typeof parseCatalogParams>
     params.sizes.length > 0 ||
     params.colors.length > 0 ||
     params.materials.length > 0 ||
-    Boolean(params.stock || params.min || params.max)
+    Boolean(params.inStockOnly || params.min || params.max)
   const [title, hint] = !params.q
     ? ['Немає товарів з такими фільтрами', 'Спробуйте прибрати частину фільтрів або подивіться весь каталог.']
     : hasFilters
@@ -33,7 +32,7 @@ function EmptyResult({ params }: { params: ReturnType<typeof parseCatalogParams>
 
   return (
     <div className="flex flex-col items-center py-16 text-center">
-      <p className="font-serif text-lg uppercase tracking-[1px] text-ink">{title}</p>
+      <p className="font-serif text-2xl text-ink-text">{title}</p>
       <p className="mt-3 max-w-[420px] text-sm leading-6 text-brown">{hint}</p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         {params.q && hasFilters ? (
@@ -106,10 +105,11 @@ export default async function CatalogPage({
   const products = filterProducts(baseProducts, params)
   const activeCategory = categories.find((c) => c.slug === params.category)
 
+  // Capsules like the site's buttons (rounded-full = the 26px radius at this height)
   const chip = (active: boolean) =>
     cn(
-      'flex h-[22px] min-w-[101px] shrink-0 items-center justify-center border px-3 text-xs transition-colors',
-      active ? 'border-ink bg-ink text-white' : 'border-brown/60 text-brown hover:border-ink',
+      'flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-4 text-sm transition-colors',
+      active ? 'border-ink bg-ink text-white' : 'border-brown/40 text-brown hover:border-ink hover:text-ink',
     )
 
   return (
@@ -132,38 +132,36 @@ export default async function CatalogPage({
           {' / '}
           <span className="text-brown">{activeCategory ? activeCategory.title : 'Каталог'}</span>
         </nav>
-        <h1 className="mt-2 font-serif text-xl uppercase tracking-[1px] text-ink">
+        {/* Same voice as the home page's "Ніжність щодня": large serif in normal case, no caps and tracking */}
+        <h1 className="mt-2 font-serif text-[36px] leading-[40px] text-ink-text lg:text-[48px] lg:leading-[52px]">
           {activeCategory ? activeCategory.title : 'Каталог'}
         </h1>
       </div>
 
-      <div className="mt-6 flex flex-col gap-4 lg:col-start-2 lg:row-start-2 lg:flex-row lg:items-center lg:gap-12">
-        <form action="/catalog" role="search" className="relative lg:w-[367px] lg:shrink-0">
-          {params.category && <input type="hidden" name="category" value={params.category} />}
-          <Image src="/brand/search.svg" alt="" width={17} height={16} className="absolute left-5 top-1/2 -translate-y-1/2" />
-          <input
-            type="search"
-            name="q"
-            defaultValue={params.q}
-            placeholder="Пошук"
-            aria-label="Пошук товарів"
-            className="h-[50px] w-full rounded-card bg-cream/70 pl-12 pr-6 text-xs text-brown placeholder:text-right placeholder:text-brown focus:outline-none focus:ring-1 focus:ring-brown/40"
-          />
-        </form>
-
-        {categories.length > 0 && (
-          <div className="-mx-[var(--gutter)] grid auto-cols-max grid-flow-col grid-rows-2 gap-x-3.5 gap-y-1 overflow-x-auto px-[var(--gutter)] [scrollbar-width:none] lg:mx-0 lg:px-0">
-            <Link href="/catalog" className={chip(!params.category)}>
-              Усі товари
+      {/*
+        Categories: one row of capsules under the heading, scrolling sideways on mobile.
+        No search field here: the header's search icon is the only search on the site (it submits to /catalog?q=…).
+      */}
+      {categories.length > 0 && (
+        <nav
+          aria-label="Категорії"
+          className="-mx-[var(--gutter)] mt-6 flex gap-2 overflow-x-auto px-[var(--gutter)] [scrollbar-width:none] lg:col-start-2 lg:row-start-2 lg:mx-0 lg:flex-wrap lg:px-0 [&::-webkit-scrollbar]:hidden"
+        >
+          <Link href="/catalog" className={chip(!params.category)} aria-current={!params.category ? 'page' : undefined}>
+            Усі товари
+          </Link>
+          {categories.map((cat) => (
+            <Link
+              key={cat.id}
+              href={`/catalog?category=${cat.slug}`}
+              className={chip(params.category === cat.slug)}
+              aria-current={params.category === cat.slug ? 'page' : undefined}
+            >
+              {cat.title}
             </Link>
-            {categories.map((cat) => (
-              <Link key={cat.id} href={`/catalog?category=${cat.slug}`} className={chip(params.category === cat.slug)}>
-                {cat.title}
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+          ))}
+        </nav>
+      )}
 
       <div className="mt-8 lg:col-start-1 lg:row-span-2 lg:row-start-2 lg:mt-6">
         <FilterPanel params={params} facets={facets} />
@@ -172,7 +170,16 @@ export default async function CatalogPage({
       <div className="mt-8 lg:col-start-2 lg:row-start-3">
         <div className="mb-6 flex items-center justify-between text-sm text-brown/60">
           <p>
-            {params.q ? `Пошук «${params.q}»: ` : ''}
+            {params.q && (
+              // The query has no field of its own on this page: it shows as a capsule with a reset cross
+              <Link
+                href={catalogUrl({ category: params.category })}
+                aria-label={`Скинути пошук «${params.q}»`}
+                className="mr-3 inline-flex h-8 items-center gap-2 rounded-full bg-cream/70 pl-3.5 pr-3 text-ink transition-colors hover:bg-cream"
+              >
+                Пошук «{params.q}»<span aria-hidden className="text-base leading-none text-brown">×</span>
+              </Link>
+            )}
             {products.length} {plural(products.length, ['товар', 'товари', 'товарів'])}
           </p>
           <SortSelect value={params.sort} />

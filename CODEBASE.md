@@ -65,7 +65,7 @@ The public part of the site.
 
 - **`layout.tsx`**: shared layout (Header, Footer, CartProvider) and site-wide SEO metadata.
 - **`page.tsx`**: home page: hero (store description as the only H1 in a small line, short phrase in large type, one photo of the newest model with color swatches that switch it), trust row (delivery, payment, returns, made in Ukraine), "Новинки" slider, fabric block (Materials with `showOnHome`, placeholders until any are marked), "Про бренд" (draft text in `ABOUT_TEXT`). Rendered on every request.
-- **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, material, price and sorting are applied in memory (`lib/catalog.ts`).
+- **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, material, "in stock only" (`stock=in`), price and sorting are applied in memory (`lib/catalog.ts`); orderable products always come before sold-out ones. Search has no field here: the header's search icon submits to `/catalog?q=…`, and the query shows as a removable capsule.
 - **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams`, `generateMetadata`, canonical URL and JSON-LD `Product` markup.
 - **`cart/page.tsx`**: cart and checkout.
 - **`api/order/route.ts`**: order endpoint. Validates input, rate-limits by IP, re-reads prices and stock from the database, saves the order and emails the owner.
@@ -88,7 +88,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 - **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `ScrollToTop`.
 - **`shop/JsonLd.tsx`**: structured data for Google: `JsonLd` (escaped script tag), `storeLd` (store + site search, home page), `breadcrumbsLd` (category and product pages).
-- **`shop/catalog/`**: `CatalogFilters`.
+- **`shop/catalog/`**: `CatalogFilters` (sticky sidebar on desktop: size and colour as round buttons, an "in stock only" switch, the price range hidden while every product costs the same).
 - **`shop/home/`**: `HeroSection` (first screen in three layouts: a — text + one photo, default; b — two photos; c — banner on the studio backdrop colour; search moved to the header's search icon), `HeroVariantSwitch` (client demo only: `/?hero=a|b|c` shows a floating switch; remove with the unused layouts once one is chosen), `TrustStrip` (store promises under the hero; keep in sync with `/delivery` and the checkout), `ProductSlider`, `ArrowButton`.
 - **`ui/button.tsx`**: base button with style variants (CVA).
 
@@ -101,7 +101,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 | File | Purpose |
 |------|---------|
 | `queries.ts` | All database queries through the Payload Local API (products, categories, color variants, settings). `getNonEmptyCategories` feeds the menu, catalog chips and sitemap, so empty categories stay hidden |
-| `catalog.ts` | In-memory catalog filters and facets |
+| `catalog.ts` | In-memory catalog filters and facets; `availableFirst` puts orderable products ahead of sold-out ones (catalog and home) |
 | `media.ts` | `getMediaUrl`: builds a Cloudinary URL from a Media object |
 | `payload.ts` | Payload initialization for server code (Local API) |
 | `cloudinaryAdapter.ts` | Custom Payload storage adapter that uploads files to Cloudinary |

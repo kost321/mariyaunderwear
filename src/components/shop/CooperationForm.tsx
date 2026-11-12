@@ -1,43 +1,11 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-
-// Rounded like the catalog search field
-const input =
-  'h-11 w-full rounded-full border border-brown/30 bg-white px-5 text-sm text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none'
+import { FormField as Field } from '@/components/shop/FormField'
 
 const EMPTY = { firstName: '', lastName: '', email: '', company: '', phone: '', message: '' }
-type Form = typeof EMPTY
-
-type FieldProps = {
-  name: keyof Form
-  label: string
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  required?: boolean
-  className?: string
-} & Pick<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'autoComplete' | 'maxLength' | 'placeholder' | 'inputMode'>
-
-/** A label above the field (placeholders vanish as soon as you type), with an asterisk on required ones. */
-function Field({ name, label, required, className, ...props }: FieldProps) {
-  const id = useId()
-  return (
-    <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-sm text-brown">
-        {label}
-        {required && (
-          <span className="text-ink" aria-hidden>
-            {' '}
-            *
-          </span>
-        )}
-      </label>
-      <input id={id} name={name} required={required} className={input} {...props} />
-    </div>
-  )
-}
 
 /** Contact form of the "Співпраця" page: sends the request to /api/cooperation. */
 export function CooperationForm() {
@@ -84,7 +52,7 @@ export function CooperationForm() {
     )
   }
 
-  const field = (name: keyof Form) => ({ name, value: form[name], onChange: handleChange })
+  const field = (name: keyof typeof EMPTY) => ({ name, value: form[name], onChange: handleChange })
 
   return (
     // One gap for rows and columns, so first and last name sit as far apart as the rows

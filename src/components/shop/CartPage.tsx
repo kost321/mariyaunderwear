@@ -1,17 +1,18 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Check, ShoppingBag, X } from 'lucide-react'
+import { ArrowLeft, Check, ChevronDown, ShoppingBag, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { cn, colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
 import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
+import { FormField } from '@/components/shop/FormField'
 import { QuantityStepper } from '@/components/shop/QuantityStepper'
 import { primaryButton } from '@/components/shop/StatusScreen'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 import { PAYMENT_METHODS, paymentMethodLabel, type PaymentMethod } from '@/lib/payment'
-import { normalizeUaPhone, PHONE_ERROR } from '@/lib/phone'
+import { formatUaPhoneInput, normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
 
 type Step = 'cart' | 'checkout' | 'success'
 
@@ -24,8 +25,6 @@ const CHECKOUT_STEPS = [
 type CheckoutStep = (typeof CHECKOUT_STEPS)[number]['id']
 
 const photo = 'relative overflow-hidden rounded-card bg-placeholder/40'
-const field =
-  'h-11 w-full border border-[#b6ada3] px-5 text-xs text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none'
 
 /** Empty cart: what happened and the way back to the catalog, instead of a blank page. */
 function EmptyCart() {
@@ -46,19 +45,75 @@ function EmptyCart() {
 /** "Чайна роза · M": colour in sentence case and the size, as on the catalog cards. */
 const variantLine = (item: CartItem) => [item.color && colorLabel(item.color), item.size].filter(Boolean).join(' · ')
 
-/** "Next" button with an arrow, like "Shipping →" in the design. */
-function NextButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
+/** Section title inside the checkout forms ("Контактні дані"), in normal case like the cart's "Підсумок". */
+const subheading = 'text-lg font-medium text-ink'
+
+/** Main checkout button: dark, the full width of the form; "Доставка ⟶" with the long arrow of the design. */
+function NextButton({ children, disabled, arrow = true }: { children: React.ReactNode; disabled?: boolean; arrow?: boolean }) {
   return (
-    <div className="mt-6 flex justify-end">
-      <button
-        type="submit"
-        disabled={disabled}
-        className="flex h-11 w-full items-center justify-between rounded-card bg-cream/70 px-6 text-sm text-ink transition-colors hover:bg-cream disabled:opacity-60 sm:w-[231px]"
-      >
-        {children}
-        <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100" />
-      </button>
-    </div>
+    <button
+      type="submit"
+      disabled={disabled}
+      className={cn(
+        'mt-8 flex h-12 w-full items-center rounded-card bg-ink text-[15px] text-white transition-colors hover:bg-ink/90 disabled:opacity-60',
+        arrow ? 'justify-between pl-7 pr-5' : 'justify-center',
+      )}
+    >
+      {children}
+      {/* The arrow file is brown; brightness-0 + invert turns it white on the dark button */}
+      {arrow && <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100 brightness-0 invert" />}
+    </button>
+  )
+}
+
+/** Step tabs "1 Інформація · 2 Доставка · 3 Оплата": the current one underlined, passed ones ticked and reopenable. */
+function CheckoutSteps({
+  current,
+  reached,
+  onSelect,
+}: {
+  current: CheckoutStep
+  reached: number
+  onSelect: (step: CheckoutStep) => void
+}) {
+  const currentIndex = CHECKOUT_STEPS.findIndex((s) => s.id === current)
+  return (
+    <nav aria-label="Кроки оформлення">
+      <ol className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[15px]">
+        {CHECKOUT_STEPS.map((s, i) => {
+          const isCurrent = i === currentIndex
+          return (
+            <li key={s.id} className="flex items-center gap-3">
+              {i > 0 && (
+                // Lifted by the height of the underline under the step names, so it sits on their middle
+                <span aria-hidden className="mb-[6px] text-brown/40">
+                  ·
+                </span>
+              )}
+              <button
+                type="button"
+                disabled={i > reached}
+                aria-current={isCurrent ? 'step' : undefined}
+                onClick={() => onSelect(s.id)}
+                className={cn(
+                  'flex items-center gap-1.5 border-b-2 pb-1 transition-colors',
+                  isCurrent
+                    ? 'border-ink font-medium text-ink'
+                    : 'border-transparent text-brown enabled:hover:text-ink disabled:text-brown/50',
+                )}
+              >
+                {i < currentIndex ? (
+                  <Check className="h-4 w-4" strokeWidth={2} aria-label="пройдено" />
+                ) : (
+                  <span className="tabular-nums">{i + 1}</span>
+                )}
+                {s.label}
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
   )
 }
 
@@ -79,6 +134,41 @@ function Totals({ total }: { total: number }) {
       <div className="mt-4 flex items-baseline justify-between gap-4 border-t border-brown/15 pt-4 text-ink">
         <span className="text-base font-medium">Разом</span>
         <span className="text-xl font-semibold tabular-nums">{formatPrice(total)}</span>
+      </div>
+    </>
+  )
+}
+
+/** Line of the "Ваше замовлення" panel: small photo, the name as in the cart, colour · size, amount. */
+function SummaryItem({ item }: { item: CartItem }) {
+  return (
+    <li className="flex gap-3">
+      <div className={cn(photo, 'aspect-[4/5] w-16 shrink-0 rounded-xl')}>
+        {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="64px" className="object-cover" />}
+      </div>
+      <div className="min-w-0 flex-1 text-sm">
+        <p className="leading-5 text-ink">{shortProductTitle(item.title)}</p>
+        <p className="mt-1 text-brown">
+          {variantLine(item)}
+          {item.quantity > 1 && ` · ${item.quantity} шт.`}
+        </p>
+      </div>
+      <p className="shrink-0 text-sm tabular-nums text-ink">{formatPrice(item.price * item.quantity)}</p>
+    </li>
+  )
+}
+
+/** Contents of "Ваше замовлення": the lines and the totals (desktop panel and the phone drop-down). */
+function OrderSummary({ items, total }: { items: CartItem[]; total: number }) {
+  return (
+    <>
+      <ul className="space-y-4">
+        {items.map((item) => (
+          <SummaryItem key={`${item.productId}-${item.size}-${item.color}`} item={item} />
+        ))}
+      </ul>
+      <div className="mt-5 border-t border-brown/15 pt-5">
+        <Totals total={total} />
       </div>
     </>
   )
@@ -304,6 +394,13 @@ export function CartPage() {
   const [error, setError] = useState('')
   // Checked on the first step: otherwise a typo only surfaces after delivery and payment are filled in
   const [phoneError, setPhoneError] = useState('')
+  const phoneRef = useRef<HTMLInputElement>(null)
+  const phoneCaret = useRef<number | null>(null)
+  // Names are checked softly: Latin letters get a hint (Nova Poshta matches the passport), nothing is blocked
+  const [namesTouched, setNamesTouched] = useState(false)
+  const latinName = namesTouched && /[a-z]/i.test(firstName + lastName)
+  // "Ваше замовлення" on phones: collapsed to one line above the form
+  const [summaryOpen, setSummaryOpen] = useState(false)
   const [placed, setPlaced] = useState<PlacedOrder | null>(null)
   // Consent to the public offer: required before checkout
   const [agreed, setAgreed] = useState(false)
@@ -331,12 +428,18 @@ export function CartPage() {
   )
   const [form, setForm] = useState<CheckoutForm>({
     customerName: '',
-    phone: '',
+    // The country code is already typed in; the mask keeps it (lib/phone formatUaPhoneInput)
+    phone: UA_PHONE_PREFIX,
     city: '',
     novaPoshtaBranch: '',
     email: '',
     comment: '',
   })
+  useLayoutEffect(() => {
+    if (phoneCaret.current === null || document.activeElement !== phoneRef.current) return
+    phoneRef.current?.setSelectionRange(phoneCaret.current, phoneCaret.current)
+    phoneCaret.current = null
+  }, [form.phone])
 
   function goTo(next: Step) {
     setRemoved(null)
@@ -349,6 +452,34 @@ export function CartPage() {
     setReached((r) => Math.max(r, index))
     setCheckoutStep(next)
     window.scrollTo({ top: 0 })
+  }
+
+  /**
+   * Phone mask: reformat on every change and keep the caret after the same digit it was after (applied in
+   * the layout effect below, once React has written the new value). Backspace over a bracket or a space
+   * removes the digit before it, otherwise the mask would put the separator straight back.
+   */
+  function handlePhone(e: React.ChangeEvent<HTMLInputElement>) {
+    let raw = e.target.value
+    let caret = e.target.selectionStart ?? raw.length
+    if (formatUaPhoneInput(raw) === form.phone && raw.length < form.phone.length) {
+      const digitAt = raw.slice(0, caret).search(/\d\D*$/)
+      if (digitAt > UA_PHONE_PREFIX.length - 2) {
+        raw = raw.slice(0, digitAt) + raw.slice(digitAt + 1)
+        caret = digitAt
+      }
+    }
+    const next = formatUaPhoneInput(raw)
+    let pos = next.length
+    if (caret < raw.length) {
+      const digitsBefore = raw.slice(0, caret).replace(/\D/g, '').length
+      pos = 0
+      for (let seen = 0; pos < next.length && seen < digitsBefore; pos++) if (/\d/.test(next[pos])) seen++
+      pos = Math.max(pos, UA_PHONE_PREFIX.length)
+    }
+    phoneCaret.current = pos
+    setPhoneError('')
+    setForm((prev) => ({ ...prev, phone: next }))
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -495,175 +626,258 @@ export function CartPage() {
 
   // STEP 2: checkout
   return (
-    <div className="lg:grid lg:grid-cols-[468px_406px] lg:justify-between">
-      <section>
-        <button type="button" onClick={() => goTo('cart')} aria-label="Назад до кошика" className="transition-opacity hover:opacity-70">
-          <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="h-[14px] w-[61px]" />
+    <div className="pb-6">
+      <button
+        type="button"
+        onClick={() => goTo('cart')}
+        className="inline-flex items-center gap-2 text-sm text-brown underline-offset-4 transition-colors hover:text-ink hover:underline"
+      >
+        <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        Повернутися до кошика
+      </button>
+      <h1 className="heading-page mt-2">Оформлення</h1>
+
+      {/* Phones: the order collapsed to one line above the form, so the total is in sight without scrolling */}
+      <div className="mt-6 rounded-card bg-[#f4efeb] lg:hidden">
+        <button
+          type="button"
+          onClick={() => setSummaryOpen((o) => !o)}
+          aria-expanded={summaryOpen}
+          aria-controls="order-summary-mobile"
+          className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left text-[15px] text-ink"
+        >
+          <span>
+            Ваше замовлення <span className="text-brown/60">({totalCount})</span>
+          </span>
+          <span className="flex items-center gap-2 font-medium tabular-nums">
+            {formatPrice(totalPrice)}
+            <ChevronDown className={cn('h-4 w-4 transition-transform', summaryOpen && 'rotate-180')} strokeWidth={1.5} aria-hidden />
+          </span>
         </button>
-        <h1 className="mt-10 font-serif text-[32px] uppercase tracking-[2px] text-ink">Оформлення</h1>
+        {summaryOpen && (
+          <div id="order-summary-mobile" className="border-t border-brown/15 px-5 pb-5 pt-4">
+            <OrderSummary items={items} total={totalPrice} />
+            <button
+              type="button"
+              onClick={() => goTo('cart')}
+              className="mt-4 text-sm text-brown underline underline-offset-4 transition-colors hover:text-ink"
+            >
+              Змінити в кошику
+            </button>
+          </div>
+        )}
+      </div>
 
-        {/* Step tabs: completed ones can be reopened, the next ones only via the button */}
-        <nav aria-label="Кроки оформлення" className="mt-8 flex gap-11 text-sm sm:text-base">
-          {CHECKOUT_STEPS.map((s, i) => {
-            const current = s.id === checkoutStep
-            return (
-              <button
-                key={s.id}
-                type="button"
-                disabled={i > reached}
-                aria-current={current ? 'step' : undefined}
-                onClick={() => setCheckoutStep(s.id)}
-                className={cn('transition-colors', current ? 'text-ink' : 'text-brown/50 enabled:hover:text-brown')}
-              >
-                {s.label}
-              </button>
-            )
-          })}
-        </nav>
+      <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-16">
+        <section className="max-w-[560px]">
+          <CheckoutSteps current={checkoutStep} reached={reached} onSelect={setCheckoutStep} />
 
-        {checkoutStep === 'info' && (
-          <form
-            className="mt-10"
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (!normalizeUaPhone(form.phone)) {
-                setPhoneError(PHONE_ERROR)
-                e.currentTarget.querySelector<HTMLInputElement>('input[name=phone]')?.focus()
-                return
-              }
-              goToCheckoutStep('shipping')
-            }}
-          >
-            <h2 className="font-serif text-sm uppercase text-ink">Контактні дані</h2>
-            <div className="mt-3 space-y-4">
-              <div>
-                <input
+          {checkoutStep === 'info' && (
+            <form
+              className="mt-8"
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (!normalizeUaPhone(form.phone)) {
+                  setPhoneError(PHONE_ERROR)
+                  phoneRef.current?.focus()
+                  return
+                }
+                goToCheckoutStep('shipping')
+              }}
+            >
+              <h2 className={subheading}>Контактні дані</h2>
+              <div className="mt-4 grid gap-5">
+                <FormField
+                  label="Телефон"
+                  required
                   name="phone"
                   type="tel"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="Телефон, +380…"
+                  inputMode="tel"
                   autoComplete="tel"
-                  required
-                  aria-label="Телефон"
-                  aria-invalid={phoneError ? true : undefined}
-                  aria-describedby={phoneError ? 'phone-error' : undefined}
-                  className={cn(field, phoneError && 'border-destructive')}
+                  inputRef={phoneRef}
+                  value={form.phone}
+                  onChange={handlePhone}
+                  onBlur={() => {
+                    // A half-typed number is pointed out on leaving the field; an untouched one only on "Доставка"
+                    if (uaPhoneDigits(form.phone) > 0 && !normalizeUaPhone(form.phone)) setPhoneError(PHONE_ERROR)
+                  }}
+                  placeholder="+380 (__) ___ __ __"
+                  error={phoneError}
+                  hint="Менеджер зателефонує, щоб підтвердити замовлення"
                 />
-                {phoneError && (
-                  <p id="phone-error" role="alert" className="mt-1.5 text-xs text-destructive">
-                    {phoneError}
-                  </p>
-                )}
+                <FormField
+                  label="Email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="name@example.com"
+                />
               </div>
-              <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Email (необов'язково)" autoComplete="email" aria-label="Email" className={field} />
-            </div>
 
-            <h2 className="mt-10 font-serif text-sm uppercase text-ink">Отримувач</h2>
-            <div className="mt-3 grid grid-cols-2 gap-1.5">
-              <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Ім'я" autoComplete="given-name" required aria-label="Ім'я" className={field} />
-              <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Прізвище" autoComplete="family-name" required aria-label="Прізвище" className={field} />
-            </div>
+              <h2 className={cn(subheading, 'mt-10')}>Отримувач</h2>
+              <div className="mt-4 grid gap-5 sm:grid-cols-2">
+                <FormField
+                  label="Імʼя"
+                  required
+                  autoComplete="given-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  onBlur={() => setNamesTouched(true)}
+                />
+                <FormField
+                  label="Прізвище"
+                  required
+                  autoComplete="family-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  onBlur={() => setNamesTouched(true)}
+                />
+              </div>
+              <p aria-live="polite" className={cn('mt-1.5 px-5 text-xs leading-5', latinName ? 'text-ink' : 'text-brown')}>
+                {latinName
+                  ? 'Схоже, імʼя написане латиницею. Для Нової пошти краще українською, як у паспорті'
+                  : 'Як у паспорті, українською'}
+              </p>
 
-            <NextButton>Доставка</NextButton>
-          </form>
-        )}
+              <NextButton>Доставка</NextButton>
+            </form>
+          )}
 
-        {checkoutStep === 'shipping' && (
-          <form
-            className="mt-10"
-            onSubmit={(e) => {
-              e.preventDefault()
-              goToCheckoutStep('payment')
-            }}
-          >
-            <h2 className="font-serif text-sm uppercase text-ink">Доставка Новою поштою</h2>
-            <div className="mt-3 grid grid-cols-2 gap-1.5 gap-y-4">
-              <input name="city" value={form.city} onChange={handleChange} placeholder="Місто" autoComplete="address-level2" required aria-label="Місто" className={field} />
-              <input name="novaPoshtaBranch" value={form.novaPoshtaBranch} onChange={handleChange} placeholder="№ відділення" required aria-label="Номер відділення Нової пошти" className={field} />
-              <textarea name="comment" value={form.comment} onChange={handleChange} placeholder="Коментар до замовлення" aria-label="Коментар" rows={3} className={cn(field, 'col-span-2 h-auto py-3')} />
-            </div>
-
-            <NextButton>Оплата</NextButton>
-          </form>
-        )}
-
-        {checkoutStep === 'payment' && (
-          <form onSubmit={handleSubmit} className="mt-10">
-            <h2 className="font-serif text-sm uppercase text-ink">Перевірте дані</h2>
-            <dl className="mt-3 divide-y divide-[#b6ada3] border-y border-[#b6ada3] text-xs text-brown">
-              {[
-                { label: 'Отримувач', value: `${firstName} ${lastName}`, step: 'info' as const },
-                { label: 'Контакти', value: [form.phone, form.email].filter(Boolean).join(', '), step: 'info' as const },
-                {
-                  label: 'Доставка',
-                  value: `Нова пошта, ${form.city}, відділення ${form.novaPoshtaBranch}`,
-                  step: 'shipping' as const,
-                },
-              ].map((row) => (
-                <div key={row.label} className="flex items-start gap-4 py-3">
-                  <dt className="w-24 shrink-0 text-brown/50">{row.label}</dt>
-                  <dd className="flex-1 text-ink">{row.value}</dd>
-                  <button type="button" onClick={() => setCheckoutStep(row.step)} className="shrink-0 underline underline-offset-2">
-                    Змінити
-                  </button>
-                </div>
-              ))}
-            </dl>
-
-            <fieldset className="mt-8">
-              <legend className="font-serif text-sm uppercase text-ink">Спосіб оплати</legend>
-              <div className="mt-3 space-y-3">
-                {PAYMENT_METHODS.map((m) => (
-                  <label
-                    key={m.value}
-                    className={cn(
-                      'flex cursor-pointer items-start gap-3 border px-5 py-4 text-xs transition-colors',
-                      form.paymentMethod === m.value ? 'border-ink' : 'border-[#b6ada3] hover:border-brown',
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={m.value}
-                      checked={form.paymentMethod === m.value}
-                      onChange={() => setForm((prev) => ({ ...prev, paymentMethod: m.value }))}
-                      required
-                      className="mt-0.5 accent-ink"
-                    />
-                    <span>
-                      <span className="block text-ink">{m.label}</span>
-                      <span className="mt-1 block text-brown/60">{m.hint}</span>
-                    </span>
+          {checkoutStep === 'shipping' && (
+            <form
+              className="mt-8"
+              onSubmit={(e) => {
+                e.preventDefault()
+                goToCheckoutStep('payment')
+              }}
+            >
+              <h2 className={subheading}>Доставка Новою поштою</h2>
+              <div className="mt-4 grid gap-5 sm:grid-cols-2">
+                <FormField
+                  label="Місто"
+                  required
+                  name="city"
+                  autoComplete="address-level2"
+                  value={form.city}
+                  onChange={handleChange}
+                />
+                <FormField
+                  label="№ відділення"
+                  required
+                  name="novaPoshtaBranch"
+                  value={form.novaPoshtaBranch}
+                  onChange={handleChange}
+                  placeholder="Наприклад, 12"
+                />
+                <div className="sm:col-span-2">
+                  <label htmlFor="checkout-comment" className="mb-1.5 block text-sm text-brown">
+                    Коментар до замовлення
                   </label>
-                ))}
+                  {/* Rounded border on a wrapper, so the resize grip stays inside the curve (as on "Співпраця") */}
+                  <div className="rounded-[20px] border border-brown/30 bg-white p-1.5 focus-within:border-ink">
+                    <textarea
+                      id="checkout-comment"
+                      name="comment"
+                      value={form.comment}
+                      onChange={handleChange}
+                      rows={3}
+                      placeholder="Наприклад, зручний час для дзвінка"
+                      className="block w-full resize-y bg-transparent px-3.5 py-1.5 text-sm leading-6 text-ink placeholder:text-brown/50 focus:outline-none"
+                    />
+                  </div>
+                </div>
               </div>
-            </fieldset>
-            <p className="mt-4 text-xs leading-[18px] text-brown/60">
-              Менеджер зателефонує, щоб підтвердити замовлення та спосіб оплати. Онлайн-оплати на сайті немає.
-            </p>
 
-            {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+              <NextButton>Оплата</NextButton>
+            </form>
+          )}
 
-            <NextButton disabled={loading}>{loading ? 'Відправляємо…' : 'Підтвердити'}</NextButton>
-          </form>
-        )}
-      </section>
+          {checkoutStep === 'payment' && (
+            <form onSubmit={handleSubmit} className="mt-8">
+              <h2 className={subheading}>Перевірте дані</h2>
+              <dl className="mt-4 divide-y divide-brown/15 border-y border-brown/15 text-sm">
+                {[
+                  { label: 'Отримувач', value: `${firstName} ${lastName}`, step: 'info' as const },
+                  { label: 'Контакти', value: [form.phone, form.email].filter(Boolean).join(', '), step: 'info' as const },
+                  {
+                    label: 'Доставка',
+                    value: `Нова пошта, ${form.city}, відділення ${form.novaPoshtaBranch}`,
+                    step: 'shipping' as const,
+                  },
+                ].map((row) => (
+                  <div key={row.label} className="flex items-start gap-4 py-3">
+                    <dt className="w-24 shrink-0 text-brown">{row.label}</dt>
+                    <dd className="min-w-0 flex-1 text-ink">{row.value}</dd>
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutStep(row.step)}
+                      className="shrink-0 text-brown underline underline-offset-4 transition-colors hover:text-ink"
+                    >
+                      Змінити
+                    </button>
+                  </div>
+                ))}
+              </dl>
 
-      <aside className="relative mt-12 border border-[#b6ada3] px-5 py-8 lg:mt-[188px] lg:self-start lg:px-10 lg:py-10">
-        <span className="absolute right-4 top-2 text-xs text-brown/80">({totalCount})</span>
-        <h2 className="font-serif text-sm uppercase tracking-[1px] text-black">Ваше замовлення</h2>
-        <ul className="mt-6 space-y-6 border-b border-[#b6ada3] pb-6">
-          {items.map((item) => (
-            <li key={`${item.productId}-${item.size}-${item.color}`}>
-              <OrderLine item={item} onChange={() => goTo('cart')} />
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4">
-          <Totals total={totalPrice} />
-        </div>
-      </aside>
+              <fieldset className="mt-10">
+                <legend className={subheading}>Спосіб оплати</legend>
+                <div className="mt-4 space-y-3">
+                  {PAYMENT_METHODS.map((m) => (
+                    <label
+                      key={m.value}
+                      className={cn(
+                        'flex cursor-pointer items-start gap-3 rounded-2xl border px-5 py-4 text-sm transition-colors',
+                        form.paymentMethod === m.value ? 'border-ink bg-[#f4efeb]' : 'border-brown/30 hover:border-brown',
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={m.value}
+                        checked={form.paymentMethod === m.value}
+                        onChange={() => setForm((prev) => ({ ...prev, paymentMethod: m.value }))}
+                        required
+                        className="mt-1 accent-ink"
+                      />
+                      <span>
+                        <span className="block text-ink">{m.label}</span>
+                        <span className="mt-1 block text-brown">{m.hint}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <p className="mt-4 text-sm leading-6 text-brown">
+                Менеджер зателефонує, щоб підтвердити замовлення та спосіб оплати. Онлайн-оплати на сайті немає.
+              </p>
+
+              {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+
+              <NextButton disabled={loading} arrow={false}>
+                {loading ? 'Відправляємо…' : 'Підтвердити замовлення'}
+              </NextButton>
+            </form>
+          )}
+        </section>
+
+        <aside className="hidden rounded-card bg-[#f4efeb] px-8 py-7 lg:sticky lg:top-8 lg:block">
+          <div className="mb-5 flex items-baseline justify-between gap-4">
+            <h2 className="text-lg font-medium text-ink">
+              Ваше замовлення <span className="text-brown/60">({totalCount})</span>
+            </h2>
+            <button
+              type="button"
+              onClick={() => goTo('cart')}
+              className="text-sm text-brown underline underline-offset-4 transition-colors hover:text-ink"
+            >
+              Змінити
+            </button>
+          </div>
+          <OrderSummary items={items} total={totalPrice} />
+        </aside>
+      </div>
     </div>
   )
 }

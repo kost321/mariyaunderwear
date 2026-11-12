@@ -33,6 +33,16 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  /* Browser autofill paints filled fields light blue: keep them white with the site's ink text */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #fff inset;
+    -webkit-text-fill-color: #403834;
+    caret-color: #403834;
+    transition: background-color 9999s ease-out 0s;
+  }
 }
 
 @layer components {

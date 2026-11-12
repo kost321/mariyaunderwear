@@ -14,7 +14,8 @@ const TRUST_POINTS: TrustPoint[] = [
     icon: RefreshCw,
     title: 'Обмін і повернення',
     text: 'протягом 14 днів для речей без слідів використання',
-    href: '/delivery',
+    // Straight to the returns section of the delivery page
+    href: '/delivery#returns',
   },
   { icon: Heart, title: 'Виготовлено в Україні', text: 'Mariya Underwear — український бренд домашнього одягу' },
 ]

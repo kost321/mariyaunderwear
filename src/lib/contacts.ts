@@ -3,8 +3,8 @@
  * Empty values are hidden (or shown inactive); fill them in once the owner provides them.
  */
 export const CONTACTS = {
-  /** Seller name for the public offer, e.g. 'Іваненко Марія Іванівна' (ФОП). Empty — shown without a name */
-  seller: '',
+  /** Seller (ФОП) name for the public offer. Empty — shown without a name */
+  seller: 'Климук Марія Іванівна',
   /** Seller's tax number (РНОКПП) for the public offer. Empty — not shown */
   sellerTaxId: '',
   email: 'mariyaunderwear.ua@gmail.com',
@@ -16,9 +16,12 @@ export const CONTACTS = {
   wholesalePhone: '+380 (97) 724 05 88',
   wholesaleContact: 'Марія',
   postcode: '80100',
-  /** A warehouse, not a shop: there is nowhere to come in, so the page just says «Адреса». Postcode at the end */
+  /**
+   * A warehouse, not a shop: there is nowhere to come in, so the page just says «Адреса». Postcode at the end.
+   * The wholesale department works from the same premises, so the address is shown once.
+   */
   // Non-breaking spaces keep «Львівська обл., 80100» on one line
-  address: 'вул. Мазепи, 12, Шептицький, Львівська\u00A0обл.,\u00A080100',
+  address: 'вул. Мазепи, 12, м.\u00A0Шептицький, Львівська\u00A0обл.,\u00A080100',
   /** The same address split into parts, for Google structured data (components/shop/JsonLd) */
   addressParts: { street: 'вул. Мазепи, 12', city: 'Шептицький', region: 'Львівська область' },
   instagram: 'https://www.instagram.com/mariyaunderwear',

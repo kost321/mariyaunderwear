@@ -3,18 +3,30 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Check, ChevronDown, ShoppingBag, X } from 'lucide-react'
+import { ArrowLeft, Check, ChevronDown, Loader2, ShoppingBag, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { cn, colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
 import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
 import { FormField } from '@/components/shop/FormField'
 import { QuantityStepper } from '@/components/shop/QuantityStepper'
 import { primaryButton } from '@/components/shop/StatusScreen'
+import { CONTACTS, phoneHref } from '@/lib/contacts'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 import { PAYMENT_METHODS, paymentMethodLabel, type PaymentMethod } from '@/lib/payment'
 import { formatUaPhoneInput, normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
 
 type Step = 'cart' | 'checkout' | 'success'
+
+/** How long to wait for the order API (it answers after the emails and SMS are sent) */
+const ORDER_TIMEOUT_MS = 30_000
+const NETWORK_ERROR = 'Не вдалося звʼязатися з сервером. Перевірте інтернет і спробуйте ще раз: введені дані збережено.'
+const SERVER_ERROR = 'Не вдалося оформити замовлення через збій на сервері. Спробуйте ще раз за хвилину: введені дані збережено.'
+
+/** Key of one checkout attempt; randomUUID needs https (or localhost), the fallback covers the rest. */
+const newOrderKey = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`
 
 // Checkout tabs from the design: Information → Shipping → Payment
 const CHECKOUT_STEPS = [
@@ -49,13 +61,23 @@ const variantLine = (item: CartItem) => [item.color && colorLabel(item.color), i
 const subheading = 'text-lg font-medium text-ink'
 
 /** Main checkout button: dark, the full width of the form; "Доставка ⟶" with the long arrow of the design. */
-function NextButton({ children, disabled, arrow = true }: { children: React.ReactNode; disabled?: boolean; arrow?: boolean }) {
+function NextButton({
+  children,
+  busy,
+  arrow = true,
+}: {
+  children: React.ReactNode
+  /** The order is on its way: the button is locked but stays dark (a greyed-out one looks broken) */
+  busy?: boolean
+  arrow?: boolean
+}) {
   return (
     <button
       type="submit"
-      disabled={disabled}
+      disabled={busy}
+      aria-busy={busy || undefined}
       className={cn(
-        'mt-8 flex h-12 w-full items-center rounded-card bg-ink text-[15px] text-white transition-colors hover:bg-ink/90 disabled:opacity-60',
+        'mt-8 flex h-12 w-full items-center rounded-card bg-ink text-[15px] text-white transition-colors enabled:hover:bg-ink/90 disabled:cursor-wait',
         arrow ? 'justify-between pl-7 pr-5' : 'justify-center',
       )}
     >
@@ -392,6 +414,13 @@ export function CartPage() {
   const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // Guard against a second submit while the order is on its way
+  const submitting = useRef(false)
+  // Key of this checkout attempt, sent with every retry; a new one once the cart changes
+  const orderKey = useRef('')
+  useEffect(() => {
+    orderKey.current = newOrderKey()
+  }, [items])
   // Checked on the first step: otherwise a typo only surfaces after delivery and payment are filled in
   const [phoneError, setPhoneError] = useState('')
   const phoneRef = useRef<HTMLInputElement>(null)
@@ -489,20 +518,37 @@ export function CartPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!items.length) return
+    // The disabled button is not enough on its own: a double click or Enter can land before React re-renders
+    if (!items.length || submitting.current) return
+    submitting.current = true
     setLoading(true)
     setError('')
+    // The server does not answer until the emails and SMS are sent; past this the request is given up
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), ORDER_TIMEOUT_MS)
     try {
-      const res = await fetch('/api/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, form: { ...form, customerName: `${firstName.trim()} ${lastName.trim()}`.trim() } }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(res.status === 400 && data?.error ? data.error : '')
+      let res: Response
+      try {
+        res = await fetch('/api/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // The same key on every retry: if the first try went through and only its answer was lost,
+          // the server returns that order instead of creating a second one (api/order, lib/idempotency)
+          body: JSON.stringify({
+            items,
+            form: { ...form, customerName: `${firstName.trim()} ${lastName.trim()}`.trim() },
+            orderKey: orderKey.current,
+          }),
+          signal: controller.signal,
+        })
+      } catch {
+        throw new Error(NETWORK_ERROR)
       }
       const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        // 400 and 429 carry a message for the customer (out of stock, too many tries); the rest is a server failure
+        throw new Error((res.status === 400 || res.status === 429) && data?.error ? data.error : SERVER_ERROR)
+      }
       setPlaced({
         id: data?.orderId ?? '',
         items,
@@ -514,12 +560,11 @@ export function CartPage() {
       clear()
       goTo('success')
     } catch (e) {
-      setError(
-        e instanceof Error && e.message
-          ? e.message
-          : "Щось пішло не так. Спробуйте ще раз або зв'яжіться з нами.",
-      )
+      // Everything typed stays in the form: the customer only presses the button again
+      setError(e instanceof Error && e.message ? e.message : SERVER_ERROR)
     } finally {
+      clearTimeout(timer)
+      submitting.current = false
       setLoading(false)
     }
   }
@@ -853,11 +898,30 @@ export function CartPage() {
                 Менеджер зателефонує, щоб підтвердити замовлення та спосіб оплати. Онлайн-оплати на сайті немає.
               </p>
 
-              {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
-
-              <NextButton disabled={loading} arrow={false}>
-                {loading ? 'Відправляємо…' : 'Підтвердити замовлення'}
+              <NextButton busy={loading} arrow={false}>
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    Оформлюємо…
+                  </span>
+                ) : error ? (
+                  'Спробувати ще раз'
+                ) : (
+                  'Підтвердити замовлення'
+                )}
               </NextButton>
+              {/* Under the button, where the eye is after pressing it; a phone number as the way out */}
+              {error && (
+                <div role="alert" className="mt-3 text-sm leading-6">
+                  <p className="text-destructive">{error}</p>
+                  <p className="mt-1 text-brown">
+                    Якщо не виходить, зателефонуйте нам:{' '}
+                    <a href={`tel:${phoneHref(CONTACTS.phone)}`} className="whitespace-nowrap text-ink underline underline-offset-4 hover:no-underline">
+                      {CONTACTS.phone}
+                    </a>
+                  </p>
+                </div>
+              )}
             </form>
           )}
         </section>

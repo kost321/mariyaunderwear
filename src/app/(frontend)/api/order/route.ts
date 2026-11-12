@@ -10,6 +10,7 @@ import { createIdempotencyCache, idempotencyKey } from '@/lib/idempotency'
 import { isPaymentMethod, paymentMethodLabel } from '@/lib/payment'
 import { normalizeUaPhone, PHONE_ERROR } from '@/lib/phone'
 import { reportFailure } from '@/lib/sentry'
+import { orderToken } from '@/lib/orderToken'
 
 const isRateLimited = createRateLimiter(5, 10 * 60 * 1000)
 
@@ -205,6 +206,10 @@ async function placeOrder(body: OrderBody): Promise<NextResponse> {
     },
   })
 
+  // Link to the "order accepted" page (signed, see lib/orderToken): the cart opens it, the customer's email links to it
+  const token = orderToken(order.id)
+  const siteUrl = process.env.NEXT_PUBLIC_SERVER_URL
+
   // Send the emails
   const itemsHtml = items
     .map(
@@ -276,6 +281,7 @@ async function placeOrder(body: OrderBody): Promise<NextResponse> {
           : 'Ми звʼяжемося з вами найближчим часом, щоб підтвердити замовлення і спосіб оплати.'
       }</p>
       ${details}${orderTable}
+      ${siteUrl ? `<p style="margin-top:24px"><a href="${siteUrl}/order/${token}">Переглянути замовлення на сайті</a></p>` : ''}
     `,
           },
         ]
@@ -298,5 +304,5 @@ async function placeOrder(body: OrderBody): Promise<NextResponse> {
     sendSms(form.phone, smsText.orderAccepted(order.id)),
   ])
 
-  return NextResponse.json({ success: true, orderId: order.id })
+  return NextResponse.json({ success: true, orderId: order.id, token })
 }

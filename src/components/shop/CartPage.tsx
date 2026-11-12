@@ -3,19 +3,21 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowLeft, Check, ChevronDown, Loader2, ShoppingBag, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { cn, colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
 import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
 import { FormField } from '@/components/shop/FormField'
+import { OrderTotals } from '@/components/shop/OrderTotals'
 import { QuantityStepper } from '@/components/shop/QuantityStepper'
 import { primaryButton } from '@/components/shop/StatusScreen'
 import { CONTACTS, phoneHref } from '@/lib/contacts'
 import type { CartItem, CheckoutForm } from '@/types/shop'
-import { PAYMENT_METHODS, paymentMethodLabel, type PaymentMethod } from '@/lib/payment'
+import { PAYMENT_METHODS } from '@/lib/payment'
 import { formatUaPhoneInput, normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
 
-type Step = 'cart' | 'checkout' | 'success'
+type Step = 'cart' | 'checkout'
 
 /** How long to wait for the order API (it answers after the emails and SMS are sent) */
 const ORDER_TIMEOUT_MS = 30_000
@@ -139,28 +141,6 @@ function CheckoutSteps({
   )
 }
 
-/** "Summary" block: subtotal, delivery, total. Amounts in the body font; the total larger and bolder. */
-function Totals({ total }: { total: number }) {
-  return (
-    <>
-      <dl className="space-y-2 text-sm text-brown">
-        <div className="flex justify-between gap-4">
-          <dt>Сума</dt>
-          <dd className="tabular-nums text-ink">{formatPrice(total)}</dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt>Доставка</dt>
-          <dd className="text-right">за тарифами Нової пошти</dd>
-        </div>
-      </dl>
-      <div className="mt-4 flex items-baseline justify-between gap-4 border-t border-brown/15 pt-4 text-ink">
-        <span className="text-base font-medium">Разом</span>
-        <span className="text-xl font-semibold tabular-nums">{formatPrice(total)}</span>
-      </div>
-    </>
-  )
-}
-
 /** Line of the "Ваше замовлення" panel: small photo, the name as in the cart, colour · size, amount. */
 function SummaryItem({ item }: { item: CartItem }) {
   return (
@@ -190,137 +170,9 @@ function OrderSummary({ items, total }: { items: CartItem[]; total: number }) {
         ))}
       </ul>
       <div className="mt-5 border-t border-brown/15 pt-5">
-        <Totals total={total} />
+        <OrderTotals total={total} />
       </div>
     </>
-  )
-}
-
-/** Order line, as in "Your order" of the design: photo, title, color/size, quantity and amount. */
-function OrderLine({ item, onChange }: { item: CartItem; onChange?: () => void }) {
-  return (
-    <div className="flex gap-[11px]">
-      <div className={cn(photo, 'h-[134px] w-[113px] shrink-0')}>
-        {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="113px" className="object-cover" />}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col py-4">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm text-black">{item.title}</p>
-          {onChange && (
-            <button type="button" onClick={onChange} className="shrink-0 text-xs text-brown underline underline-offset-2">
-              Змінити
-            </button>
-          )}
-        </div>
-        <p className="mt-2 text-xs text-brown">{[item.color, item.size].filter(Boolean).join(' / ')}</p>
-        <div className="mt-auto flex items-baseline justify-between">
-          <span className="text-xs text-brown/80">× {item.quantity}</span>
-          <span className="text-[13px] text-brown/50">{formatPrice(item.price * item.quantity)}</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/** What is left on screen after the order: the cart itself is already cleared. */
-type PlacedOrder = {
-  id: number | string
-  items: CartItem[]
-  total: number
-  address: string
-  phone: string
-  paymentMethod?: PaymentMethod
-}
-
-/** Ordered items in one row; scrolls sideways with a fade and a "›" button while there is more on the right. */
-function OrderItemsRow({ items }: { items: CartItem[] }) {
-  const listRef = useRef<HTMLUListElement>(null)
-  const [more, setMore] = useState(false)
-
-  const update = useCallback(() => {
-    const el = listRef.current
-    if (el) setMore(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
-  }, [])
-
-  useEffect(() => {
-    update()
-    window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
-  }, [update])
-
-  return (
-    <div className="relative min-w-0 lg:border-r lg:border-[#dfdfdf]">
-      <ul
-        ref={listRef}
-        onScroll={update}
-        className="flex snap-x gap-10 overflow-x-auto pb-2 [scrollbar-width:none] lg:pt-[29px] [&::-webkit-scrollbar]:hidden"
-      >
-        {items.map((item) => (
-          <li key={`${item.productId}-${item.size}-${item.color}`} className="w-[260px] shrink-0 snap-start">
-            <OrderLine item={item} />
-          </li>
-        ))}
-      </ul>
-
-      {more && (
-        <>
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-[133px] bg-gradient-to-r from-white/0 to-white" />
-          <button
-            type="button"
-            onClick={() => listRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
-            aria-label="Показати інші товари"
-            className="absolute right-3 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center lg:right-6 lg:top-[calc(50%+14px)]"
-          >
-            <Image src="/brand/chevron.svg" alt="" width={13} height={7} className="rotate-90" />
-          </button>
-        </>
-      )}
-    </div>
-  )
-}
-
-/** Thank-you screen: message + full-width band with the order lines and the summary. */
-function OrderSuccess({ order }: { order: PlacedOrder }) {
-  return (
-    <div className="lg:pt-[110px]">
-      <div className="flex flex-col items-center px-5 py-8 text-center lg:p-0">
-        <h1 className="font-serif text-2xl uppercase leading-8 tracking-[2px] text-ink lg:text-[32px] lg:leading-10">Дякуємо за замовлення</h1>
-        <Link href="/catalog" className="mt-2 leading-10 text-brown underline underline-offset-4 transition-colors hover:text-ink lg:mt-[17px]">
-          Повернутись до покупок
-        </Link>
-      </div>
-
-      <section className="-mx-[var(--gutter)] mt-6 grid border-y border-[#d9d9d9] px-[var(--gutter)] py-10 lg:mt-[66px] lg:grid-cols-[1fr_327px] lg:gap-x-[38px] lg:pb-[39px] lg:pr-[57px] lg:pt-[41px]">
-        <OrderItemsRow items={order.items} />
-
-        <div className="mt-10 flex flex-col border-t border-[#dfdfdf] pt-6 lg:mt-0 lg:min-h-[191px] lg:border-t-0 lg:pt-0">
-          <dl className="space-y-2.5 text-xs text-ink">
-            <div className="flex items-baseline justify-between gap-4">
-              <dt>Номер замовлення</dt>
-              <dd className="text-[13px] text-brown/50">№{order.id}</dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-4">
-              <dt className="shrink-0">Адреса доставки</dt>
-              <dd className="text-right text-[10px] text-brown/50">{order.address}</dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-4">
-              <dt className="shrink-0">Контактний номер</dt>
-              <dd className="text-right text-[10px] text-brown/50">{order.phone}</dd>
-            </div>
-            {order.paymentMethod && (
-              <div className="flex items-baseline justify-between gap-4">
-                <dt className="shrink-0">Оплата</dt>
-                <dd className="text-right text-[10px] text-brown/50">{paymentMethodLabel(order.paymentMethod)}</dd>
-              </div>
-            )}
-          </dl>
-          <div className="mt-10 flex items-baseline justify-between border-t border-[#dfdfdf] pt-4 font-serif text-sm text-ink lg:mt-auto">
-            <span>Сума</span>
-            <span>{formatPrice(order.total)}</span>
-          </div>
-        </div>
-      </section>
-    </div>
   )
 }
 
@@ -430,7 +282,10 @@ export function CartPage() {
   const latinName = namesTouched && /[a-z]/i.test(firstName + lastName)
   // "Ваше замовлення" on phones: collapsed to one line above the form
   const [summaryOpen, setSummaryOpen] = useState(false)
-  const [placed, setPlaced] = useState<PlacedOrder | null>(null)
+  // The order went through and the "order accepted" page is opening: the cart is already empty by then,
+  // so this keeps "Кошик порожній" from flashing for a moment
+  const [redirecting, setRedirecting] = useState(false)
+  const router = useRouter()
   // Consent to the public offer: required before checkout
   const [agreed, setAgreed] = useState(false)
   // "Оформити замовлення" stays clickable; pressed without the consent it points at the checkbox
@@ -549,16 +404,11 @@ export function CartPage() {
         // 400 and 429 carry a message for the customer (out of stock, too many tries); the rest is a server failure
         throw new Error((res.status === 400 || res.status === 429) && data?.error ? data.error : SERVER_ERROR)
       }
-      setPlaced({
-        id: data?.orderId ?? '',
-        items,
-        total: totalPrice,
-        address: `Нова пошта, ${form.city}, відділення ${form.novaPoshtaBranch}`,
-        phone: form.phone,
-        paymentMethod: form.paymentMethod,
-      })
+      // The order has its own page (/order/<signed token>, see lib/orderToken): a reload there shows the
+      // saved order again and sends nothing; replace() keeps the back button from returning to the form
+      setRedirecting(true)
+      router.replace(data?.token ? `/order/${data.token}` : '/')
       clear()
-      goTo('success')
     } catch (e) {
       // Everything typed stays in the form: the customer only presses the button again
       setError(e instanceof Error && e.message ? e.message : SERVER_ERROR)
@@ -569,7 +419,7 @@ export function CartPage() {
     }
   }
 
-  if (step === 'success' && placed) return <OrderSuccess order={placed} />
+  if (redirecting) return <div className="min-h-[50vh]" />
 
   // Until the cart is read from localStorage, show nothing rather than a flash of "Кошик порожній"
   if (!ready) return <div className="min-h-[50vh]" />
@@ -613,7 +463,7 @@ export function CartPage() {
 
           <aside className="mt-10 rounded-card bg-[#f4efeb] px-6 py-6 lg:sticky lg:top-8 lg:mt-0 lg:px-8 lg:py-7">
             <h2 className="mb-5 text-lg font-medium text-ink">Підсумок</h2>
-            <Totals total={totalPrice} />
+            <OrderTotals total={totalPrice} />
             <label className="mt-6 flex cursor-pointer items-start gap-2.5 text-[13px] leading-5 text-brown">
               {/* Own box instead of the native one: its border turns brick red when the consent is missing */}
               <span className="relative mt-px flex size-[18px] shrink-0">

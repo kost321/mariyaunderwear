@@ -88,6 +88,8 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 ## Components `src/components/`
 
 - **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `ScrollToTop`.
+- **`shop/LegalPage.tsx`** + **`shop/LegalToc.tsx`**: layout of the offer and privacy pages: breadcrumbs, title, «Редакція від …», text column of ~70 letters, numbered sections; the contents are sticky on the right on desktop and highlight the section being read.
+- **`shop/Breadcrumbs.tsx`**: «Головна / …» trail above page titles (catalog, contacts, cooperation, legal pages).
 - **`shop/HeaderSearch.tsx`**: search panel dropped over the page from the header icon (not on /catalog): live results from `/api/search`, "Усі результати" to the catalog; Esc, a click outside or navigation close it.
 - **`shop/JsonLd.tsx`**: structured data for Google: `JsonLd` (escaped script tag), `storeLd` (store + site search, home page), `breadcrumbsLd` (category and product pages).
 - **`shop/catalog/`**: `CatalogFilters` (sticky sidebar on desktop: size and colour as round buttons, an "in stock only" switch, the price range hidden while every product costs the same).

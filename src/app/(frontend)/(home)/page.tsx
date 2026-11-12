@@ -11,7 +11,7 @@ import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import { TrustStrip } from '@/components/shop/home/TrustStrip'
 import { JsonLd, storeLd } from '@/components/shop/JsonLd'
 import { CONTACTS } from '@/lib/contacts'
-import { cn } from '@/lib/utils'
+import { cn, colorLabel } from '@/lib/utils'
 
 // The home page is built from products, so it is rendered on every request: during the build
 // on Railway the DB is unavailable (postgres.railway.internal exists only at runtime)
@@ -29,19 +29,25 @@ function toPhoto(product: Product): Photo | null {
 const modelId = (p: Product) => (typeof p.model === 'object' && p.model !== null ? p.model.id : p.model)
 
 /**
- * Hero: the newest product with a photo, plus the other colors of its model (each color card is a
- * separate product linked by `model`). The newest stays first, so it is the photo shown on load;
- * the swatches switch between the colors.
+ * Hero: the newest product with a photo, plus every other color of its model (each color card is a
+ * separate product linked by `model`). The newest stays first, so it is the photo shown on load.
+ * Colors without a photo are listed too, so the hero shows as many swatches as the catalog has colors;
+ * their swatch opens the product page instead of switching the photo.
  */
-function heroItems(withImages: Product[]): HeroItem[] {
+function heroItems(products: Product[], withImages: Product[]): HeroItem[] {
   const lead = withImages[0]
   if (!lead) return []
   const leadModel = modelId(lead)
-  const colors = leadModel == null ? [lead] : [lead, ...withImages.filter((p) => p.id !== lead.id && modelId(p) === leadModel)]
-  return colors.flatMap((p) => {
+  const colors = leadModel == null ? [lead] : [lead, ...products.filter((p) => p.id !== lead.id && modelId(p) === leadModel)]
+  return colors.map((p) => {
     const photo = toPhoto(p)
-    if (!photo) return []
-    return [{ ...photo, name: p.colorName ?? undefined, hex: p.colorHex ?? undefined }]
+    return {
+      url: photo?.url,
+      alt: photo?.alt ?? p.title,
+      href: `/product/${p.slug}`,
+      name: p.colorName ? colorLabel(p.colorName) : undefined,
+      hex: p.colorHex ?? undefined,
+    }
   })
 }
 
@@ -92,7 +98,7 @@ export default async function HomePage({
   // Newest first, but what can be ordered now goes ahead of sold-out cards
   const newest = availableFirst(products.slice(0, 12))
   const withImages = products.filter((p) => getMediaUrl(p.images?.[0]?.image))
-  const hero = heroItems(withImages)
+  const hero = heroItems(products, withImages)
   // "Про бренд" photo: not the one the hero shows on load. Another model first, otherwise another color.
   // Swap for a dedicated brand photo when there is one.
   const lead = withImages[0]
@@ -107,8 +113,8 @@ export default async function HomePage({
       {/* Outside the spaced container: as its first child the script would push the hero down by the section gap */}
       <JsonLd data={storeLd()} />
       {heroVariant && <HeroVariantSwitch active={heroVariant} />}
-      {/* Section rhythm: 150px from the mockup left a hole under the trust row, which already ends in a divider */}
-      <div className="space-y-20 lg:space-y-28">
+      {/* Section rhythm: the trust row already ends in a divider, so a wide gap after it read as an empty band */}
+      <div className="space-y-14 lg:space-y-16">
         {/* The trust row sits closer to the hero than the regular section spacing */}
         <div className="space-y-12 lg:space-y-16">
           <HeroSection items={hero} variant={heroVariant ?? 'a'} />
@@ -119,9 +125,9 @@ export default async function HomePage({
           <section>
             {/* "See all" on the heading's line, on its baseline, instead of a row of its own */}
             <div className="mb-8 flex items-baseline justify-between gap-4 lg:mb-10">
-              <h2 className="heading-section text-black">
+              <h2 className="heading-section">
                 Новинки
-                <span className="ml-3 align-top font-sans text-base normal-case tracking-normal text-brown/80">({newest.length})</span>
+                <span className="ml-2 font-sans text-base text-brown/70">({newest.length})</span>
               </h2>
               <Link
                 href="/catalog?sort=new"
@@ -140,7 +146,7 @@ export default async function HomePage({
 
         <section id="care" className="scroll-mt-8">
           <div className="text-center">
-            <h2 className="heading-section text-black">Догляд за виробами</h2>
+            <h2 className="heading-section">Догляд за виробами</h2>
             <p className="mx-auto mt-4 max-w-[685px] text-base leading-6 text-brown">
               Правильний догляд зберігає м&apos;якість тканини та форму виробу. Ніжне прання при 30°, без відбілювачів,
               сушіння в розправленому вигляді — і ваші речі довго залишатимуться як нові.
@@ -152,7 +158,7 @@ export default async function HomePage({
             {fabrics.map((fabric, i) => {
               const slot = CARE_SLOTS[i % CARE_SLOTS.length]
               const label = (
-                <p className="text-center font-serif text-[25px] uppercase leading-7 tracking-[2px] text-brown">{fabric.title}</p>
+                <p className="text-center font-serif text-[25px] leading-7 text-brown">{fabric.title}</p>
               )
               const content = (
                 <>
@@ -214,7 +220,7 @@ export default async function HomePage({
             </Link>
           )}
           <div>
-            <h2 id="about" className="heading-section text-black">
+            <h2 id="about" className="heading-section">
               Про бренд
             </h2>
             <div className="mt-6 max-w-[560px] space-y-4 text-base leading-7 text-brown lg:mt-8">

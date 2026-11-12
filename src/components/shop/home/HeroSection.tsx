@@ -5,8 +5,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { cn, plural } from '@/lib/utils'
 
-/** One color of the hero product: its photo, page and swatch. */
-export type HeroItem = { url: string; alt: string; href: string; name?: string; hex?: string }
+/** One color of the hero product: its photo (if any), page and swatch. */
+export type HeroItem = { url?: string; alt: string; href: string; name?: string; hex?: string }
 
 /**
  * First-screen layouts, switchable for the client demo via /?hero=a|b|c (see HeroVariantSwitch):
@@ -61,7 +61,16 @@ function HeroText({
         <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex gap-2" role="group" aria-label="Кольори">
             {items.map((item, i) =>
-              item.hex ? (
+              !item.hex ? null : !item.url ? (
+                // No photo to switch to yet: the swatch opens that color's page instead
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-label={item.name ?? item.alt}
+                  className="h-7 w-7 rounded-full border border-brown/30 transition-transform hover:scale-110"
+                  style={{ backgroundColor: item.hex }}
+                />
+              ) : (
                 <button
                   key={item.href}
                   type="button"
@@ -74,7 +83,7 @@ function HeroText({
                   )}
                   style={{ backgroundColor: item.hex }}
                 />
-              ) : null,
+              ),
             )}
           </div>
           {/* The selected colour is named here, not in a hover tooltip that floats away from the swatch */}
@@ -89,6 +98,7 @@ function HeroText({
 }
 
 function Photo({ item, sizes, className }: { item: HeroItem; sizes: string; className?: string }) {
+  if (!item.url) return null
   return (
     <Link href={item.href} className={cn(photoFrame, className)}>
       <Image key={item.url} src={item.url} alt={item.alt} fill priority quality={90} sizes={sizes} className="object-cover" />
@@ -99,13 +109,15 @@ function Photo({ item, sizes, className }: { item: HeroItem; sizes: string; clas
 export function HeroSection({ items, variant = 'a' }: { items: HeroItem[]; variant?: HeroVariant }) {
   const [active, setActive] = useState(0)
   const current = items[active]
+  // Only colors with a photo can be shown; variant b pairs the current one with the next of those
+  const withPhotos = items.filter((i) => i.url)
   const text = (className?: string) => (
     <HeroText items={items} active={active} onSelect={setActive} className={className} />
   )
 
   if (variant === 'b') {
     // Two colors side by side: the selected one and the next
-    const second = items.length > 1 ? items[(active + 1) % items.length] : undefined
+    const second = withPhotos.length > 1 ? withPhotos[(withPhotos.indexOf(current) + 1) % withPhotos.length] : undefined
     return (
       <section className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:gap-16">
         {text('lg:py-10')}
@@ -125,7 +137,7 @@ export function HeroSection({ items, variant = 'a' }: { items: HeroItem[]; varia
       // Desktop: one wide panel in the backdrop colour, text on the left, the model filling the right half.
       <section className="flex flex-col-reverse gap-6 lg:relative lg:block lg:overflow-hidden lg:rounded-card lg:bg-[#eaeaec]">
         {text('lg:relative lg:z-10 lg:max-w-[50%] lg:py-20 lg:pl-16 xl:max-w-[700px]')}
-        {current && (
+        {current?.url && (
           <Link
             href={current.href}
             // Desktop: both edges fade into the panel, as some photos have a backdrop a shade off #eaeaec or a light vignette

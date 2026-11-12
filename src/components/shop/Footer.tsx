@@ -73,7 +73,7 @@ function Column({ title, children }: { title: string; children: React.ReactNode 
 
 export function Footer() {
   return (
-    <footer className="relative mt-20 bg-ink text-sand lg:mt-32">
+    <footer className="relative mt-12 bg-ink text-sand lg:mt-16">
       <div className="container flex min-h-[190px] flex-col">
         <div className="grid grid-cols-1 gap-y-8 pb-10 pt-10 sm:grid-cols-2 sm:gap-x-10 lg:pb-[35px] lg:pt-[35px]">
           <Column title="Інформація">

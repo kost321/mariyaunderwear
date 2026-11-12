@@ -27,9 +27,9 @@ export async function POST(req: NextRequest) {
   const lastName = str(body?.lastName, 100)
   const email = str(body?.email, 120)
   const company = str(body?.company, 200)
-  const position = str(body?.position, 100)
+  const message = str(body?.message, 2000)
   const phone = str(body?.phone, 30)
-  if (!firstName || !email || lastName === undefined || company === undefined || position === undefined || phone === undefined) {
+  if (!firstName || !email || lastName === undefined || company === undefined || message === undefined || phone === undefined) {
     return BAD_REQUEST()
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return BAD_REQUEST()
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         <p><b>Email:</b> ${esc(email)}</p>
         ${phone ? `<p><b>Телефон:</b> ${esc(phone)}</p>` : ''}
         ${company ? `<p><b>Організація:</b> ${esc(company)}</p>` : ''}
-        ${position ? `<p><b>Посада:</b> ${esc(position)}</p>` : ''}
+        ${message ? `<p><b>Що цікавить:</b></p><p style="white-space:pre-wrap">${esc(message)}</p>` : ''}
       `,
     })
     if (error) {

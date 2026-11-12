@@ -470,7 +470,7 @@ export function ProductDetails({
         )}
 
         <div className="mt-3">
-          <SizeChart html={product.sizeChartHtml} />
+          <SizeChart html={product.sizeChartHtml} selected={size} />
         </div>
 
         {/* Quantity only when something can be ordered (quick order: see below) */}

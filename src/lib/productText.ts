@@ -65,3 +65,53 @@ export function paragraphs(html: string | null | undefined): string[] {
   const lines = parts.length ? parts : [plainText(html)]
   return lines.filter(Boolean).map((line) => line.replace(/ - /g, ' — '))
 }
+
+export type SizeChartData = {
+  /** Small line above the table, e.g. "Нічна сорочка · Виміри виробу" */
+  caption: string | null
+  /** Column titles, the unit moved in: "Довжина, см" */
+  headers: string[]
+  /** Rows: the size first, then the values without the unit */
+  rows: string[][]
+  /** "Зверніть увагу: …" under the table, split into its bold lead and the rest */
+  note: { lead: string; text: string } | null
+}
+
+const UNIT = /\s*(см|cm|мм|mm)\.?$/i
+
+/**
+ * The size chart HTML in the admin is a hand-made card with inline styles (a frame, a "CM" badge, "см" in
+ * every cell). The data is read out of it and the site draws its own table; null when there is no table.
+ */
+export function parseSizeChart(html: string | null | undefined): SizeChartData | null {
+  if (!html) return null
+  const table = html.match(/<table\b[\s\S]*?<\/table>/i)?.[0]
+  if (!table) return null
+
+  const cells = (row: string) => [...row.matchAll(/<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/gi)].map((c) => plainText(c[1]))
+  const allRows = [...table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)].map((m) => cells(m[1])).filter((r) => r.length)
+  if (allRows.length < 2) return null
+  const [head, ...body] = allRows
+
+  // A column whose values all end in the same unit gets it in the title instead
+  const headers = head.map((title, col) => {
+    if (col === 0) return title
+    const unit = body.map((r) => r[col]?.match(UNIT)?.[1]).find(Boolean)
+    const everyCell = unit && body.every((r) => !r[col] || UNIT.test(r[col]))
+    return everyCell ? `${title.replace(/,\s*$/, '')}, ${unit.toLowerCase().replace('cm', 'см').replace('mm', 'мм')}` : title
+  })
+  const rows = body.map((r) =>
+    r.map((value, col) => (col > 0 && headers[col] !== head[col] ? value.replace(UNIT, '') : value)),
+  )
+
+  const rest = html.replace(table, '')
+  const caption = plainText(rest.match(/<p\b[^>]*>([\s\S]*?)<\/p>/i)?.[1]) || null
+  const noteMatch = rest.match(/<strong\b[^>]*>([\s\S]*?)<\/strong>([\s\S]*?)<\/(?:div|p)>/i)
+  const note = noteMatch ? { lead: plainText(noteMatch[1]), text: plainText(noteMatch[2]) } : null
+
+  return { caption, headers, rows, note }
+}
+
+/** Size as written in the chart and on the size buttons, compared loosely ("М" Cyrillic, case, spaces). */
+export const sameSize = (a: string, b: string) =>
+  a.replace(/М/g, 'M').replace(/\s+/g, '').toUpperCase() === b.replace(/М/g, 'M').replace(/\s+/g, '').toUpperCase()

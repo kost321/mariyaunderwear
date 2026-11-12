@@ -143,6 +143,10 @@ export interface Product {
    */
   slug?: string | null;
   active?: boolean | null;
+  /**
+   * Показувати в розділі «Бестселери» (пункт меню в шапці). Поки жоден товар не відмічено, пункт меню прихований.
+   */
+  bestseller?: boolean | null;
   price: number;
   /**
    * Може повторюватися — напр. у різних кольорів однієї моделі однаковий артикул.
@@ -470,6 +474,7 @@ export interface ProductsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   active?: T;
+  bestseller?: T;
   price?: T;
   sku?: T;
   wholesalePrice?: T;

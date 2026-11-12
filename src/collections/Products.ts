@@ -19,7 +19,7 @@ export const Products: CollectionConfig = {
   slug: 'products',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'price', 'category', 'active'],
+    defaultColumns: ['title', 'price', 'category', 'bestseller', 'active'],
     group: 'Каталог',
   },
   labels: {
@@ -62,6 +62,17 @@ export const Products: CollectionConfig = {
       defaultValue: true,
       admin: {
         position: 'sidebar',
+      },
+    },
+    {
+      name: 'bestseller',
+      label: 'Бестселер',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Показувати в розділі «Бестселери» (пункт меню в шапці). Поки жоден товар не відмічено, пункт меню прихований.',
       },
     },
     {

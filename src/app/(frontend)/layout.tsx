@@ -3,7 +3,7 @@ import { Inter, Podkova } from 'next/font/google'
 import { CartProvider } from '@/hooks/useCart'
 import { Header } from '@/components/shop/Header'
 import { Footer } from '@/components/shop/Footer'
-import { getNonEmptyCategories } from '@/lib/queries'
+import { getNonEmptyCategories, hasBestsellers } from '@/lib/queries'
 import './globals.css'
 
 // Two typefaces: Inter for text (the design's Almarai has no Cyrillic) and Podkova for headings,
@@ -38,16 +38,18 @@ export default async function FrontendLayout({
   children: React.ReactNode
 }) {
   // Categories with products for the side menu; if the DB is unavailable the menu renders without them and the site does not crash
-  const categories = (await getNonEmptyCategories().catch(() => [])).flatMap((c) =>
-    c.slug ? [{ slug: c.slug, title: c.title }] : [],
-  )
+  const [allCategories, showBestsellers] = await Promise.all([
+    getNonEmptyCategories().catch(() => []),
+    hasBestsellers().catch(() => false),
+  ])
+  const categories = allCategories.flatMap((c) => (c.slug ? [{ slug: c.slug, title: c.title }] : []))
 
   return (
     <html lang="uk" className={`${sans.variable} ${serif.variable}`}>
       {/* Room under the footer for the fixed mobile "Add to cart" bar (73px) on product pages */}
       <body className="flex min-h-screen flex-col bg-background font-sans has-[[data-sticky-buy]]:pb-[73px] lg:has-[[data-sticky-buy]]:pb-0">
         <CartProvider>
-          <Header categories={categories} />
+          <Header categories={categories} showBestsellers={showBestsellers} />
           <main className="container flex-1 py-8">{children}</main>
           <Footer />
         </CartProvider>

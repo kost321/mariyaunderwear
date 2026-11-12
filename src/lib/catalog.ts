@@ -18,6 +18,11 @@ export type CatalogParams = {
   materials: string[]
   /** Only products that can be ordered now ("Тільки в наявності"). */
   inStockOnly: boolean
+  /**
+   * The «Бестселери» section: only products ticked «Бестселер» in the admin (?bestseller=1).
+   * It is one of the catalog chips, like a category, so it never combines with one.
+   */
+  bestseller: boolean
   min?: number
   max?: number
   sort: CatalogSort
@@ -35,13 +40,15 @@ const num = (v: string | string[] | undefined) => {
 
 export function parseCatalogParams(raw: RawParams): CatalogParams {
   const sort = first(raw.sort)
+  const bestseller = first(raw.bestseller) === '1'
   return {
-    category: first(raw.category) || undefined,
+    category: bestseller ? undefined : first(raw.category) || undefined,
     q: first(raw.q)?.trim() || undefined,
     sizes: list(raw.size),
     colors: list(raw.color),
     materials: list(raw.material),
     inStockOnly: first(raw.stock) === 'in',
+    bestseller,
     min: num(raw.min),
     max: num(raw.max),
     sort: sort === 'price-asc' || sort === 'price-desc' ? sort : 'new',

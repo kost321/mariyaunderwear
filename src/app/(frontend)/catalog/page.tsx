@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import type { Product } from '@/payload-types'
-import { getProducts, getNonEmptyCategories } from '@/lib/queries'
+import { getProducts, getNonEmptyCategories, hasBestsellers } from '@/lib/queries'
 import { isProductInStock } from '@/lib/stock'
 import { filterProducts, getFacets, parseCatalogParams } from '@/lib/catalog'
 import { cn, plural } from '@/lib/utils'
@@ -25,8 +25,13 @@ function EmptyResult({ params, suggestions }: { params: ReturnType<typeof parseC
     params.colors.length > 0 ||
     params.materials.length > 0 ||
     Boolean(params.inStockOnly || params.min || params.max)
+  // «Скинути фільтри» keeps the chosen category or the «Бестселери» section
+  const bestseller = params.bestseller ? '1' : undefined
+  const inSection = Boolean(params.category || params.bestseller)
   const [title, hint] = !params.q
-    ? ['Немає товарів з такими фільтрами', 'Спробуйте прибрати частину фільтрів або подивіться весь каталог.']
+    ? params.bestseller && !hasFilters
+      ? ['Бестселери скоро з\'являться', 'Поки що подивіться весь каталог.']
+      : ['Немає товарів з такими фільтрами', 'Спробуйте прибрати частину фільтрів або подивіться весь каталог.']
     : hasFilters
       ? [`За запитом «${params.q}» з такими фільтрами нічого немає`, 'Спробуйте скинути фільтри — можливо, товар є в іншому розмірі чи кольорі.']
       : [`Нічого не знайдено за запитом «${params.q}»`, 'Перевірте написання або спробуйте коротше слово, наприклад «сорочка».']
@@ -40,15 +45,15 @@ function EmptyResult({ params, suggestions }: { params: ReturnType<typeof parseC
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         {params.q && hasFilters ? (
           <Link
-            href={catalogUrl({ category: params.category, q: params.q })}
+            href={catalogUrl({ category: params.category, q: params.q, bestseller })}
             className={`${button} border border-brown/50 text-brown hover:border-ink hover:text-ink`}
           >
             Скинути фільтри
           </Link>
         ) : null}
-        {!params.q && hasFilters && params.category ? (
+        {!params.q && hasFilters && inSection ? (
           <Link
-            href={catalogUrl({ category: params.category })}
+            href={catalogUrl({ category: params.category, bestseller })}
             className={`${button} border border-brown/50 text-brown hover:border-ink hover:text-ink`}
           >
             Скинути фільтри
@@ -82,10 +87,19 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>
  * index them as duplicates.
  */
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
-  const { category } = parseCatalogParams(await searchParams)
+  const { category, bestseller } = parseCatalogParams(await searchParams)
   const active = category
     ? (await getNonEmptyCategories().catch(() => [])).find((c) => c.slug === category)
     : undefined
+  // Filtered views of the section point at the section itself
+  if (bestseller) {
+    return {
+      title: 'Бестселери',
+      description:
+        'Бестселери Mariya Underwear: нічні сорочки, піжами та домашній одяг, які обирають найчастіше. Доставка Новою поштою.',
+      alternates: { canonical: '/catalog?bestseller=1' },
+    }
+  }
   if (!active?.slug) {
     return {
       title: 'Каталог',
@@ -111,14 +125,17 @@ export default async function CatalogPage({
   const raw = await searchParams
   const params = parseCatalogParams(raw)
 
-  // Fetch products and categories from Payload in parallel (Local API).
-  const [baseProducts, categories] = await Promise.all([
-    getProducts({ categorySlug: params.category, q: params.q, limit: 1000 }),
+  // «Бестселери» (products ticked in the admin, ?bestseller=1) is one more chip beside the categories:
+  // «Усі товари» and the categories lead out of it. The chip is shown once a product is ticked.
+  const [baseProducts, categories, showBestsellers] = await Promise.all([
+    getProducts({ categorySlug: params.category, q: params.q, bestseller: params.bestseller, limit: 1000 }),
     getNonEmptyCategories(),
+    params.bestseller ? true : hasBestsellers(),
   ])
   const facets = getFacets(baseProducts)
   const products = filterProducts(baseProducts, params)
   const activeCategory = categories.find((c) => c.slug === params.category)
+  const allProducts = !params.category && !params.bestseller
   // Nothing matched: offer a few products that can be ordered right now
   const suggestions = products.length
     ? []
@@ -133,21 +150,29 @@ export default async function CatalogPage({
 
   return (
     <div className="lg:grid lg:grid-cols-[265px_1fr] lg:gap-x-10">
-      {activeCategory?.slug && (
+      {(activeCategory?.slug || params.bestseller) && (
         <JsonLd
           data={breadcrumbsLd([
             { name: 'Головна', url: '/' },
             { name: 'Каталог', url: '/catalog' },
-            { name: activeCategory.title, url: `/catalog?category=${encodeURIComponent(activeCategory.slug)}` },
+            activeCategory?.slug
+              ? { name: activeCategory.title, url: `/catalog?category=${encodeURIComponent(activeCategory.slug)}` }
+              : { name: 'Бестселери', url: '/catalog?bestseller=1' },
           ])}
         />
       )}
       {/* Heading above the grid, left-aligned like everything under it; on desktop it sits in the right column */}
       <div className="lg:col-start-2">
-        <Breadcrumbs items={[{ name: 'Головна', href: '/' }, { name: activeCategory ? activeCategory.title : 'Каталог' }]} />
+        <Breadcrumbs
+          items={
+            params.bestseller
+              ? [{ name: 'Головна', href: '/' }, { name: 'Каталог', href: '/catalog' }, { name: 'Бестселери' }]
+              : [{ name: 'Головна', href: '/' }, { name: activeCategory ? activeCategory.title : 'Каталог' }]
+          }
+        />
         {/* Same voice as the home page's "Ніжність щодня": large serif in normal case, no caps and tracking */}
         <h1 className="heading-page mt-2">
-          {activeCategory ? activeCategory.title : 'Каталог'}
+          {activeCategory ? activeCategory.title : params.bestseller ? 'Бестселери' : 'Каталог'}
         </h1>
       </div>
 
@@ -161,9 +186,18 @@ export default async function CatalogPage({
             aria-label="Категорії"
             className="-mx-[var(--gutter)] order-2 flex min-w-0 gap-2 overflow-x-auto px-[var(--gutter)] [scrollbar-width:none] lg:order-1 lg:mx-0 lg:flex-wrap lg:px-0 [&::-webkit-scrollbar]:hidden"
           >
-            <Link href={catalogUrl({ q: params.q })} className={chip(!params.category)} aria-current={!params.category ? 'page' : undefined}>
+            <Link href={catalogUrl({ q: params.q })} className={chip(allProducts)} aria-current={allProducts ? 'page' : undefined}>
               Усі товари
             </Link>
+            {showBestsellers && (
+              <Link
+                href={catalogUrl({ q: params.q, bestseller: '1' })}
+                className={chip(params.bestseller)}
+                aria-current={params.bestseller ? 'page' : undefined}
+              >
+                Бестселери
+              </Link>
+            )}
             {categories.map((cat) => (
               <Link
                 key={cat.id}

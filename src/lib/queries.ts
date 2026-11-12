@@ -16,6 +16,8 @@ export async function getProducts(options?: {
   categorySlug?: string
   /** Search by title (case-insensitive). */
   q?: string
+  /** Only products ticked «Бестселер» in the admin. */
+  bestseller?: boolean
   limit?: number
 }): Promise<Product[]> {
   const payload = await getPayload()
@@ -34,6 +36,10 @@ export async function getProducts(options?: {
     where.title = { like: options.q.trim() }
   }
 
+  if (options?.bestseller) {
+    where.bestseller = { equals: true }
+  }
+
   const result = await payload.find({
     collection: 'products',
     where,
@@ -48,6 +54,19 @@ export async function getProducts(options?: {
   // as a separate tile. The color link only works on the product page
   // through the switcher (getColorVariants).
   return result.docs
+}
+
+/**
+ * Whether any active product is ticked «Бестселер». Until the owner ticks one,
+ * the header hides the «Бестселери» link, so it never leads to an empty page.
+ */
+export async function hasBestsellers(): Promise<boolean> {
+  const payload = await getPayload()
+  const { totalDocs } = await payload.count({
+    collection: 'products',
+    where: { active: { equals: true }, bestseller: { equals: true } },
+  })
+  return totalDocs > 0
 }
 
 /** Get one product by slug (for the product page). */

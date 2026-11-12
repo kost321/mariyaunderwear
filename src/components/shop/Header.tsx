@@ -11,13 +11,19 @@ import { cn } from '@/lib/utils'
 import { HeaderSearch } from './HeaderSearch'
 import { MobileMenu, type MenuCategory } from './MobileMenu'
 
-// No "Головна": the logo in the centre already leads home. The mockup's "Бестселери" is called
-// "Новинки" until products get a bestseller flag: the link leads to the newest products.
+// "Головна · Бестселери · Каталог" as in the mockup, plus "Новинки" (the newest products).
+// "Бестселери" are products ticked in the admin; the link is hidden until there is at least one.
 // Used by the desktop nav and the burger menu.
-export const NAV_LINKS = [
-  { href: '/catalog?sort=new', label: 'Новинки' },
-  { href: '/catalog', label: 'Каталог' },
-]
+const BESTSELLERS_LINK = { href: '/catalog?bestseller=1', label: 'Бестселери' }
+
+function navLinks(showBestsellers: boolean) {
+  return [
+    { href: '/', label: 'Головна' },
+    ...(showBestsellers ? [BESTSELLERS_LINK] : []),
+    { href: '/catalog?sort=new', label: 'Новинки' },
+    { href: '/catalog', label: 'Каталог' },
+  ]
+}
 
 const iconButton = 'relative -m-2 flex h-11 w-11 items-center justify-center text-ink transition-opacity hover:opacity-70'
 
@@ -27,7 +33,8 @@ const iconButton = 'relative -m-2 flex h-11 w-11 items-center justify-center tex
  * on other pages it drops a panel with live results over the page (HeaderSearch).
  * Client component because it reads the cart state and opens the menu and the search.
  */
-export function Header({ categories }: { categories: MenuCategory[] }) {
+export function Header({ categories, showBestsellers }: { categories: MenuCategory[]; showBestsellers: boolean }) {
+  const links = navLinks(showBestsellers)
   const { totalCount } = useCart()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -59,8 +66,9 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
           >
             <Image src="/brand/burger.svg" alt="" width={28} height={18} />
           </button>
-          <nav className="hidden items-center gap-9 text-base text-brown lg:flex">
-            {NAV_LINKS.map((link) => (
+          {/* Four links fit beside the centred logo at 1024px only with the smaller gap */}
+          <nav className="hidden items-center gap-6 text-base text-brown lg:flex xl:gap-9">
+            {links.map((link) => (
               <Link key={link.href} href={link.href} className="transition-opacity hover:opacity-70">
                 {link.label}
               </Link>
@@ -127,7 +135,7 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
       <MobileMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        links={NAV_LINKS}
+        links={links}
         categories={categories}
       />
     </header>

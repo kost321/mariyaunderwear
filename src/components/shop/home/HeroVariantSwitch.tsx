@@ -17,7 +17,7 @@ export function HeroVariantSwitch({ active }: { active: HeroVariant }) {
   return (
     <nav
       aria-label="Варіанти першого екрана"
-      className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-full bg-ink/90 p-1 text-sm shadow-lg backdrop-blur"
+      className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 gap-1 rounded-full bg-ink/90 p-1 text-sm shadow-lg backdrop-blur"
     >
       {VARIANTS.map((v) => (
         <Link

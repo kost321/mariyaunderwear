@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Instagram, Search, ShoppingBag, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { CONTACTS } from '@/lib/contacts'
 import { cn } from '@/lib/utils'
+import { HeaderSearch } from './HeaderSearch'
 import { MobileMenu, type MenuCategory } from './MobileMenu'
 
 // No "Головна": the logo in the centre already leads home. The mockup's "Бестселери" is called
@@ -21,26 +23,32 @@ const iconButton = 'relative -m-2 flex h-11 w-11 items-center justify-center tex
 
 /**
  * Store header: navigation on the left (burger on mobile), logo in the center, search and cart on the right.
- * The search icon opens a field under the header that submits to the catalog (/catalog?q=…).
+ * Search: in the catalog the icon focuses the catalog's own search field (CatalogSearch, id "catalog-search");
+ * on other pages it drops a panel with live results over the page (HeaderSearch).
  * Client component because it reads the cart state and opens the menu and the search.
  */
 export function Header({ categories }: { categories: MenuCategory[] }) {
   const { totalCount } = useCart()
+  const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const searchInput = useRef<HTMLInputElement>(null)
+  const closeSearch = useCallback(() => setSearchOpen(false), [])
 
-  // Focus the field when the search opens; Esc closes it
-  useEffect(() => {
-    if (!searchOpen) return
-    searchInput.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSearchOpen(false)
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [searchOpen])
+  // Any navigation (a picked result, Enter, a header link) closes the panel
+  useEffect(() => setSearchOpen(false), [pathname])
+
+  function onSearchClick() {
+    const field = pathname === '/catalog' ? document.getElementById('catalog-search') : null
+    if (field) {
+      field.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      field.focus({ preventScroll: true })
+      return
+    }
+    setSearchOpen((o) => !o)
+  }
 
   return (
-    <header className="bg-white">
+    <header className="relative z-40 bg-white">
       <div className="container grid h-[88px] grid-cols-[1fr_auto_1fr] items-center lg:h-[144px]">
         <div className="flex items-center gap-8">
           <button
@@ -90,7 +98,7 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
           )}
           <button
             type="button"
-            onClick={() => setSearchOpen((o) => !o)}
+            onClick={onSearchClick}
             aria-label={searchOpen ? 'Закрити пошук' : 'Пошук'}
             aria-expanded={searchOpen}
             aria-controls="header-search"
@@ -114,22 +122,7 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
         </div>
       </div>
 
-      {searchOpen && (
-        <div id="header-search" className="container pb-6">
-          {/* Plain GET form: submitting loads /catalog?q=… as a new page, which also closes the panel */}
-          <form action="/catalog" role="search" className="relative">
-            <Search className="absolute left-5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-brown" strokeWidth={1.5} aria-hidden />
-            <input
-              ref={searchInput}
-              type="search"
-              name="q"
-              placeholder="Пошук товарів"
-              aria-label="Пошук товарів"
-              className="h-[50px] w-full rounded-card bg-cream/70 pl-12 pr-6 text-sm text-ink placeholder:text-brown/70 focus:outline-none focus:ring-1 focus:ring-brown/40"
-            />
-          </form>
-        </div>
-      )}
+      {searchOpen && <HeaderSearch onClose={closeSearch} />}
 
       <MobileMenu
         open={menuOpen}

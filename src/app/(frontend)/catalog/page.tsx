@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import type { Product } from '@/payload-types'
 import { getProducts, getNonEmptyCategories } from '@/lib/queries'
+import { isProductInStock } from '@/lib/stock'
 import { filterProducts, getFacets, parseCatalogParams } from '@/lib/catalog'
 import { cn, plural } from '@/lib/utils'
 import { ProductCard } from '@/components/shop/ProductCard'
-import { FilterPanel, SortSelect } from '@/components/shop/catalog/CatalogFilters'
+import { CatalogSearch, FilterPanel, SortSelect } from '@/components/shop/catalog/CatalogFilters'
 import { JsonLd, breadcrumbsLd } from '@/components/shop/JsonLd'
 
 const catalogUrl = (query: Record<string, string | undefined>) => {
@@ -16,7 +18,7 @@ const catalogUrl = (query: Record<string, string | undefined>) => {
  * Nothing matched: say why (search or filters) and offer a way back to the products,
  * instead of a bare "not found".
  */
-function EmptyResult({ params }: { params: ReturnType<typeof parseCatalogParams> }) {
+function EmptyResult({ params, suggestions }: { params: ReturnType<typeof parseCatalogParams>; suggestions: Product[] }) {
   const hasFilters =
     params.sizes.length > 0 ||
     params.colors.length > 0 ||
@@ -26,7 +28,7 @@ function EmptyResult({ params }: { params: ReturnType<typeof parseCatalogParams>
     ? ['Немає товарів з такими фільтрами', 'Спробуйте прибрати частину фільтрів або подивіться весь каталог.']
     : hasFilters
       ? [`За запитом «${params.q}» з такими фільтрами нічого немає`, 'Спробуйте скинути фільтри — можливо, товар є в іншому розмірі чи кольорі.']
-      : [`За запитом «${params.q}» нічого не знайшли`, 'Перевірте написання або спробуйте коротше слово, наприклад «сорочка».']
+      : [`Нічого не знайдено за запитом «${params.q}»`, 'Перевірте написання або спробуйте коротше слово, наприклад «сорочка».']
   const button =
     'flex h-11 min-w-[200px] items-center justify-center rounded-card px-6 text-sm transition-colors'
 
@@ -55,6 +57,18 @@ function EmptyResult({ params }: { params: ReturnType<typeof parseCatalogParams>
           Усі товари
         </Link>
       </div>
+
+      {/* A few products in stock instead of an empty page */}
+      {suggestions.length > 0 && (
+        <div className="mt-14 w-full text-left">
+          <p className="text-sm text-brown">Є в наявності</p>
+          <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:gap-x-10">
+            {suggestions.map((p) => (
+              <ProductCard key={p.id} product={p} sizes="(max-width: 768px) 50vw, 300px" />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -104,6 +118,10 @@ export default async function CatalogPage({
   const facets = getFacets(baseProducts)
   const products = filterProducts(baseProducts, params)
   const activeCategory = categories.find((c) => c.slug === params.category)
+  // Nothing matched: offer a few products that can be ordered right now
+  const suggestions = products.length
+    ? []
+    : (await getProducts({ limit: 30 })).filter((p) => isProductInStock(p.sizes)).slice(0, 3)
 
   // Capsules like the site's buttons (rounded-full = the 26px radius at this height)
   const chip = (active: boolean) =>
@@ -139,29 +157,34 @@ export default async function CatalogPage({
       </div>
 
       {/*
-        Categories: one row of capsules under the heading, scrolling sideways on mobile.
-        No search field here: the header's search icon is the only search on the site (it submits to /catalog?q=…).
+        Categories as one row of capsules and the search field on the right of the same row (on mobile the field
+        goes above the chips). The header's search icon focuses this field instead of opening its own panel.
       */}
-      {categories.length > 0 && (
-        <nav
-          aria-label="Категорії"
-          className="-mx-[var(--gutter)] mt-6 flex gap-2 overflow-x-auto px-[var(--gutter)] [scrollbar-width:none] lg:col-start-2 lg:row-start-2 lg:mx-0 lg:flex-wrap lg:px-0 [&::-webkit-scrollbar]:hidden"
-        >
-          <Link href="/catalog" className={chip(!params.category)} aria-current={!params.category ? 'page' : undefined}>
-            Усі товари
-          </Link>
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/catalog?category=${cat.slug}`}
-              className={chip(params.category === cat.slug)}
-              aria-current={params.category === cat.slug ? 'page' : undefined}
-            >
-              {cat.title}
+      <div className="mt-6 flex flex-col gap-4 lg:col-start-2 lg:row-start-2 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+        {categories.length > 0 && (
+          <nav
+            aria-label="Категорії"
+            className="-mx-[var(--gutter)] order-2 flex min-w-0 gap-2 overflow-x-auto px-[var(--gutter)] [scrollbar-width:none] lg:order-1 lg:mx-0 lg:flex-wrap lg:px-0 [&::-webkit-scrollbar]:hidden"
+          >
+            <Link href={catalogUrl({ q: params.q })} className={chip(!params.category)} aria-current={!params.category ? 'page' : undefined}>
+              Усі товари
             </Link>
-          ))}
-        </nav>
-      )}
+            {categories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={catalogUrl({ category: cat.slug ?? undefined, q: params.q })}
+                className={chip(params.category === cat.slug)}
+                aria-current={params.category === cat.slug ? 'page' : undefined}
+              >
+                {cat.title}
+              </Link>
+            ))}
+          </nav>
+        )}
+        <div className="order-1 lg:order-2 lg:ml-auto">
+          <CatalogSearch value={params.q} />
+        </div>
+      </div>
 
       <div className="mt-8 lg:col-start-1 lg:row-span-2 lg:row-start-2 lg:mt-6">
         <FilterPanel params={params} facets={facets} />
@@ -170,16 +193,6 @@ export default async function CatalogPage({
       <div className="mt-8 lg:col-start-2 lg:row-start-3">
         <div className="mb-6 flex items-center justify-between text-sm text-brown/60">
           <p>
-            {params.q && (
-              // The query has no field of its own on this page: it shows as a capsule with a reset cross
-              <Link
-                href={catalogUrl({ category: params.category })}
-                aria-label={`Скинути пошук «${params.q}»`}
-                className="mr-3 inline-flex h-8 items-center gap-2 rounded-full bg-cream/70 pl-3.5 pr-3 text-ink transition-colors hover:bg-cream"
-              >
-                Пошук «{params.q}»<span aria-hidden className="text-base leading-none text-brown">×</span>
-              </Link>
-            )}
             {products.length} {plural(products.length, ['товар', 'товари', 'товарів'])}
           </p>
           <SortSelect value={params.sort} />
@@ -192,7 +205,7 @@ export default async function CatalogPage({
             ))}
           </div>
         ) : (
-          <EmptyResult params={params} />
+          <EmptyResult params={params} suggestions={suggestions} />
         )}
       </div>
     </div>

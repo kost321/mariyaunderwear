@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Search, X } from 'lucide-react'
 import type { CatalogFacets, CatalogParams } from '@/lib/catalog'
 import { cn, colorLabel, isLightColor } from '@/lib/utils'
 
@@ -277,5 +277,78 @@ export function SortSelect({ value }: { value: CatalogParams['sort'] }) {
         ))}
       </select>
     </label>
+  )
+}
+
+/**
+ * Catalog search field next to the category chips. The grid filters as you type: the query goes into
+ * the URL (?q=…) after a short pause and the server re-renders the list without a page reload, so
+ * filters, sorting and links keep working with it. The header's search icon focuses this field on /catalog.
+ */
+export function CatalogSearch({ value }: { value?: string }) {
+  const { update, pending } = useUpdateParams()
+  const [q, setQ] = useState(value ?? '')
+  const field = useRef<HTMLInputElement>(null)
+  const sent = useRef(value ?? '')
+
+  // The query changed from outside (a link, the back button): show it, unless the shopper is typing
+  useEffect(() => {
+    if (document.activeElement !== field.current) setQ(value ?? '')
+    sent.current = value ?? ''
+  }, [value])
+
+  useEffect(() => {
+    const next = q.trim()
+    if (next === sent.current) return
+    const timer = setTimeout(() => {
+      sent.current = next
+      update({ q: next || undefined })
+    }, 300)
+    return () => clearTimeout(timer)
+    // update is recreated on each render; the query is the only trigger
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q])
+
+  return (
+    <form
+      role="search"
+      className="relative w-full lg:w-[280px] lg:shrink-0"
+      onSubmit={(e) => {
+        e.preventDefault()
+        sent.current = q.trim()
+        update({ q: q.trim() || undefined })
+        field.current?.blur()
+      }}
+    >
+      <Search
+        className={cn('absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brown transition-opacity', pending && 'opacity-50')}
+        strokeWidth={1.5}
+        aria-hidden
+      />
+      <input
+        ref={field}
+        id="catalog-search"
+        type="search"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Пошук"
+        aria-label="Пошук товарів"
+        autoComplete="off"
+        className="h-10 w-full rounded-full border border-brown/30 bg-white pl-10 pr-10 text-sm text-ink placeholder:text-brown/70 focus:border-ink focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+      />
+      {q && (
+        <button
+          type="button"
+          onClick={() => {
+            setQ('')
+            field.current?.focus()
+          }}
+          aria-label="Очистити пошук"
+          className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-brown hover:bg-cream"
+        >
+          <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        </button>
+      )}
+    </form>
   )
 }

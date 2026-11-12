@@ -6,7 +6,7 @@ import {
   getColorVariants,
 } from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
-import { ProductDetails } from '@/components/shop/ProductDetails'
+import { ProductDetails, type ProductFacts } from '@/components/shop/ProductDetails'
 import { ProductDescription } from '@/components/shop/ProductDescription'
 import { ProductCard } from '@/components/shop/ProductCard'
 import type { Product } from '@/payload-types'
@@ -15,6 +15,7 @@ import { productMaterials } from '@/lib/catalog'
 import { JsonLd, SITE_URL, breadcrumbsLd } from '@/components/shop/JsonLd'
 import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
 import { modelName } from '@/lib/utils'
+import { formatDescriptionHtml, formatSpecsHtml, paragraphs, specValue } from '@/lib/productText'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -123,6 +124,12 @@ export default async function ProductPage({ params }: Params) {
     { name: product.title, url: `/product/${slug}` },
   ]
 
+  // For the block under the buy button: composition from the characteristics table, the care text
+  const facts: ProductFacts = {
+    composition: specValue(product.descriptionHtml, 'Матеріал', 'Склад')?.toLowerCase() ?? null,
+    care: paragraphs(product.careHtml),
+  }
+
   // Structured data for Google (price, availability, photos in search results).
   // Same rule as the page and the order API (lib/stock): empty stock = not in stock.
   const outOfStock = !isProductInStock(product.sizes)
@@ -163,26 +170,30 @@ export default async function ProductPage({ params }: Params) {
         ]}
       />
       <div className="mt-4 lg:mt-6">
-        <ProductDetails product={product} colorVariants={colorVariants} />
-      </div>
-
-
-      {/* Description, composition and care: under the gallery at full block width, as in the design */}
-      <div className="mx-auto mt-12 lg:mt-[100px] lg:max-w-[911px]">
-        <ProductDescription
-          sections={[
-            { html: product.description },
-            // "Характеристики:" is already in the admin text itself, so we do not add our own heading
-            { html: product.descriptionHtml },
-            { title: 'Догляд', html: product.careHtml },
-          ]}
+        <ProductDetails
+          product={product}
+          colorVariants={colorVariants}
+          facts={facts}
+          description={
+            // Care lives in the "Склад і догляд" block next to the buy button, so it is not repeated here
+            <ProductDescription
+              sections={[
+                { html: formatDescriptionHtml(product.description) },
+                // Some admin texts already start with "Характеристики:"; the heading is added only where it is missing
+                {
+                  title: /Характеристик/i.test(product.descriptionHtml ?? '') ? undefined : 'Характеристики',
+                  html: formatSpecsHtml(product.descriptionHtml),
+                },
+              ]}
+            />
+          }
         />
       </div>
 
       {/* "Frequently bought together": products hand-picked in the admin */}
       {relatedProducts.length > 0 && (
         <section className="mt-16 lg:mt-[100px]">
-          <h2 className="border-b border-brown/40 pb-5 font-serif text-xl uppercase leading-10 tracking-[2px] text-brown">
+          <h2 className="border-b border-brown/15 pb-5 font-serif text-[28px] leading-9 text-ink-text">
             З цим товаром часто купують
           </h2>
           <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-3 lg:gap-x-[41px] lg:gap-y-12">

@@ -50,3 +50,20 @@ export function isLightColor(hex: string | null | undefined): boolean {
   // Perceived brightness (ITU-R BT.601)
   return 0.299 * r + 0.587 * g + 0.114 * b > 225
 }
+
+/**
+ * Short product name for cards: "Нічна сорочка «Ранкова ніжність»" instead of
+ * "Жіноча нічна сорочка «Ранкова ніжність», кавовий". The store sells women's wear only, so "Жіноча"
+ * adds nothing, and the colour is named next to the price. The full title stays in <title>,
+ * on the product page and in the photo's alt text.
+ */
+export function shortProductTitle(title: string): string {
+  const quoteEnd = title.indexOf('»')
+  const name = (quoteEnd === -1 ? title : title.slice(0, quoteEnd + 1))
+    .replace(/^\s*жіноч\S*\s+/i, '')
+    .trim()
+  if (!name) return title
+  // A short «model name» never breaks inside (no lone «Ранкова on one line and ніжність» on the next)
+  const glued = name.replace(/«([^»]{1,22})»/, (m) => m.replace(/ /g, '\u00A0'))
+  return glued.charAt(0).toUpperCase() + glued.slice(1)
+}

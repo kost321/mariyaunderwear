@@ -4,10 +4,11 @@ import { Plus } from 'lucide-react'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { isProductInStock } from '@/lib/stock'
-import { cn, colorLabel, formatPrice, isLightColor } from '@/lib/utils'
+import { cn, colorLabel, formatPrice, isLightColor, shortProductTitle } from '@/lib/utils'
 
 /**
- * Product card: photo with a round "+" button, then the title, the price under it and the colour dot.
+ * Product card: photo with a round "+" button, then the short title (Нічна сорочка «Ранкова ніжність»; the full
+ * one is in alt) and under it the price with the colour: 790 грн ● чайна роза.
  * No category line: in the catalog it repeats the chip that is already selected.
  * A sold-out card says so on the photo and is dimmed, so nobody opens it to find every size crossed out.
  * Server Component, just a link to the product page.
@@ -45,11 +46,11 @@ export function ProductCard({
             quality={90}
             className={cn(
               'object-cover transition-transform duration-500 group-hover:scale-105',
-              soldOut && 'opacity-60 grayscale-[40%]',
+              soldOut && 'opacity-75',
             )}
           />
         ) : (
-          <div className={cn('flex h-full items-center justify-center text-sm text-brown/60', soldOut && 'opacity-50')}>
+          <div className={cn('flex h-full items-center justify-center text-sm text-brown/60', soldOut && 'opacity-75')}>
             немає фото
           </div>
         )}
@@ -70,21 +71,22 @@ export function ProductCard({
 
       {/* flex-1 + mt-auto: the price row sits at the same height in every card of a row, however many lines the title takes */}
       <div className="mt-3 flex flex-1 flex-col gap-1.5">
-        <h3 className={cn('text-sm leading-5 sm:text-[15px] sm:leading-[22px]', soldOut ? 'text-ink/60' : 'text-ink')}>
-          {product.title}
+        <h3 className={cn('text-sm leading-5 sm:text-[15px] sm:leading-[22px]', soldOut ? 'text-ink/75' : 'text-ink')}>
+          {shortProductTitle(product.title)}
         </h3>
         <div className="mt-auto flex items-center gap-2.5">
           <p className="whitespace-nowrap text-sm leading-5 text-brown sm:text-[15px] sm:leading-[22px]">
             {formatPrice(product.price)}
           </p>
           {swatch && (
-            <span className="flex items-center gap-1 text-[11px] text-brown/80">
+            <span className="flex min-w-0 items-center gap-1.5 text-sm leading-5 text-brown/80">
               <span
-                className={cn('h-3 w-3 rounded-full border', isLightColor(swatch) ? 'border-brown/40' : 'border-transparent')}
+                aria-hidden
+                className={cn('h-2.5 w-2.5 shrink-0 rounded-full border', isLightColor(swatch) ? 'border-brown/40' : 'border-transparent')}
                 style={{ backgroundColor: swatch }}
-                {...(swatchName && { title: colorLabel(swatchName) })}
               />
-              {extraColors > 0 && `+${extraColors}`}
+              {swatchName && <span className="truncate">{colorLabel(swatchName).toLowerCase()}</span>}
+              {extraColors > 0 && <span className="shrink-0">+{extraColors}</span>}
             </span>
           )}
         </div>

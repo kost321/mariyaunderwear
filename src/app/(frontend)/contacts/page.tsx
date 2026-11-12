@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
+import { JsonLd, breadcrumbsLd } from '@/components/shop/JsonLd'
 import { SocialLinks } from '@/components/shop/SocialLinks'
 import { CONTACTS, phoneHref } from '@/lib/contacts'
 
@@ -10,98 +12,81 @@ export const metadata: Metadata = {
 // Not prerendered at build time: the layout pulls menu categories from the DB (see cart/page.tsx)
 export const dynamic = 'force-dynamic'
 
-const heading = 'font-serif text-sm uppercase leading-[18px] text-brown'
-const value = 'text-[13px] font-medium leading-[1.3] text-brown'
-const muted = 'text-xs leading-[1.3] text-ink/50'
+// Body text in the colour of the "Про бренд" description; links a shade darker and underlined on hover
+const text = 'text-base leading-7 text-brown'
+const link = 'text-ink underline-offset-4 transition-colors hover:underline'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className={heading}>{title}</h2>
-      <div className="mt-4">{children}</div>
+      {/* Subheadings in the sans, normal case, a step bolder than the text */}
+      <h2 className="text-base font-medium text-ink">{title}</h2>
+      <div className={`mt-2 ${text}`}>{children}</div>
     </section>
   )
 }
 
-function Lines({ lines }: { lines: string[] }) {
-  return (
-    <>
-      {lines.map((line) => (
-        <p key={line} className={muted}>
-          {line}
-        </p>
-      ))}
-    </>
-  )
-}
-
+/**
+ * Contacts. The shop and the wholesale department share one address and one schedule, so each is
+ * shown once. The address is a warehouse with no shop to visit, so it is just «Адреса», without a map.
+ */
 export default function Contacts() {
   return (
-    <div className="py-6 lg:px-[35px] lg:pb-[100px] lg:pt-[50px]">
-      <h1 className="font-serif text-xl uppercase leading-[26px] text-ink">Контакти</h1>
+    <div className="pb-6">
+      <JsonLd
+        data={breadcrumbsLd([
+          { name: 'Головна', url: '/' },
+          { name: 'Контакти', url: '/contacts' },
+        ])}
+      />
+      <Breadcrumbs items={[{ name: 'Головна', href: '/' }, { name: 'Контакти' }]} />
+      <h1 className="heading-page mt-2">Контакти</h1>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[594px_468px] lg:gap-x-0">
-        <div className="flex flex-col gap-6">
-          {CONTACTS.workHours.length > 0 && (
-            <Section title="Графік роботи">
-              <Lines lines={CONTACTS.workHours} />
-            </Section>
-          )}
+      <div className="mt-8 grid gap-x-10 gap-y-7 sm:grid-cols-2 sm:gap-y-10 lg:mt-14 lg:grid-cols-3">
+        {CONTACTS.phone && (
+          <Section title="Клієнтська турбота">
+            <a href={`tel:${phoneHref(CONTACTS.phone)}`} className={link}>
+              {CONTACTS.phone}
+            </a>
+          </Section>
+        )}
 
-          {CONTACTS.phone && (
-            <Section title="Клієнтська турбота">
-              <p className={value}>
-                <a href={`tel:${phoneHref(CONTACTS.phone)}`} className="hover:text-ink">
-                  {CONTACTS.phone}
-                </a>
-              </p>
-              <p className={muted}>прийом дзвінків</p>
-              <Lines lines={CONTACTS.workHours} />
-            </Section>
-          )}
+        {CONTACTS.wholesalePhone && (
+          <Section title="Гуртова співпраця">
+            <a href={`tel:${phoneHref(CONTACTS.wholesalePhone)}`} className={link}>
+              {CONTACTS.wholesalePhone}
+            </a>
+            {CONTACTS.wholesaleContact && <span>, {CONTACTS.wholesaleContact}</span>}
+          </Section>
+        )}
 
-          {(CONTACTS.instagram || CONTACTS.tiktok) && (
-            <Section title="Соцмережі">
-              <SocialLinks items={['instagram', 'tiktok']} size={26} gap={8} />
-            </Section>
-          )}
-        </div>
+        {CONTACTS.email && (
+          <Section title="Пошта">
+            <a href={`mailto:${CONTACTS.email}`} className={link}>
+              {CONTACTS.email}
+            </a>
+          </Section>
+        )}
 
-        <div className="flex flex-col gap-6">
-          {CONTACTS.address && (
-            <Section title="Адреса магазину">
-              <p className={value}>{CONTACTS.postcode}</p>
-              <p className={muted}>{CONTACTS.address}</p>
-            </Section>
-          )}
+        {CONTACTS.workHours.length > 0 && (
+          <Section title="Графік роботи">
+            {CONTACTS.workHours.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </Section>
+        )}
 
-          {CONTACTS.wholesaleAddress && (
-            <Section title="Відділ оптових закупівель">
-              <p className={muted}>{CONTACTS.wholesaleAddress}</p>
-            </Section>
-          )}
+        {CONTACTS.address && (
+          <Section title="Адреса">
+            <p>{CONTACTS.address}</p>
+          </Section>
+        )}
 
-          {CONTACTS.email && (
-            <Section title="Пошта">
-              <p className={muted}>
-                <a href={`mailto:${CONTACTS.email}`} className="hover:text-ink">
-                  {CONTACTS.email}
-                </a>
-              </p>
-            </Section>
-          )}
-
-          {CONTACTS.wholesalePhone && (
-            <Section title="Питання щодо гуртової співпраці">
-              <p className="text-xs leading-[1.3]">
-                <a href={`tel:${phoneHref(CONTACTS.wholesalePhone)}`} className="font-medium text-brown hover:text-ink">
-                  {CONTACTS.wholesalePhone}
-                </a>
-                {CONTACTS.wholesaleContact && <span className="text-ink/50"> ({CONTACTS.wholesaleContact})</span>}
-              </p>
-            </Section>
-          )}
-        </div>
+        {(CONTACTS.instagram || CONTACTS.tiktok) && (
+          <Section title="Соцмережі">
+            <SocialLinks items={['instagram', 'tiktok']} size={24} gap={8} className="-mt-1" />
+          </Section>
+        )}
       </div>
     </div>
   )

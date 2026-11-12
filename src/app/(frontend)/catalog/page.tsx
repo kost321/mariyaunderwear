@@ -8,6 +8,7 @@ import { cn, plural } from '@/lib/utils'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { CatalogSearch, FilterPanel, SortSelect } from '@/components/shop/catalog/CatalogFilters'
 import { JsonLd, breadcrumbsLd } from '@/components/shop/JsonLd'
+import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
 
 const catalogUrl = (query: Record<string, string | undefined>) => {
   const qs = new URLSearchParams(Object.entries(query).filter((e): e is [string, string] => Boolean(e[1]))).toString()
@@ -143,15 +144,9 @@ export default async function CatalogPage({
       )}
       {/* Heading above the grid, left-aligned like everything under it; on desktop it sits in the right column */}
       <div className="lg:col-start-2">
-        <nav aria-label="Хлібні крихти" className="text-xs text-brown/60">
-          <Link href="/" className="hover:text-brown">
-            Головна
-          </Link>
-          {' / '}
-          <span className="text-brown">{activeCategory ? activeCategory.title : 'Каталог'}</span>
-        </nav>
+        <Breadcrumbs items={[{ name: 'Головна', href: '/' }, { name: activeCategory ? activeCategory.title : 'Каталог' }]} />
         {/* Same voice as the home page's "Ніжність щодня": large serif in normal case, no caps and tracking */}
-        <h1 className="mt-2 font-serif text-[36px] leading-[40px] text-ink-text lg:text-[48px] lg:leading-[52px]">
+        <h1 className="heading-page mt-2">
           {activeCategory ? activeCategory.title : 'Каталог'}
         </h1>
       </div>

@@ -36,6 +36,10 @@
 
 @layer components {
   /* Section heading: large Podkova in normal case, the same voice as the hero's "Ніжність щодня" and the catalog title. */
+  /* Page title (h1): catalog, contacts and other content pages */
+  .heading-page {
+    @apply font-serif text-[36px] leading-[40px] text-ink-text lg:text-[48px] lg:leading-[52px];
+  }
   .heading-section {
     @apply font-serif text-[32px] leading-[36px] text-ink-text lg:text-[48px] lg:leading-[52px];
   }

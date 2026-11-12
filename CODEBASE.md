@@ -64,11 +64,13 @@ A custom admin page and sidebar link for importing prices, per-size stock and ma
 The public part of the site.
 
 - **`layout.tsx`**: shared layout (Header, Footer, CartProvider) and site-wide SEO metadata.
-- **`page.tsx`**: home page: hero, collection tabs, fabric block (Materials with `showOnHome`, placeholders until any are marked). Rendered on every request.
-- **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, material, price and sorting are applied in memory (`lib/catalog.ts`).
+- **`page.tsx`**: home page: hero (store description as the only H1 in a small line, short phrase in large type, one photo of the newest model with color swatches that switch it), trust row (delivery, payment, returns, made in Ukraine), "Новинки" slider, fabric block (Materials with `showOnHome`, placeholders until any are marked), "Про бренд" (draft text in `ABOUT_TEXT`). Rendered on every request.
+- **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, material, "in stock only" (`stock=in`), price and sorting are applied in memory (`lib/catalog.ts`); orderable products always come before sold-out ones. Search: a field next to the category chips (`CatalogSearch`) filters the grid as you type (debounced `?q=` without a page reload); on /catalog the header's search icon focuses it. No matches → in-stock suggestions.
 - **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams`, `generateMetadata`, canonical URL and JSON-LD `Product` markup.
 - **`cart/page.tsx`**: cart and checkout.
-- **`api/order/route.ts`**: order endpoint. Validates input, rate-limits by IP, re-reads prices and stock from the database, saves the order and emails the owner.
+- **`api/search/route.ts`**: `GET ?q=` live results for the header search panel (short title, price, colour, thumbnail, stock; in-stock suggestions when nothing matches). Same matching as `/catalog?q=`.
+- **`order/[token]/page.tsx`**: "order accepted" page (number, what happens next, order lines, details and totals on a warm panel). Opens only with a valid signed token, so order numbers cannot be walked through; noindex, no referrer. Delivery is read back from `comment` ("city | branch | comment") until orders get delivery fields.
+- **`api/order/route.ts`**: order endpoint. Validates input, rate-limits by IP, re-reads prices and stock from the database, saves the order and emails the owner. Repeat-safe: the checkout sends an `orderKey` with every retry and `lib/idempotency` returns the already created order instead of a second one (in memory, 30 min). Both the checkout and the quick order send through `lib/submitOrder` (timeout, error texts, order key) and mask the phone with `hooks/usePhoneMask`; the checkout keeps a draft of the form in sessionStorage so a reload or the error screen does not lose it. The checkout locks the button while sending, waits up to 30 s and on failure shows the error under the button with a retry, keeping the form. The answer carries a signed `token` (`lib/orderToken`: id + expiry + HMAC with `PAYLOAD_SECRET`, 30 days); the cart then opens `/order/<token>`, and the customer's email links to it.
 - **`src/app/robots.ts`, `src/app/sitemap.ts`**: `robots.txt` and `sitemap.xml`.
 
 ## Payload `src/app/(payload)/`
@@ -86,9 +88,13 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 ## Components `src/components/`
 
-- **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `ScrollToTop`.
-- **`shop/catalog/`**: `CatalogFilters`.
-- **`shop/home/`**: `HeroSection`, `ProductSlider`, `ArrowButton`.
+- **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `QuantityStepper` (the − 1 + capsule shared by the product page and the cart), `QuickOrderModal` ("Купити в 1 клік": bottom sheet on phones, product line as in the cart, phone mask, success state with the order number; sends through `lib/submitOrder`), `CartPage` (cart as a list of rows, summary panel, consent checked on click; empty state waits for `useCart().ready`; checkout: numbered steps, rounded labelled fields, phone mask `+380 (67) 123 45 67` from `lib/phone` `formatUaPhoneInput`, soft Cyrillic hint for names, "Ваше замовлення" panel, collapsed to one line on phones), `FormField` (label above a rounded input, hint or error under it; also used by `CooperationForm`), `ScrollToTop`.
+- **`shop/LegalPage.tsx`** + **`shop/LegalToc.tsx`**: layout of the offer and privacy pages: breadcrumbs, title, «Редакція від …», text column of ~70 letters, numbered sections; the contents are sticky on the right on desktop and highlight the section being read.
+- **`shop/Breadcrumbs.tsx`**: «Головна / …» trail above page titles (catalog, contacts, cooperation, legal pages).
+- **`shop/HeaderSearch.tsx`**: search panel dropped over the page from the header icon (not on /catalog): live results from `/api/search`, "Усі результати" to the catalog; Esc, a click outside or navigation close it.
+- **`shop/JsonLd.tsx`**: structured data for Google: `JsonLd` (escaped script tag), `storeLd` (store + site search, home page), `breadcrumbsLd` (category and product pages).
+- **`shop/catalog/`**: `CatalogFilters` (sticky sidebar on desktop: size and colour as round buttons, an "in stock only" switch, the price range hidden while every product costs the same).
+- **`shop/home/`**: `HeroSection` (first screen in three layouts: a — text + one photo, default; b — two photos; c — banner on the studio backdrop colour; search moved to the header's search icon), `HeroVariantSwitch` (client demo only: `/?hero=a|b|c` shows a floating switch; remove with the unused layouts once one is chosen), `TrustStrip` (store promises under the hero; keep in sync with `/delivery` and the checkout), `ProductSlider`, `ArrowButton`.
 - **`ui/button.tsx`**: base button with style variants (CVA).
 
 ## Hooks `src/hooks/`
@@ -99,8 +105,10 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 | File | Purpose |
 |------|---------|
-| `queries.ts` | All database queries through the Payload Local API (products, categories, color variants, settings) |
-| `catalog.ts` | In-memory catalog filters and facets |
+| `queries.ts` | All database queries through the Payload Local API (products, categories, color variants, settings). `getNonEmptyCategories` feeds the menu, catalog chips and sitemap, so empty categories stay hidden |
+| `productText.ts` | Tidies product HTML from the admin on the server: description subheadings (short paragraphs without a full stop) become `<h2>`, hyphens become dashes, the characteristics table loses inline styles and multi-paragraph cells become one line; `specValue`/`paragraphs` feed the composition and care in the block under the buy button |
+| `colors.ts` | `COLOR_ORDER`: the one colour order for hero swatches, the catalog colour filter and the product page switch; add new colours here |
+| `catalog.ts` | In-memory catalog filters and facets; `availableFirst` puts orderable products ahead of sold-out ones (catalog and home) |
 | `media.ts` | `getMediaUrl`: builds a Cloudinary URL from a Media object |
 | `payload.ts` | Payload initialization for server code (Local API) |
 | `cloudinaryAdapter.ts` | Custom Payload storage adapter that uploads files to Cloudinary |

@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Search, SlidersHorizontal, X } from 'lucide-react'
 import type { CatalogFacets, CatalogParams } from '@/lib/catalog'
-import { cn } from '@/lib/utils'
+import { cn, colorLabel, isLightColor } from '@/lib/utils'
 
 /** Updates the catalog query params without scrolling the page. */
 function useUpdateParams() {
@@ -40,12 +40,12 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="border-b border-dashed border-[#c9c9c9] py-4">
+    <div className="border-b border-brown/15 py-5">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between text-sm tracking-[2px] text-brown"
+        className="flex w-full items-center justify-between text-sm text-brown"
       >
         {title}
         <ChevronRight className={cn('h-4 w-4 text-ink transition-transform', open && '-rotate-90')} strokeWidth={1.5} />
@@ -55,12 +55,13 @@ function Section({
   )
 }
 
-const STOCK_OPTIONS = [
-  { value: 'in', label: 'В наявності' },
-  { value: 'out', label: 'Немає в наявності' },
-] as const
+const blockClass = 'border-b border-brown/15 py-5'
+const blockTitle = 'text-sm text-brown'
 
-/** Left filter panel: size, availability, color, material, price. On mobile it expands with a button. */
+/**
+ * Left filter panel: size, colour, "in stock only", material, price. On mobile it expands with a button;
+ * on desktop it stays in view while the grid scrolls (sticky).
+ */
 export function FilterPanel({ params, facets }: { params: CatalogParams; facets: CatalogFacets }) {
   const { update, pending } = useUpdateParams()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -68,29 +69,37 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
   const [max, setMax] = useState(params.max?.toString() ?? '')
 
   const activeCount =
-    params.sizes.length + params.colors.length + params.materials.length + (params.stock ? 1 : 0) + (params.min || params.max ? 1 : 0)
+    params.sizes.length + params.colors.length + params.materials.length + (params.inStockOnly ? 1 : 0) + (params.min || params.max ? 1 : 0)
+  // One price for every product: a "from 790 to 790" range filters nothing. Kept while a range is applied, so it can be cleared.
+  const showPrice = facets.priceMin < facets.priceMax || Boolean(params.min || params.max)
+  const selectedColors = facets.colors.filter((c) => params.colors.includes(c.name))
 
   return (
-    <aside className={cn('transition-opacity', pending && 'opacity-60')}>
+    <aside className={cn('transition-opacity lg:sticky lg:top-8', pending && 'opacity-60')}>
+      {/* Mobile: a capsule that unfolds the filters in place (an arrow read as a link to another page) */}
       <button
         type="button"
         onClick={() => setMobileOpen((o) => !o)}
         aria-expanded={mobileOpen}
-        className="flex items-center gap-3 font-serif text-base tracking-[2px] text-ink lg:pointer-events-none"
+        aria-controls="catalog-filters"
+        className={cn(
+          'flex h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors lg:hidden',
+          mobileOpen || activeCount > 0 ? 'border-ink text-ink' : 'border-brown/40 text-brown',
+        )}
       >
-        Фільтри
-        {activeCount > 0 && <span className="font-script text-lg text-pink">({activeCount})</span>}
-        <ChevronRight
-          className={cn('h-4 w-4 transition-transform lg:hidden', mobileOpen && 'rotate-90')}
-          strokeWidth={1.5}
-        />
+        <SlidersHorizontal className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        Фільтри{activeCount > 0 && ` (${activeCount})`}
       </button>
+      {/* Desktop: the panel is always open, so this is just its heading, in the sans like the rest of the sidebar */}
+      <p className="hidden text-base text-ink lg:block">
+        Фільтри{activeCount > 0 && <span className="text-brown/70"> ({activeCount})</span>}
+      </p>
 
-      <div className={cn('mt-6 lg:block', mobileOpen ? 'block' : 'hidden')}>
+      <div id="catalog-filters" className={cn('mt-1 lg:block', mobileOpen ? 'block' : 'hidden')}>
         {facets.sizes.length > 0 && (
-          <div className="border-b border-dashed border-[#c9c9c9] pb-5">
-            <p className="text-sm tracking-[2px] text-brown">Розмір</p>
-            <div className="mt-3 flex flex-wrap gap-1">
+          <div className={blockClass}>
+            <p className={blockTitle}>Розмір</p>
+            <div className="mt-3 flex flex-wrap gap-2">
               {facets.sizes.map((size) => {
                 const on = params.sizes.includes(size)
                 return (
@@ -100,7 +109,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
                     aria-pressed={on}
                     onClick={() => update({ size: toggle(params.sizes, size).join(',') || undefined })}
                     className={cn(
-                      'flex h-[39px] min-w-[38px] items-center justify-center border px-1.5 text-sm font-medium transition-colors',
+                      'flex h-10 min-w-10 items-center justify-center rounded-full border px-3 text-sm transition-colors',
                       on ? 'border-ink bg-ink text-white' : 'border-[#a3a3a3] text-brown hover:border-ink',
                     )}
                   >
@@ -112,64 +121,84 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
           </div>
         )}
 
-        <Section title="Наявність" defaultOpen={Boolean(params.stock)}>
-          <ul className="flex flex-col gap-3">
-            {STOCK_OPTIONS.map((option) => (
-              <li key={option.value}>
-                <label className="flex cursor-pointer items-center gap-3 text-xs tracking-[2px] text-ink">
-                  <input
-                    type="checkbox"
-                    checked={params.stock === option.value}
-                    onChange={() => update({ stock: params.stock === option.value ? undefined : option.value })}
-                    className="h-[22px] w-[22px] shrink-0 appearance-none border border-[#a3a3a3] bg-white checked:border-ink checked:bg-ink"
-                  />
-                  {option.label}
-                  <span className="text-brown/50">({facets.stock[option.value]})</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
+        {/* Colours: round swatches like the sizes, the selected ones ringed and named next to the title */}
         {facets.colors.length > 0 && (
-          <Section title="Колір" defaultOpen={params.colors.length > 0}>
-            <ul className="flex flex-col gap-3">
+          <div className={blockClass}>
+            <p className={blockTitle}>
+              Колір
+              {selectedColors.length > 0 && (
+                <span className="text-ink">: {selectedColors.map((c) => colorLabel(c.name).toLowerCase()).join(', ')}</span>
+              )}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2.5">
               {facets.colors.map((color) => {
                 const on = params.colors.includes(color.name)
                 return (
-                  <li key={color.name}>
-                    <label className="flex cursor-pointer items-center gap-3 text-xs tracking-[2px] text-ink">
-                      <input
-                        type="checkbox"
-                        checked={on}
-                        onChange={() => update({ color: toggle(params.colors, color.name).join(',') || undefined })}
-                        className="h-[22px] w-[22px] shrink-0 appearance-none border border-[#a3a3a3] bg-white checked:border-ink checked:bg-ink"
-                      />
-                      {color.hex && (
-                        <span className="h-3 w-3 shrink-0 rounded-full border border-brown/30" style={{ backgroundColor: color.hex }} />
-                      )}
-                      {color.name}
-                    </label>
-                  </li>
+                  <button
+                    key={color.name}
+                    type="button"
+                    aria-pressed={on}
+                    aria-label={colorLabel(color.name)}
+                    title={colorLabel(color.name)}
+                    onClick={() => update({ color: toggle(params.colors, color.name).join(',') || undefined })}
+                    className={cn(
+                      'h-8 w-8 rounded-full border transition-transform',
+                      isLightColor(color.hex) || !color.hex ? 'border-brown/40' : 'border-transparent',
+                      on ? 'ring-1 ring-ink ring-offset-2' : 'hover:scale-110',
+                    )}
+                    style={{ backgroundColor: color.hex ?? '#ddd' }}
+                  />
                 )
               })}
-            </ul>
-          </Section>
+            </div>
+          </div>
         )}
+
+        {/*
+          One switch instead of "in stock / not in stock" checkboxes: nobody filters for what cannot be bought.
+          Sold-out products are still listed after the available ones, with a badge on the card.
+        */}
+        <div className={blockClass}>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={params.inStockOnly}
+            onClick={() => update({ stock: params.inStockOnly ? undefined : 'in' })}
+            className="flex w-full items-center justify-between gap-3 text-left text-sm text-brown"
+          >
+            <span>
+              Тільки в наявності <span className="text-brown/60">({facets.inStock})</span>
+            </span>
+            <span
+              aria-hidden
+              className={cn(
+                'relative h-6 w-10 shrink-0 rounded-full transition-colors',
+                params.inStockOnly ? 'bg-ink' : 'bg-brown/25',
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+                  params.inStockOnly && 'translate-x-4',
+                )}
+              />
+            </span>
+          </button>
+        </div>
 
         {facets.materials.length > 0 && (
           <Section title="Матеріал" defaultOpen={params.materials.length > 0}>
             <ul className="flex flex-col gap-3">
               {facets.materials.map((material) => (
                 <li key={material.slug}>
-                  <label className="flex cursor-pointer items-center gap-3 text-xs tracking-[2px] text-ink">
+                  <label className="flex cursor-pointer items-center gap-3 text-xs text-ink">
                     <input
                       type="checkbox"
                       checked={params.materials.includes(material.slug)}
                       onChange={() =>
                         update({ material: toggle(params.materials, material.slug).join(',') || undefined })
                       }
-                      className="h-[22px] w-[22px] shrink-0 appearance-none border border-[#a3a3a3] bg-white checked:border-ink checked:bg-ink"
+                      className="h-[22px] w-[22px] shrink-0 appearance-none rounded-md border border-[#a3a3a3] bg-white checked:border-ink checked:bg-ink"
                     />
                     {material.title}
                   </label>
@@ -179,35 +208,37 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
           </Section>
         )}
 
-        <Section title="Ціна" defaultOpen={Boolean(params.min || params.max)}>
-          <form
-            className="flex items-center gap-2"
-            onSubmit={(e) => {
-              e.preventDefault()
-              update({ min: min || undefined, max: max || undefined })
-            }}
-          >
-            {[
-              { value: min, set: setMin, placeholder: `від ${facets.priceMin}`, label: 'Ціна від' },
-              { value: max, set: setMax, placeholder: `до ${facets.priceMax}`, label: 'Ціна до' },
-            ].map((f) => (
-              <input
-                key={f.label}
-                type="number"
-                inputMode="numeric"
-                min={0}
-                value={f.value}
-                onChange={(e) => f.set(e.target.value)}
-                placeholder={f.placeholder}
-                aria-label={f.label}
-                className="h-[39px] w-full min-w-0 border border-[#a3a3a3] px-2 text-xs text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none"
-              />
-            ))}
-            <button type="submit" className="h-[39px] shrink-0 bg-ink px-3 text-xs text-white">
-              OK
-            </button>
-          </form>
-        </Section>
+        {showPrice && (
+          <Section title="Ціна" defaultOpen={Boolean(params.min || params.max)}>
+            <form
+              className="flex items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault()
+                update({ min: min || undefined, max: max || undefined })
+              }}
+            >
+              {[
+                { value: min, set: setMin, placeholder: `від ${facets.priceMin}`, label: 'Ціна від' },
+                { value: max, set: setMax, placeholder: `до ${facets.priceMax}`, label: 'Ціна до' },
+              ].map((f) => (
+                <input
+                  key={f.label}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={f.value}
+                  onChange={(e) => f.set(e.target.value)}
+                  placeholder={f.placeholder}
+                  aria-label={f.label}
+                  className="h-10 w-full min-w-0 rounded-full border border-[#a3a3a3] px-4 text-xs text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none"
+                />
+              ))}
+              <button type="submit" className="h-10 shrink-0 rounded-full bg-ink px-4 text-xs text-white transition-colors hover:bg-ink/90">
+                OK
+              </button>
+            </form>
+          </Section>
+        )}
 
         {activeCount > 0 && (
           <button
@@ -217,7 +248,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
               setMax('')
               update({ size: undefined, color: undefined, material: undefined, stock: undefined, min: undefined, max: undefined })
             }}
-            className="mt-4 text-xs tracking-[1px] text-brown/60 underline-offset-4 hover:underline"
+            className="mt-4 text-xs text-brown/60 underline-offset-4 hover:underline"
           >
             Скинути фільтри
           </button>
@@ -251,5 +282,78 @@ export function SortSelect({ value }: { value: CatalogParams['sort'] }) {
         ))}
       </select>
     </label>
+  )
+}
+
+/**
+ * Catalog search field next to the category chips. The grid filters as you type: the query goes into
+ * the URL (?q=…) after a short pause and the server re-renders the list without a page reload, so
+ * filters, sorting and links keep working with it. The header's search icon focuses this field on /catalog.
+ */
+export function CatalogSearch({ value }: { value?: string }) {
+  const { update, pending } = useUpdateParams()
+  const [q, setQ] = useState(value ?? '')
+  const field = useRef<HTMLInputElement>(null)
+  const sent = useRef(value ?? '')
+
+  // The query changed from outside (a link, the back button): show it, unless the shopper is typing
+  useEffect(() => {
+    if (document.activeElement !== field.current) setQ(value ?? '')
+    sent.current = value ?? ''
+  }, [value])
+
+  useEffect(() => {
+    const next = q.trim()
+    if (next === sent.current) return
+    const timer = setTimeout(() => {
+      sent.current = next
+      update({ q: next || undefined })
+    }, 300)
+    return () => clearTimeout(timer)
+    // update is recreated on each render; the query is the only trigger
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q])
+
+  return (
+    <form
+      role="search"
+      className="relative w-full lg:w-[280px] lg:shrink-0"
+      onSubmit={(e) => {
+        e.preventDefault()
+        sent.current = q.trim()
+        update({ q: q.trim() || undefined })
+        field.current?.blur()
+      }}
+    >
+      <Search
+        className={cn('absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brown transition-opacity', pending && 'opacity-50')}
+        strokeWidth={1.5}
+        aria-hidden
+      />
+      <input
+        ref={field}
+        id="catalog-search"
+        type="search"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Пошук"
+        aria-label="Пошук товарів"
+        autoComplete="off"
+        className="h-10 w-full rounded-full border border-brown/30 bg-white pl-10 pr-10 text-sm text-ink placeholder:text-brown/70 focus:border-ink focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+      />
+      {q && (
+        <button
+          type="button"
+          onClick={() => {
+            setQ('')
+            field.current?.focus()
+          }}
+          aria-label="Очистити пошук"
+          className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-brown hover:bg-cream"
+        >
+          <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        </button>
+      )}
+    </form>
   )
 }

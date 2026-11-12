@@ -1,19 +1,16 @@
 import type { Metadata } from 'next'
-import { Aleo, Great_Vibes, Inter, Podkova } from 'next/font/google'
+import { Inter, Podkova } from 'next/font/google'
 import { CartProvider } from '@/hooks/useCart'
 import { Header } from '@/components/shop/Header'
 import { Footer } from '@/components/shop/Footer'
-import { getCategories } from '@/lib/queries'
+import { getNonEmptyCategories } from '@/lib/queries'
 import './globals.css'
 
-// Body text: the design font (Almarai) has no Cyrillic, so Inter is used. Script: Great Vibes instead of Alex Brush.
+// Two typefaces: Inter for text (the design's Almarai has no Cyrillic) and Podkova for headings,
+// product names and prices (`font-serif`). The script font stays only in the logo image; the
+// English serif (Aleo) was never used, the site is Ukrainian only.
 const sans = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-sans' })
-const script = Great_Vibes({ subsets: ['latin', 'cyrillic'], weight: '400', variable: '--font-script' })
-// Serif text (headings, product names, prices) per the design "Typograpy" page: Podkova for Ukrainian,
-// Aleo for English. `font-serif` picks one by <html lang> (globals.css). Aleo has no Cyrillic and is not
-// preloaded, so Ukrainian pages never download it.
-const serifUk = Podkova({ subsets: ['latin', 'cyrillic'], variable: '--font-serif-uk' })
-const serifEn = Aleo({ subsets: ['latin'], variable: '--font-serif-en', preload: false })
+const serif = Podkova({ subsets: ['latin', 'cyrillic'], variable: '--font-serif' })
 
 const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
@@ -21,10 +18,11 @@ const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 export const metadata: Metadata = {
   metadataBase: new URL(serverUrl),
   title: {
-    default: 'Mariya Underwear — магазин одягу',
+    default: 'Жіночі нічні сорочки та домашній одяг — Mariya Underwear',
     template: '%s — Mariya Underwear',
   },
-  description: 'Інтернет-магазин жіночого одягу Mariya Underwear. Нічні сорочки, піжами, халати, комплекти.',
+  description:
+    'Інтернет-магазин Mariya Underwear: жіночі нічні сорочки, піжами, халати та комплекти. Виготовлено в Україні, доставка Новою поштою.',
   openGraph: {
     type: 'website',
     locale: 'uk_UA',
@@ -39,14 +37,15 @@ export default async function FrontendLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Categories for the side menu; if the DB is unavailable the menu renders without them and the site does not crash
-  const categories = (await getCategories().catch(() => [])).flatMap((c) =>
+  // Categories with products for the side menu; if the DB is unavailable the menu renders without them and the site does not crash
+  const categories = (await getNonEmptyCategories().catch(() => [])).flatMap((c) =>
     c.slug ? [{ slug: c.slug, title: c.title }] : [],
   )
 
   return (
-    <html lang="uk" className={`${sans.variable} ${script.variable} ${serifUk.variable} ${serifEn.variable}`}>
-      <body className="flex min-h-screen flex-col bg-background font-sans">
+    <html lang="uk" className={`${sans.variable} ${serif.variable}`}>
+      {/* Room under the footer for the fixed mobile "Add to cart" bar (73px) on product pages */}
+      <body className="flex min-h-screen flex-col bg-background font-sans has-[[data-sticky-buy]]:pb-[73px] lg:has-[[data-sticky-buy]]:pb-0">
         <CartProvider>
           <Header categories={categories} />
           <main className="container flex-1 py-8">{children}</main>

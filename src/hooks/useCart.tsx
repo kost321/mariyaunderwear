@@ -14,10 +14,14 @@ const STORAGE_KEY = 'olga-shop-cart'
 
 interface CartContextValue {
   items: CartItem[]
+  /** false until the cart is read from localStorage: an empty list then does not mean an empty cart */
+  ready: boolean
   totalCount: number
   totalPrice: number
   addItem: (item: CartItem) => void
   removeItem: (index: number) => void
+  /** Puts a removed line back at its old place ("Повернути" in the cart toast) */
+  restoreItem: (item: CartItem, index: number) => void
   updateQuantity: (index: number, quantity: number) => void
   clear: () => void
 }
@@ -73,6 +77,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => prev.filter((_, i) => i !== index))
   }, [])
 
+  const restoreItem = useCallback((item: CartItem, index: number) => {
+    setItems((prev) => [...prev.slice(0, index), item, ...prev.slice(index)])
+  }, [])
+
   const updateQuantity = useCallback((index: number, quantity: number) => {
     setItems((prev) =>
       prev.map((item, i) =>
@@ -95,10 +103,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const value: CartContextValue = {
     items,
+    ready: hydrated,
     totalCount,
     totalPrice,
     addItem,
     removeItem,
+    restoreItem,
     updateQuantity,
     clear,
   }

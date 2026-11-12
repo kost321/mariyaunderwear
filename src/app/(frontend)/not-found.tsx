@@ -11,7 +11,7 @@ export default function NotFound() {
   return (
     <StatusScreen
       title="404"
-      subtitle="not found"
+      subtitle="Сторінку не знайдено"
       text={
         <>
           <p>Можливо, посилання застаріло або адресу введено з помилкою.</p>

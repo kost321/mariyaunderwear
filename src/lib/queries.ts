@@ -3,6 +3,7 @@ import 'server-only'
 import type { Where } from 'payload'
 import { getPayload } from './payload'
 import type { Product, Category, Material } from '@/payload-types'
+import { sortByColor } from '@/lib/colors'
 
 /**
  * Data access layer. All product/category queries go through these
@@ -70,7 +71,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
  * All cards of one model (color variants).
  * Each color is a standalone product with its own slug; they are linked by the `model` field
  * (a relationship to the product-models collection).
- * Returned in the same order as they were created in the admin.
+ * Returned in the site-wide colour order (lib/colors).
  */
 export async function getColorVariants(
   modelId: number | string,
@@ -90,7 +91,7 @@ export async function getColorVariants(
     depth: 1,
   })
 
-  return result.docs
+  return sortByColor(result.docs, (p) => p.colorName)
 }
 
 /** Get all categories (for the menu/filter). */
@@ -105,6 +106,30 @@ export async function getCategories(): Promise<Category[]> {
   })
 
   return result.docs
+}
+
+/**
+ * Categories that have at least one active product (menu, catalog chips, sitemap):
+ * an empty category leads to a "0 товарів" page. A category appears by itself once
+ * an active product is added to it.
+ */
+export async function getNonEmptyCategories(): Promise<Category[]> {
+  const payload = await getPayload()
+  const [categories, products] = await Promise.all([
+    getCategories(),
+    payload.find({
+      collection: 'products',
+      where: { active: { equals: true } },
+      select: { category: true },
+      limit: 5000,
+      depth: 0,
+      pagination: false,
+    }),
+  ])
+  const used = new Set(
+    products.docs.map((p) => String(typeof p.category === 'object' && p.category ? p.category.id : p.category)),
+  )
+  return categories.filter((c) => used.has(String(c.id)))
 }
 
 /** Materials marked "show on home" (fabric block on the home page). */

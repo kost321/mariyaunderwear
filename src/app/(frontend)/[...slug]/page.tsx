@@ -1,4 +1,8 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+
+// The tab title of the 404 page: for this catch-all route Next does not take it from not-found.tsx
+export const metadata: Metadata = { title: 'Сторінку не знайдено' }
 
 /**
  * Any address that matches no page. The site has two root layouts ((frontend) and (payload)),

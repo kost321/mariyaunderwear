@@ -15,7 +15,8 @@
     --muted-foreground: 27 18% 37%;
     --accent: 15 33% 95%;
     --accent-foreground: 20 10% 23%;
-    --destructive: 0 84% 60%;
+    /* Muted brick red (#B3402E): reads as an error, stays in the warm palette */
+    --destructive: 8 59% 44%;
     --destructive-foreground: 0 0% 98%;
     --border: 27 22% 77%;
     --input: 27 22% 77%;
@@ -32,24 +33,31 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
-}
-
-@layer base {
-  /* Language-dependent serif font: Ukrainian (default) — Podkova, English — Aleo. */
-  :root {
-    --font-serif: var(--font-serif-uk);
+  /* Keyboard focus ring in the brand ink instead of the browser's blue. Fields that draw their own focus
+     (focus:outline-none + a dark border) keep it, utilities come after this layer. */
+  :focus-visible {
+    outline: 2px solid #403834;
+    outline-offset: 2px;
   }
-  html[lang='en'] {
-    --font-serif: var(--font-serif-en);
+  /* Browser autofill paints filled fields light blue: keep them white with the site's ink text */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #fff inset;
+    -webkit-text-fill-color: #403834;
+    caret-color: #403834;
+    transition: background-color 9999s ease-out 0s;
   }
 }
 
 @layer components {
-  /* Section heading from the design: Podkova 55px (uk) / Aleo 48px (en), 2px letter spacing, uppercase. */
-  .heading-section {
-    @apply font-serif text-[32px] uppercase leading-[34px] tracking-[2px] lg:text-[55px] lg:leading-10;
+  /* Section heading: large Podkova in normal case, the same voice as the hero's "Ніжність щодня" and the catalog title. */
+  /* Page title (h1): catalog, contacts and other content pages */
+  .heading-page {
+    @apply font-serif text-[36px] leading-[40px] text-ink-text lg:text-[48px] lg:leading-[52px];
   }
-  html[lang='en'] .heading-section {
-    @apply text-[28px] lg:text-[48px];
+  .heading-section {
+    @apply font-serif text-[32px] leading-[36px] text-ink-text lg:text-[48px] lg:leading-[52px];
   }
 }

@@ -6,27 +6,50 @@ import type { CartItem, CheckoutForm } from '@/types/shop'
 import { isSizeAvailable } from '@/lib/stock'
 import { esc, notifyRecipients, str } from '@/lib/mail'
 import { createRateLimiter } from '@/lib/rateLimit'
+import { createIdempotencyCache, idempotencyKey } from '@/lib/idempotency'
 import { isPaymentMethod, paymentMethodLabel } from '@/lib/payment'
-import { normalizeUaPhone } from '@/lib/phone'
+import { normalizeUaPhone, PHONE_ERROR } from '@/lib/phone'
 import { reportFailure } from '@/lib/sentry'
+import { orderToken } from '@/lib/orderToken'
 
 const isRateLimited = createRateLimiter(5, 10 * 60 * 1000)
 
 const BAD_REQUEST = () => NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
 
-export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (isRateLimited(ip)) {
-    return NextResponse.json({ error: 'Забагато спроб. Спробуйте пізніше.' }, { status: 429 })
-  }
+type OrderBody = { items?: CartItem[]; form?: Partial<CheckoutForm>; orderKey?: unknown }
 
-  let body: { items?: CartItem[]; form?: Partial<CheckoutForm> }
+// One order per checkout attempt: the cart sends the same key with every retry (lib/idempotency). The order
+// is saved before the emails and SMS go out, so a slow network can lose the answer of an order that went
+// through; the retry then gets that order back instead of creating a second one.
+const orders = createIdempotencyCache(30 * 60 * 1000)
+
+export async function POST(req: NextRequest) {
+  let body: OrderBody
   try {
     body = await req.json()
   } catch {
     return BAD_REQUEST()
   }
 
+  const key = idempotencyKey(body?.orderKey)
+  // A retry of an order that already went through: the same answer, and it does not count against the limit
+  const done = await orders.done(key)
+  if (done) return NextResponse.json(done.body, { status: done.status })
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: 'Забагато спроб. Спробуйте пізніше.' }, { status: 429 })
+  }
+
+  const res = await orders.run(key, async () => {
+    const answer = await placeOrder(body)
+    return { status: answer.status, body: await answer.json() }
+  })
+  return NextResponse.json(res.body, { status: res.status })
+}
+
+/** Checks the cart against the DB, saves the order and sends the notifications. */
+async function placeOrder(body: OrderBody): Promise<NextResponse> {
   const rawItems = body?.items
   const rawForm = body?.form
   if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > 50 || !rawForm) {
@@ -53,7 +76,7 @@ export async function POST(req: NextRequest) {
   const normalizedPhone = normalizeUaPhone(phone)
   if (!normalizedPhone) {
     return NextResponse.json(
-      { error: 'Вкажіть український номер телефону, наприклад +380 67 123 45 67' },
+      { error: PHONE_ERROR },
       { status: 400 },
     )
   }
@@ -183,6 +206,10 @@ export async function POST(req: NextRequest) {
     },
   })
 
+  // Link to the "order accepted" page (signed, see lib/orderToken): the cart opens it, the customer's email links to it
+  const token = orderToken(order.id)
+  const siteUrl = process.env.NEXT_PUBLIC_SERVER_URL
+
   // Send the emails
   const itemsHtml = items
     .map(
@@ -254,6 +281,7 @@ export async function POST(req: NextRequest) {
           : 'Ми звʼяжемося з вами найближчим часом, щоб підтвердити замовлення і спосіб оплати.'
       }</p>
       ${details}${orderTable}
+      ${siteUrl ? `<p style="margin-top:24px"><a href="${siteUrl}/order/${token}">Переглянути замовлення на сайті</a></p>` : ''}
     `,
           },
         ]
@@ -276,5 +304,5 @@ export async function POST(req: NextRequest) {
     sendSms(form.phone, smsText.orderAccepted(order.id)),
   ])
 
-  return NextResponse.json({ success: true, orderId: order.id })
+  return NextResponse.json({ success: true, orderId: order.id, token })
 }

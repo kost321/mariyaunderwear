@@ -1,29 +1,54 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { Instagram, Search, ShoppingBag, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
+import { CONTACTS } from '@/lib/contacts'
+import { cn } from '@/lib/utils'
+import { HeaderSearch } from './HeaderSearch'
 import { MobileMenu, type MenuCategory } from './MobileMenu'
 
-// Order and names from the mockup. There is no bestseller flag on products yet,
-// so "Бестселери" leads to the newest products (the former "Новинки" link).
+// No "Головна": the logo in the centre already leads home. The mockup's "Бестселери" is called
+// "Новинки" until products get a bestseller flag: the link leads to the newest products.
+// Used by the desktop nav and the burger menu.
 export const NAV_LINKS = [
-  { href: '/', label: 'Головна' },
-  { href: '/catalog?sort=new', label: 'Бестселери' },
+  { href: '/catalog?sort=new', label: 'Новинки' },
   { href: '/catalog', label: 'Каталог' },
 ]
 
+const iconButton = 'relative -m-2 flex h-11 w-11 items-center justify-center text-ink transition-opacity hover:opacity-70'
+
 /**
- * Store header: navigation on the left (burger on mobile), logo in the center, cart on the right.
- * Client component because it reads the cart state and opens the menu.
+ * Store header: navigation on the left (burger on mobile), logo in the center, search and cart on the right.
+ * Search: in the catalog the icon focuses the catalog's own search field (CatalogSearch, id "catalog-search");
+ * on other pages it drops a panel with live results over the page (HeaderSearch).
+ * Client component because it reads the cart state and opens the menu and the search.
  */
 export function Header({ categories }: { categories: MenuCategory[] }) {
   const { totalCount } = useCart()
+  const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const closeSearch = useCallback(() => setSearchOpen(false), [])
+
+  // Any navigation (a picked result, Enter, a header link) closes the panel
+  useEffect(() => setSearchOpen(false), [pathname])
+
+  function onSearchClick() {
+    const field = pathname === '/catalog' ? document.getElementById('catalog-search') : null
+    if (field) {
+      field.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      field.focus({ preventScroll: true })
+      return
+    }
+    setSearchOpen((o) => !o)
+  }
 
   return (
-    <header className="bg-white">
+    <header className="relative z-40 bg-white">
       <div className="container grid h-[88px] grid-cols-[1fr_auto_1fr] items-center lg:h-[144px]">
         <div className="flex items-center gap-8">
           <button
@@ -34,7 +59,7 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
           >
             <Image src="/brand/burger.svg" alt="" width={28} height={18} />
           </button>
-          <nav className="hidden items-center gap-9 text-base tracking-[2px] text-brown lg:flex">
+          <nav className="hidden items-center gap-9 text-base text-brown lg:flex">
             {NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href} className="transition-opacity hover:opacity-70">
                 {link.label}
@@ -43,10 +68,11 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
           </nav>
         </div>
 
-        <Link href="/" aria-label="Mariya Underwear — на головну" className="justify-self-center">
+        {/* The only link home: aria-label names it for screen readers, so the image itself is decorative */}
+        <Link href="/" aria-label="Mariya Underwear, на головну" className="justify-self-center">
           <Image
             src="/brand/logo.jpg"
-            alt="Mariya underwear"
+            alt=""
             width={164}
             height={53}
             priority
@@ -54,25 +80,49 @@ export function Header({ categories }: { categories: MenuCategory[] }) {
           />
         </Link>
 
-        <Link
-          href="/cart"
-          aria-label={totalCount > 0 ? `Кошик, товарів: ${totalCount}` : 'Кошик'}
-          className="relative justify-self-end"
-        >
-          <Image
-            src="/brand/bag.svg"
-            alt=""
-            width={50}
-            height={50}
-            className="h-10 w-10 lg:h-[50px] lg:w-[50px]"
-          />
-          {totalCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-pink px-1 text-[11px] font-medium text-ink">
-              {totalCount}
-            </span>
+        <div className="flex items-center gap-4 justify-self-end lg:gap-6">
+          {/*
+            Many orders of a small Ukrainian brand come through Instagram Direct, so the profile is one tap away.
+            From sm only: on narrow phones three icons do not fit beside the centred logo; there it is in the burger menu.
+          */}
+          {CONTACTS.instagram && (
+            <a
+              href={CONTACTS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className={cn(iconButton, 'hidden sm:flex')}
+            >
+              <Instagram className="h-6 w-6 lg:h-[26px] lg:w-[26px]" strokeWidth={1.25} aria-hidden />
+            </a>
           )}
-        </Link>
+          <button
+            type="button"
+            onClick={onSearchClick}
+            aria-label={searchOpen ? 'Закрити пошук' : 'Пошук'}
+            aria-expanded={searchOpen}
+            aria-controls="header-search"
+            className={iconButton}
+          >
+            {searchOpen ? (
+              <X className="h-6 w-6 lg:h-7 lg:w-7" strokeWidth={1.25} aria-hidden />
+            ) : (
+              <Search className="h-6 w-6 lg:h-7 lg:w-7" strokeWidth={1.25} aria-hidden />
+            )}
+          </button>
+          {/* Thin bag icon in a 44px tap area: the old icon sat in a thick grey ring */}
+          <Link href="/cart" aria-label={totalCount > 0 ? `Кошик, товарів: ${totalCount}` : 'Кошик'} className={iconButton}>
+            <ShoppingBag className="h-6 w-6 lg:h-7 lg:w-7" strokeWidth={1.25} aria-hidden />
+            {totalCount > 0 && (
+              <span className="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 text-[11px] font-medium text-white">
+                {totalCount}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
+
+      {searchOpen && <HeaderSearch onClose={closeSearch} />}
 
       <MobileMenu
         open={menuOpen}

@@ -19,7 +19,6 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
         serif: ['var(--font-serif)', 'Georgia', 'serif'],
-        script: ['var(--font-script)', 'cursive'],
       },
       colors: {
         // Palette from the Figma design

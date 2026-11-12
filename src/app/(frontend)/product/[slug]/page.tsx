@@ -1,19 +1,21 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
-import Link from 'next/link'
 import {
   getProductBySlug,
   getAllProductSlugs,
   getColorVariants,
 } from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
-import { ProductDetails } from '@/components/shop/ProductDetails'
+import { ProductDetails, type ProductFacts } from '@/components/shop/ProductDetails'
 import { ProductDescription } from '@/components/shop/ProductDescription'
 import { ProductCard } from '@/components/shop/ProductCard'
 import type { Product } from '@/payload-types'
 import { isProductInStock } from '@/lib/stock'
 import { productMaterials } from '@/lib/catalog'
+import { JsonLd, SITE_URL, breadcrumbsLd } from '@/components/shop/JsonLd'
+import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
+import { modelName } from '@/lib/utils'
+import { formatDescriptionHtml, formatSpecsHtml, paragraphs, specValue } from '@/lib/productText'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -38,8 +40,6 @@ export async function generateStaticParams() {
   }
 }
 
-const serverUrl = (process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
-
 /** HTML description → plain text (for meta description and JSON-LD). */
 function toPlainText(html?: string | null): string {
   return (html ?? '')
@@ -53,6 +53,10 @@ function toPlainText(html?: string | null): string {
     .replace(/\s+/g, ' ')
     .trim()
 }
+
+// Google shows about 60 characters of a title: the " — Mariya Underwear" suffix is added only when it still fits
+const TITLE_SUFFIX = ' — Mariya Underwear'
+const TITLE_MAX = 60
 
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
@@ -73,7 +77,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     : `${product.title} — купити в магазині Mariya Underwear.`
 
   return {
-    title: product.title,
+    title:
+      product.title.length + TITLE_SUFFIX.length <= TITLE_MAX ? product.title : { absolute: product.title },
     description,
     alternates: { canonical: `/product/${slug}` },
     openGraph: {
@@ -109,6 +114,22 @@ export default async function ProductPage({ params }: Params) {
     (item): item is Product => typeof item === 'object' && item !== null,
   )
 
+  // Breadcrumbs for search results: Головна › category › product
+  const category = typeof product.category === 'object' && product.category !== null ? product.category : null
+  const breadcrumbs = [
+    { name: 'Головна', url: '/' },
+    ...(category?.slug
+      ? [{ name: category.title, url: `/catalog?category=${encodeURIComponent(category.slug)}` }]
+      : [{ name: 'Каталог', url: '/catalog' }]),
+    { name: product.title, url: `/product/${slug}` },
+  ]
+
+  // For the block under the buy button: composition from the characteristics table, the care text
+  const facts: ProductFacts = {
+    composition: specValue(product.descriptionHtml, 'Матеріал', 'Склад')?.toLowerCase() ?? null,
+    care: paragraphs(product.careHtml),
+  }
+
   // Structured data for Google (price, availability, photos in search results).
   // Same rule as the page and the order API (lib/stock): empty stock = not in stock.
   const outOfStock = !isProductInStock(product.sizes)
@@ -130,7 +151,7 @@ export default async function ProductPage({ params }: Params) {
     brand: { '@type': 'Brand', name: 'Mariya Underwear' },
     offers: {
       '@type': 'Offer',
-      url: `${serverUrl}/product/${slug}`,
+      url: `${SITE_URL}/product/${slug}`,
       priceCurrency: 'UAH',
       price: product.price,
       availability: outOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
@@ -138,37 +159,41 @@ export default async function ProductPage({ params }: Params) {
   }
 
   return (
-    // pb-20 leaves room for the fixed "Add to cart" button on mobile
-    <article className="pb-20 lg:pb-0">
-      {/* Escape "<" so the product text cannot close the script tag */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+    <article>
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbsLd(breadcrumbs)} />
+      <Breadcrumbs
+        items={[
+          { name: 'Головна', href: '/' },
+          { name: 'Каталог', href: '/catalog' },
+          { name: modelName(product.title) },
+        ]}
       />
-      <nav className="mb-6 hidden lg:block">
-        <Link href="/catalog" aria-label="Назад до каталогу" className="inline-block transition-opacity hover:opacity-70">
-          <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="h-[14px] w-[61px]" />
-        </Link>
-      </nav>
-
-      <ProductDetails product={product} colorVariants={colorVariants} />
-
-      {/* Description, composition and care: under the gallery at full block width, as in the design */}
-      <div className="mx-auto mt-12 lg:mt-[100px] lg:max-w-[911px]">
-        <ProductDescription
-          sections={[
-            { html: product.description },
-            // "Характеристики:" is already in the admin text itself, so we do not add our own heading
-            { html: product.descriptionHtml },
-            { title: 'Догляд', html: product.careHtml },
-          ]}
+      <div className="mt-4 lg:mt-6">
+        <ProductDetails
+          product={product}
+          colorVariants={colorVariants}
+          facts={facts}
+          description={
+            // Care lives in the "Склад і догляд" block next to the buy button, so it is not repeated here
+            <ProductDescription
+              sections={[
+                { html: formatDescriptionHtml(product.description) },
+                // Some admin texts already start with "Характеристики:"; the heading is added only where it is missing
+                {
+                  title: /Характеристик/i.test(product.descriptionHtml ?? '') ? undefined : 'Характеристики',
+                  html: formatSpecsHtml(product.descriptionHtml),
+                },
+              ]}
+            />
+          }
         />
       </div>
 
       {/* "Frequently bought together": products hand-picked in the admin */}
       {relatedProducts.length > 0 && (
         <section className="mt-16 lg:mt-[100px]">
-          <h2 className="border-b border-brown/40 pb-5 font-serif text-xl uppercase leading-10 tracking-[2px] text-brown">
+          <h2 className="border-b border-brown/15 pb-5 font-serif text-[28px] leading-9 text-ink-text">
             З цим товаром часто купують
           </h2>
           <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-3 lg:gap-x-[41px] lg:gap-y-12">

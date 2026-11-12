@@ -1,17 +1,17 @@
-import Image from 'next/image'
 import Link from 'next/link'
 
-const button =
-  'flex h-[49px] w-full max-w-[257px] items-center justify-center rounded-card font-serif text-[15px] uppercase transition-opacity hover:opacity-80'
+// The same pair of buttons as in "Про бренд" on the home page
+const button = 'flex h-11 w-full max-w-[240px] items-center justify-center rounded-card text-sm transition-colors'
 
 /** Dark filled pill ("спробувати ще раз", "до каталогу"). */
-export const primaryButton = `${button} bg-ink text-sand`
-/** Outlined pill ("на головну"). */
-export const secondaryButton = `${button} border-2 border-ink/50 text-ink/50`
+export const primaryButton = `${button} bg-ink text-white hover:bg-ink/90`
+/** Outlined pill in the text colour ("на головну"). */
+export const secondaryButton = `${button} border border-brown/50 text-brown hover:border-ink hover:text-ink`
 
 /**
- * Full-page status screens from the mockup (error / 404 / loading):
- * huge pale word, a short explanation and optional buttons.
+ * Full-page status screens (error / 404): a large muted code in the warm sand of the palette, the title in
+ * the page-title style (normal case, like "Каталог"), a short explanation in the body text colour and buttons.
+ * With a subtitle the code is decoration and the subtitle is the page's h1.
  */
 export function StatusScreen({
   title,
@@ -20,20 +20,27 @@ export function StatusScreen({
   children,
 }: {
   title: string
-  /** Smaller second line under the title ("not found") */
+  /** The page title under the code ("Сторінку не знайдено"); without it the title itself is the h1 */
   subtitle?: string
   text: React.ReactNode
   children?: React.ReactNode
 }) {
+  const code = 'font-serif text-[96px] leading-none text-sand sm:text-[160px]'
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
-      <h1 className="font-serif uppercase leading-none tracking-[2px] text-ink/50">
-        <span className="block text-[72px] sm:text-[128px]">{title}</span>
-        {subtitle && <span className="mt-1 block text-[40px] sm:mt-0 sm:text-[72px]">{subtitle}</span>}
-      </h1>
-      <div className="mt-6 text-sm leading-[26px] text-brown/50">{text}</div>
+      {subtitle ? (
+        <>
+          <p aria-hidden className={code}>
+            {title}
+          </p>
+          <h1 className="heading-page mt-4">{subtitle}</h1>
+        </>
+      ) : (
+        <h1 className={code}>{title}</h1>
+      )}
+      <div className="mt-5 max-w-[520px] text-balance text-base leading-7 text-brown">{text}</div>
       {children && (
-        <div className="mt-6 flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-[59px]">
+        <div className="mt-8 flex w-full flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
           {children}
         </div>
       )}
@@ -46,25 +53,5 @@ export function HomeLink() {
     <Link href="/" className={secondaryButton}>
       На головну
     </Link>
-  )
-}
-
-/**
- * Loading screen for loading.tsx. Used only on pages that never return 404 (home, catalog):
- * a loading.tsx makes Next stream the page, so notFound() below it would answer 200 instead of 404.
- * The spinner turns in 12 steps, one per petal.
- */
-export function LoadingScreen() {
-  return (
-    <StatusScreen title="loading" text={<p role="status">Зачекайте, будь ласка, ми готуємо сторінку</p>}>
-      <Image
-        src="/brand/spinner.png"
-        alt=""
-        width={65}
-        height={65}
-        priority
-        className="opacity-80 [animation:spin_1s_steps(12)_infinite] motion-reduce:animate-none"
-      />
-    </StatusScreen>
   )
 }

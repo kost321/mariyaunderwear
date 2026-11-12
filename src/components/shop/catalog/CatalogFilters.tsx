@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { ChevronRight, Search, X } from 'lucide-react'
+import { ChevronRight, Search, SlidersHorizontal, X } from 'lucide-react'
 import type { CatalogFacets, CatalogParams } from '@/lib/catalog'
 import { cn, colorLabel, isLightColor } from '@/lib/utils'
 
@@ -76,21 +76,26 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
 
   return (
     <aside className={cn('transition-opacity lg:sticky lg:top-8', pending && 'opacity-60')}>
+      {/* Mobile: a capsule that unfolds the filters in place (an arrow read as a link to another page) */}
       <button
         type="button"
         onClick={() => setMobileOpen((o) => !o)}
         aria-expanded={mobileOpen}
-        className="flex items-center gap-3 font-serif text-base text-ink lg:pointer-events-none"
+        aria-controls="catalog-filters"
+        className={cn(
+          'flex h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors lg:hidden',
+          mobileOpen || activeCount > 0 ? 'border-ink text-ink' : 'border-brown/40 text-brown',
+        )}
       >
-        Фільтри
-        {activeCount > 0 && <span className="font-sans text-xs tracking-normal text-brown/80">({activeCount})</span>}
-        <ChevronRight
-          className={cn('h-4 w-4 transition-transform lg:hidden', mobileOpen && 'rotate-90')}
-          strokeWidth={1.5}
-        />
+        <SlidersHorizontal className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        Фільтри{activeCount > 0 && ` (${activeCount})`}
       </button>
+      {/* Desktop: the panel is always open, so this is just its heading, in the sans like the rest of the sidebar */}
+      <p className="hidden text-base text-ink lg:block">
+        Фільтри{activeCount > 0 && <span className="text-brown/70"> ({activeCount})</span>}
+      </p>
 
-      <div className={cn('mt-1 lg:block', mobileOpen ? 'block' : 'hidden')}>
+      <div id="catalog-filters" className={cn('mt-1 lg:block', mobileOpen ? 'block' : 'hidden')}>
         {facets.sizes.length > 0 && (
           <div className={blockClass}>
             <p className={blockTitle}>Розмір</p>

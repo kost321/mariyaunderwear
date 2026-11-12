@@ -1,5 +1,6 @@
 import type { Material, Product } from '@/payload-types'
 import { isProductInStock, isSizeAvailable } from '@/lib/stock'
+import { compareColors } from '@/lib/colors'
 
 /**
  * Catalog filters. There are not many products, so we filter in memory after
@@ -148,7 +149,7 @@ export function getFacets(products: Product[]): CatalogFacets {
 
   return {
     sizes: [...sizes].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b)),
-    colors: [...colors].map(([name, hex]) => ({ name, hex })).sort((a, b) => a.name.localeCompare(b.name, 'uk')),
+    colors: [...colors].map(([name, hex]) => ({ name, hex })).sort((a, b) => compareColors(a.name, b.name)),
     materials: [...materials.values()]
       .sort(
         (a, b) =>

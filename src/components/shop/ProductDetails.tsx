@@ -6,6 +6,7 @@ import Link from 'next/link'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { cn, colorLabel, formatPrice } from '@/lib/utils'
+import { sortByColor } from '@/lib/colors'
 import { SizeChart } from '@/components/shop/SizeChart'
 import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
@@ -14,7 +15,7 @@ import { isProductInStock, isSizeAvailable } from '@/lib/stock'
 import { productMaterials } from '@/lib/catalog'
 import type { CartItem } from '@/types/shop'
 
-const photoFrame = 'relative overflow-hidden rounded-card border border-[#d9d9d9] bg-placeholder/40'
+const photoFrame = 'relative overflow-hidden rounded-card bg-placeholder/40'
 
 /**
  * Interactive part of the product card (Figma design "Product"):
@@ -37,7 +38,7 @@ export function ProductDetails({
 
   const images = product.images ?? []
   const sizes = product.sizes ?? []
-  const colors = product.colors ?? []
+  const colors = sortByColor(product.colors ?? [], (c) => c.name)
   const materials = productMaterials(product)
 
   // Show the switcher links only if the model has at least 2 color cards.
@@ -121,7 +122,7 @@ export function ProductDetails({
     <div className="lg:flex lg:items-start lg:justify-center lg:gap-[100px]">
       {/* GALLERY: full-width photo on mobile, thumbnails as a strip under it */}
       <div className="flex flex-col gap-4 lg:flex-row lg:gap-10 lg:pt-[30px]">
-        <div className="relative -mx-[var(--gutter)] aspect-[3/4] overflow-hidden rounded-b-card border-b border-[#d9d9d9] bg-placeholder/40 lg:mx-0 lg:w-[367px] lg:rounded-card lg:border">
+        <div className="relative -mx-[var(--gutter)] aspect-[3/4] overflow-hidden rounded-b-card bg-placeholder/40 lg:mx-0 lg:w-[367px] lg:rounded-card">
 
           {mainUrl && (
             <button
@@ -188,7 +189,7 @@ export function ProductDetails({
             <div className="mt-3 flex flex-wrap gap-1">
               {colorVariants.map((v) => {
                 const isCurrent = v.id === product.id
-                const name = v.colorName ?? v.title
+                const name = v.colorName ? colorLabel(v.colorName) : v.title
                 const style = { backgroundColor: v.colorHex ?? '#ddd' }
                 return isCurrent ? (
                   <span key={v.id} title={name} aria-label={`${name} (обраний)`} aria-current="true" className={swatchClass(true)} style={style} />
@@ -212,8 +213,8 @@ export function ProductDetails({
                   key={c.id ?? c.name}
                   type="button"
                   onClick={() => setColor(c.name)}
-                  title={c.name}
-                  aria-label={c.name}
+                  title={colorLabel(c.name)}
+                  aria-label={colorLabel(c.name)}
                   aria-pressed={color === c.name}
                   className={swatchClass(color === c.name)}
                   style={{ backgroundColor: c.hex ?? '#ddd' }}

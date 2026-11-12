@@ -141,8 +141,8 @@ export default async function CatalogPage({
           ])}
         />
       )}
-      {/* Heading above the grid: on desktop it sits in the right column */}
-      <div className="text-center lg:col-start-2 lg:text-left">
+      {/* Heading above the grid, left-aligned like everything under it; on desktop it sits in the right column */}
+      <div className="lg:col-start-2">
         <nav aria-label="Хлібні крихти" className="text-xs text-brown/60">
           <Link href="/" className="hover:text-brown">
             Головна

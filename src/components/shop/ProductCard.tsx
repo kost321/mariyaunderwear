@@ -36,7 +36,7 @@ export function ProductCard({
   return (
     // flex-col + flex-1 below: cards in a row share the row height, so the prices line up at the bottom
     <Link href={`/product/${product.slug}`} className={cn('group flex flex-col', className)}>
-      <div className="relative aspect-[3/4] overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-card bg-placeholder/40">
         {url ? (
           <Image
             src={url}

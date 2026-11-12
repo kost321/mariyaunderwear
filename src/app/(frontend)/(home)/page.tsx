@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { Product } from '@/payload-types'
 import { getHomeMaterials, getProducts } from '@/lib/queries'
 import { availableFirst } from '@/lib/catalog'
+import { sortByColor } from '@/lib/colors'
 import { getMediaAlt, getMediaUrl } from '@/lib/media'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { HeroSection, type HeroItem, type HeroVariant } from '@/components/shop/home/HeroSection'
@@ -30,7 +31,8 @@ const modelId = (p: Product) => (typeof p.model === 'object' && p.model !== null
 
 /**
  * Hero: the newest product with a photo, plus every other color of its model (each color card is a
- * separate product linked by `model`). The newest stays first, so it is the photo shown on load.
+ * separate product linked by `model`). Swatches follow the site-wide colour order (lib/colors); the newest
+ * is marked `lead`, so its photo is the one shown on load.
  * Colors without a photo are listed too, so the hero shows as many swatches as the catalog has colors;
  * their swatch opens the product page instead of switching the photo.
  */
@@ -39,7 +41,7 @@ function heroItems(products: Product[], withImages: Product[]): HeroItem[] {
   if (!lead) return []
   const leadModel = modelId(lead)
   const colors = leadModel == null ? [lead] : [lead, ...products.filter((p) => p.id !== lead.id && modelId(p) === leadModel)]
-  return colors.map((p) => {
+  return sortByColor(colors, (p) => p.colorName).map((p) => {
     const photo = toPhoto(p)
     return {
       url: photo?.url,
@@ -47,6 +49,7 @@ function heroItems(products: Product[], withImages: Product[]): HeroItem[] {
       href: `/product/${p.slug}`,
       name: p.colorName ? colorLabel(p.colorName) : undefined,
       hex: p.colorHex ?? undefined,
+      lead: p.id === lead.id,
     }
   })
 }
@@ -164,7 +167,7 @@ export default async function HomePage({
                 <>
                   {slot.labelAbove && label}
                   <div
-                    className={`relative ${slot.aspect} overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder`}
+                    className={`relative ${slot.aspect} overflow-hidden rounded-card bg-placeholder`}
                   >
                     {fabric.imageUrl && (
                       <Image src={fabric.imageUrl} alt={fabric.title} fill sizes="(max-width: 640px) 70vw, 317px" className="object-cover" />

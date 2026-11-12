@@ -103,6 +103,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 | File | Purpose |
 |------|---------|
 | `queries.ts` | All database queries through the Payload Local API (products, categories, color variants, settings). `getNonEmptyCategories` feeds the menu, catalog chips and sitemap, so empty categories stay hidden |
+| `colors.ts` | `COLOR_ORDER`: the one colour order for hero swatches, the catalog colour filter and the product page switch; add new colours here |
 | `catalog.ts` | In-memory catalog filters and facets; `availableFirst` puts orderable products ahead of sold-out ones (catalog and home) |
 | `media.ts` | `getMediaUrl`: builds a Cloudinary URL from a Media object |
 | `payload.ts` | Payload initialization for server code (Local API) |

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { cn, plural } from '@/lib/utils'
 
 /** One color of the hero product: its photo (if any), page and swatch. */
-export type HeroItem = { url?: string; alt: string; href: string; name?: string; hex?: string }
+export type HeroItem = { url?: string; alt: string; href: string; name?: string; hex?: string; lead?: boolean }
 
 /**
  * First-screen layouts, switchable for the client demo via /?hero=a|b|c (see HeroVariantSwitch):
@@ -21,7 +21,8 @@ export type HeroVariant = 'a' | 'b' | 'c'
 // (Tailwind needs the class written out literally).
 const STUDIO_BACKDROP = 'bg-[#eaeaec]'
 
-const photoFrame = 'relative block overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40'
+// No outline: a grey line around the grey studio backdrop only added noise
+const photoFrame = 'relative block overflow-hidden rounded-card bg-placeholder/40'
 
 /**
  * Text column shared by all variants. The page's only H1 is the full store description in a small
@@ -107,7 +108,8 @@ function Photo({ item, sizes, className }: { item: HeroItem; sizes: string; clas
 }
 
 export function HeroSection({ items, variant = 'a' }: { items: HeroItem[]; variant?: HeroVariant }) {
-  const [active, setActive] = useState(0)
+  // Swatches are in colour order; the photo shown on load is the lead (newest) colour
+  const [active, setActive] = useState(() => Math.max(0, items.findIndex((i) => i.lead)))
   const current = items[active]
   // Only colors with a photo can be shown; variant b pairs the current one with the next of those
   const withPhotos = items.filter((i) => i.url)

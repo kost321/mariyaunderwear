@@ -3,6 +3,7 @@ import 'server-only'
 import type { Where } from 'payload'
 import { getPayload } from './payload'
 import type { Product, Category, Material } from '@/payload-types'
+import { sortByColor } from '@/lib/colors'
 
 /**
  * Data access layer. All product/category queries go through these
@@ -70,7 +71,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
  * All cards of one model (color variants).
  * Each color is a standalone product with its own slug; they are linked by the `model` field
  * (a relationship to the product-models collection).
- * Returned in the same order as they were created in the admin.
+ * Returned in the site-wide colour order (lib/colors).
  */
 export async function getColorVariants(
   modelId: number | string,
@@ -90,7 +91,7 @@ export async function getColorVariants(
     depth: 1,
   })
 
-  return result.docs
+  return sortByColor(result.docs, (p) => p.colorName)
 }
 
 /** Get all categories (for the menu/filter). */

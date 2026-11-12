@@ -20,7 +20,7 @@ const CHECKOUT_STEPS = [
 ] as const
 type CheckoutStep = (typeof CHECKOUT_STEPS)[number]['id']
 
-const photo = 'relative overflow-hidden rounded-card border border-[#d9d9d9] bg-placeholder/40'
+const photo = 'relative overflow-hidden rounded-card bg-placeholder/40'
 const pill =
   'flex h-10 w-full items-center justify-center rounded-card bg-cream/70 text-sm text-ink transition-colors hover:bg-cream disabled:opacity-60'
 const field =

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -15,20 +15,14 @@ import { primaryButton } from '@/components/shop/StatusScreen'
 import { CONTACTS, phoneHref } from '@/lib/contacts'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 import { PAYMENT_METHODS } from '@/lib/payment'
-import { formatUaPhoneInput, normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
+import { normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
+import { newOrderKey, SERVER_ERROR, submitOrder } from '@/lib/submitOrder'
+import { usePhoneMask } from '@/hooks/usePhoneMask'
 
 type Step = 'cart' | 'checkout'
 
-/** How long to wait for the order API (it answers after the emails and SMS are sent) */
-const ORDER_TIMEOUT_MS = 30_000
-const NETWORK_ERROR = 'Не вдалося звʼязатися з сервером. Перевірте інтернет і спробуйте ще раз: введені дані збережено.'
-const SERVER_ERROR = 'Не вдалося оформити замовлення через збій на сервері. Спробуйте ще раз за хвилину: введені дані збережено.'
-
-/** Key of one checkout attempt; randomUUID needs https (or localhost), the fallback covers the rest. */
-const newOrderKey = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`
+/** Draft of the checkout form in sessionStorage */
+const CHECKOUT_DRAFT_KEY = 'olga-checkout-draft'
 
 // Checkout tabs from the design: Information → Shipping → Payment
 const CHECKOUT_STEPS = [
@@ -275,8 +269,6 @@ export function CartPage() {
   }, [items])
   // Checked on the first step: otherwise a typo only surfaces after delivery and payment are filled in
   const [phoneError, setPhoneError] = useState('')
-  const phoneRef = useRef<HTMLInputElement>(null)
-  const phoneCaret = useRef<number | null>(null)
   // Names are checked softly: Latin letters get a hint (Nova Poshta matches the passport), nothing is blocked
   const [namesTouched, setNamesTouched] = useState(false)
   const latinName = namesTouched && /[a-z]/i.test(firstName + lastName)
@@ -319,11 +311,30 @@ export function CartPage() {
     email: '',
     comment: '',
   })
-  useLayoutEffect(() => {
-    if (phoneCaret.current === null || document.activeElement !== phoneRef.current) return
-    phoneRef.current?.setSelectionRange(phoneCaret.current, phoneCaret.current)
-    phoneCaret.current = null
-  }, [form.phone])
+  const phone = usePhoneMask(form.phone, (next) => {
+    setPhoneError('')
+    setForm((prev) => ({ ...prev, phone: next }))
+  })
+
+  // What is typed survives a reload of the page or a crash screen ("Спробувати ще раз" re-mounts the cart):
+  // kept for this tab only (sessionStorage) and dropped once the order is placed
+  const [restored, setRestored] = useState(false)
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(CHECKOUT_DRAFT_KEY) ?? 'null')
+      if (saved?.form) {
+        setForm((prev) => ({ ...prev, ...saved.form }))
+        setFirstName(saved.firstName ?? '')
+        setLastName(saved.lastName ?? '')
+      }
+    } catch {
+      // a broken draft is ignored
+    }
+    setRestored(true)
+  }, [])
+  useEffect(() => {
+    if (restored) sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify({ form, firstName, lastName }))
+  }, [restored, form, firstName, lastName])
 
   function goTo(next: Step) {
     setRemoved(null)
@@ -338,34 +349,6 @@ export function CartPage() {
     window.scrollTo({ top: 0 })
   }
 
-  /**
-   * Phone mask: reformat on every change and keep the caret after the same digit it was after (applied in
-   * the layout effect below, once React has written the new value). Backspace over a bracket or a space
-   * removes the digit before it, otherwise the mask would put the separator straight back.
-   */
-  function handlePhone(e: React.ChangeEvent<HTMLInputElement>) {
-    let raw = e.target.value
-    let caret = e.target.selectionStart ?? raw.length
-    if (formatUaPhoneInput(raw) === form.phone && raw.length < form.phone.length) {
-      const digitAt = raw.slice(0, caret).search(/\d\D*$/)
-      if (digitAt > UA_PHONE_PREFIX.length - 2) {
-        raw = raw.slice(0, digitAt) + raw.slice(digitAt + 1)
-        caret = digitAt
-      }
-    }
-    const next = formatUaPhoneInput(raw)
-    let pos = next.length
-    if (caret < raw.length) {
-      const digitsBefore = raw.slice(0, caret).replace(/\D/g, '').length
-      pos = 0
-      for (let seen = 0; pos < next.length && seen < digitsBefore; pos++) if (/\d/.test(next[pos])) seen++
-      pos = Math.max(pos, UA_PHONE_PREFIX.length)
-    }
-    phoneCaret.current = pos
-    setPhoneError('')
-    setForm((prev) => ({ ...prev, phone: next }))
-  }
-
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     if (e.target.name === 'phone') setPhoneError('')
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -378,42 +361,22 @@ export function CartPage() {
     submitting.current = true
     setLoading(true)
     setError('')
-    // The server does not answer until the emails and SMS are sent; past this the request is given up
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), ORDER_TIMEOUT_MS)
     try {
-      let res: Response
-      try {
-        res = await fetch('/api/order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          // The same key on every retry: if the first try went through and only its answer was lost,
-          // the server returns that order instead of creating a second one (api/order, lib/idempotency)
-          body: JSON.stringify({
-            items,
-            form: { ...form, customerName: `${firstName.trim()} ${lastName.trim()}`.trim() },
-            orderKey: orderKey.current,
-          }),
-          signal: controller.signal,
-        })
-      } catch {
-        throw new Error(NETWORK_ERROR)
-      }
-      const data = await res.json().catch(() => null)
-      if (!res.ok) {
-        // 400 and 429 carry a message for the customer (out of stock, too many tries); the rest is a server failure
-        throw new Error((res.status === 400 || res.status === 429) && data?.error ? data.error : SERVER_ERROR)
-      }
+      const placed = await submitOrder({
+        items,
+        form: { ...form, customerName: `${firstName.trim()} ${lastName.trim()}`.trim() },
+        orderKey: orderKey.current,
+      })
       // The order has its own page (/order/<signed token>, see lib/orderToken): a reload there shows the
       // saved order again and sends nothing; replace() keeps the back button from returning to the form
       setRedirecting(true)
-      router.replace(data?.token ? `/order/${data.token}` : '/')
+      sessionStorage.removeItem(CHECKOUT_DRAFT_KEY)
+      router.replace(placed.token ? `/order/${placed.token}` : '/')
       clear()
     } catch (e) {
       // Everything typed stays in the form: the customer only presses the button again
       setError(e instanceof Error && e.message ? e.message : SERVER_ERROR)
     } finally {
-      clearTimeout(timer)
       submitting.current = false
       setLoading(false)
     }
@@ -574,7 +537,7 @@ export function CartPage() {
                 e.preventDefault()
                 if (!normalizeUaPhone(form.phone)) {
                   setPhoneError(PHONE_ERROR)
-                  phoneRef.current?.focus()
+                  phone.ref.current?.focus()
                   return
                 }
                 goToCheckoutStep('shipping')
@@ -589,9 +552,9 @@ export function CartPage() {
                   type="tel"
                   inputMode="tel"
                   autoComplete="tel"
-                  inputRef={phoneRef}
+                  inputRef={phone.ref}
                   value={form.phone}
-                  onChange={handlePhone}
+                  onChange={phone.onChange}
                   onBlur={() => {
                     // A half-typed number is pointed out on leaving the field; an untouched one only on "Доставка"
                     if (uaPhoneDigits(form.phone) > 0 && !normalizeUaPhone(form.phone)) setPhoneError(PHONE_ERROR)

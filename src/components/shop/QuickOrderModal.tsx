@@ -1,34 +1,41 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import Image from 'next/image'
+import { Check, Loader2, X } from 'lucide-react'
 import type { CartItem } from '@/types/shop'
-import { normalizeUaPhone, PHONE_ERROR } from '@/lib/phone'
+import { normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
+import { newOrderKey, SERVER_ERROR, submitOrder } from '@/lib/submitOrder'
+import { CONTACTS, phoneHref } from '@/lib/contacts'
+import { colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
+import { usePhoneMask } from '@/hooks/usePhoneMask'
+import { FormField } from '@/components/shop/FormField'
 
 /**
- * "Quick order": a modal with a minimal form (name + phone).
- * Sends an order for this product straight through /api/order, bypassing
- * the cart and the checkout page. A manager calls back to confirm the details.
+ * "Купити в 1 клік": name and phone only, the order goes straight to /api/order and the manager calls back
+ * for delivery and payment. `item` is the current choice on the product page (colour, size, quantity).
  *
- * `item` is built on the product page from the current selection (size, color,
- * quantity).
+ * Laid out like the size chart: a bottom sheet with a grab handle on phones, a centred window on larger
+ * screens, portalled to <body> (inside the sticky product panel it would sit under the header). Sending
+ * works like the checkout (lib/submitOrder): the button is locked, a retry reuses the order key, and the
+ * error stays under the button with the shop's phone. After the order the window says so itself.
  */
-export function QuickOrderModal({
-  open,
-  onClose,
-  item,
-}: {
-  open: boolean
-  onClose: () => void
-  item: CartItem
-}) {
+export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClose: () => void; item: CartItem }) {
   const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [phoneValue, setPhoneValue] = useState(UA_PHONE_PREFIX)
+  const [phoneError, setPhoneError] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [done, setDone] = useState(false)
+  const [orderId, setOrderId] = useState<number | null>(null)
+  const submitting = useRef(false)
+  const orderKey = useRef('')
+  const phone = usePhoneMask(phoneValue, (next) => {
+    setPhoneError('')
+    setPhoneValue(next)
+  })
 
-  // Esc + lock background scrolling while open.
+  // Esc closes, the page under the window does not scroll
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -41,150 +48,172 @@ export function QuickOrderModal({
     }
   }, [open, onClose])
 
-  // Reset the state on every open.
+  // A fresh form and a new order key on every open; name and phone are kept if the window is reopened
+  // without ordering (a misclick on the backdrop should not cost the typing)
   useEffect(() => {
-    if (open) {
-      setName('')
-      setPhone('')
-      setError('')
-      setDone(false)
-    }
+    if (!open) return
+    setError('')
+    setPhoneError('')
+    setOrderId(null)
+    orderKey.current = newOrderKey()
   }, [open])
 
   if (!open) return null
 
+  const title = shortProductTitle(item.title)
+  const variant = [item.color && colorLabel(item.color), item.size, `${item.quantity} шт.`].filter(Boolean).join(' · ')
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !phone.trim()) {
-      setError("Вкажіть ім'я та телефон.")
+    if (submitting.current) return
+    if (!normalizeUaPhone(phoneValue)) {
+      setPhoneError(PHONE_ERROR)
+      phone.ref.current?.focus()
       return
     }
-    // Same check as the order API, so a typo is caught before the request
-    if (!normalizeUaPhone(phone)) {
-      setError(PHONE_ERROR)
-      return
-    }
+    submitting.current = true
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: [item],
-          form: {
-            customerName: name.trim(),
-            phone: phone.trim(),
-            city: '',
-            novaPoshtaBranch: '',
-            comment: 'Швидке замовлення — уточнити деталі по телефону',
-          },
-        }),
+      const placed = await submitOrder({
+        items: [item],
+        form: {
+          customerName: name.trim(),
+          phone: phoneValue,
+          city: '',
+          novaPoshtaBranch: '',
+          comment: 'Швидке замовлення — уточнити деталі по телефону',
+        },
+        orderKey: orderKey.current,
       })
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(res.status === 400 && data?.error ? data.error : '')
-      }
-      setDone(true)
+      setOrderId(placed.orderId)
+      setName('')
+      setPhoneValue(UA_PHONE_PREFIX)
     } catch (e) {
-      setError(
-        e instanceof Error && e.message
-          ? e.message
-          : "Щось пішло не так. Спробуйте ще раз або зателефонуйте нам.",
-      )
+      setError(e instanceof Error && e.message ? e.message : SERVER_ERROR)
     } finally {
+      submitting.current = false
       setLoading(false)
     }
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 sm:items-center sm:p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Швидке замовлення"
+      aria-labelledby="quick-order-title"
     >
       <div
-        className="relative w-full max-w-sm rounded-card bg-white p-8 shadow-xl"
+        className="relative max-h-[90vh] w-full overflow-y-auto overscroll-contain rounded-t-card bg-white px-5 pb-6 pt-3 shadow-xl sm:max-w-md sm:rounded-card sm:px-8 sm:pb-8 sm:pt-7"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Grab handle of the bottom sheet (phones) */}
+        <div aria-hidden className="mx-auto mb-4 h-1 w-10 rounded-full bg-brown/25 sm:hidden" />
+
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 text-2xl leading-none text-muted-foreground hover:text-foreground"
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-brown transition-colors hover:bg-cream hover:text-ink sm:right-4 sm:top-4"
           aria-label="Закрити"
         >
-          ×
+          <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
         </button>
 
-        {done ? (
-          <div className="space-y-4 py-4 text-center">
-            <h2 className="font-serif text-xl uppercase tracking-[1px] text-ink">Дякуємо!</h2>
-            <p className="text-sm text-muted-foreground">
-              Ми зв'яжемось з вами найближчим часом, щоб підтвердити замовлення.
+        {orderId !== null ? (
+          <div className="py-2 text-center" role="status">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f4efeb] text-ink">
+              <Check className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+            </span>
+            <h2 id="quick-order-title" className="mt-4 font-serif text-2xl text-ink-text">
+              Дякуємо!
+            </h2>
+            <p className="mt-2 text-lg font-medium text-ink">Замовлення №{orderId} прийнято</p>
+            <p className="mx-auto mt-2 max-w-[340px] text-balance text-[15px] leading-6 text-brown">
+              Менеджер зателефонує найближчим часом, щоб уточнити доставку й оплату.
             </p>
-            <Button onClick={onClose} className="h-11 w-full rounded-card bg-ink">
-              Закрити
-            </Button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-6 flex h-12 w-full items-center justify-center rounded-card bg-ink text-[15px] text-white transition-colors hover:bg-ink/90"
+            >
+              Продовжити покупки
+            </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <h2 className="pr-8 font-serif text-lg uppercase tracking-[1px] text-ink">Швидке замовлення</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {item.title}
-                {item.size ? `, розмір ${item.size}` : ''}
-                {item.color ? `, ${item.color}` : ''} — {item.quantity} шт.
-              </p>
+          <form onSubmit={handleSubmit}>
+            <h2 id="quick-order-title" className="pr-10 font-serif text-2xl text-ink-text">
+              Швидке замовлення
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-brown">Менеджер зателефонує, щоб уточнити доставку й оплату.</p>
+
+            {/* What is being ordered: the same line as in the cart */}
+            <div className="mt-5 flex items-center gap-3 rounded-2xl bg-[#f4efeb] p-3">
+              <div className="relative aspect-[4/5] w-14 shrink-0 overflow-hidden rounded-xl bg-placeholder/40">
+                {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="56px" className="object-cover" />}
+              </div>
+              <div className="min-w-0 flex-1 text-sm">
+                <p className="leading-5 text-ink">{title}</p>
+                <p className="mt-0.5 text-brown">{variant}</p>
+              </div>
+              <p className="shrink-0 pr-1 text-sm font-medium tabular-nums text-ink">{formatPrice(item.price * item.quantity)}</p>
             </div>
 
-            <div className="space-y-1">
-              <label htmlFor="qo-name" className="text-sm font-medium">
-                Ім'я
-              </label>
-              <input
-                id="qo-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoComplete="name"
-                className="h-11 w-full border border-[#a3a3a3] px-4 text-sm text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none"
+            <div className="mt-5 grid gap-4">
+              <FormField label="Імʼя" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+              <FormField
+                label="Телефон"
                 required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="qo-phone" className="text-sm font-medium">
-                Телефон
-              </label>
-              <input
-                id="qo-phone"
                 type="tel"
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value)
-                  setError('')
-                }}
+                inputMode="tel"
                 autoComplete="tel"
-                placeholder="+380"
-                className="h-11 w-full border border-[#a3a3a3] px-4 text-sm text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none"
-                required
+                inputRef={phone.ref}
+                value={phoneValue}
+                onChange={phone.onChange}
+                onBlur={() => {
+                  if (uaPhoneDigits(phoneValue) > 0 && !normalizeUaPhone(phoneValue)) setPhoneError(PHONE_ERROR)
+                }}
+                placeholder="+380 (__) ___ __ __"
+                error={phoneError}
               />
             </div>
 
+            <button
+              type="submit"
+              disabled={loading}
+              aria-busy={loading || undefined}
+              className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-card bg-ink text-[15px] text-white transition-colors enabled:hover:bg-ink/90 disabled:cursor-wait"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  Оформлюємо…
+                </>
+              ) : error ? (
+                'Спробувати ще раз'
+              ) : (
+                'Замовити'
+              )}
+            </button>
             {error && (
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
+              <div role="alert" className="mt-3 text-sm leading-6">
+                <p className="text-destructive">{error}</p>
+                <p className="mt-1 text-brown">
+                  Якщо не виходить, зателефонуйте нам:{' '}
+                  <a
+                    href={`tel:${phoneHref(CONTACTS.phone)}`}
+                    className="whitespace-nowrap text-ink underline underline-offset-4 hover:no-underline"
+                  >
+                    {CONTACTS.phone}
+                  </a>
+                </p>
+              </div>
             )}
-
-            <Button type="submit" disabled={loading} className="h-11 w-full rounded-card bg-ink text-sm">
-              {loading ? 'Відправляємо…' : 'Замовити'}
-            </Button>
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

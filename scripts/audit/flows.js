@@ -30,15 +30,25 @@ const tabSequence = async (page, n) => {
   return seq
 }
 
-/** Native validation messages of the fields in a form (empty when valid) */
+/**
+ * What each field of a form says after a submit: the site's own message under the field (aria-invalid +
+ * aria-describedby), or the browser's validation bubble if the form still relies on it; then where the
+ * cursor went
+ */
 const validity = (page, selector) =>
-  page.evaluate(
-    (sel) =>
-      [...document.querySelectorAll(sel)].map(
-        (i) => `${(i.labels?.[0]?.innerText || i.name || '?').replace(/\s+/g, ' ')}: ${i.validationMessage || 'ok'}`,
-      ),
-    selector,
-  )
+  page.evaluate((sel) => {
+    const fields = [...document.querySelectorAll(sel)].map((i) => {
+      const label = (i.labels?.[0]?.innerText || i.name || '?').replace(/\s+/g, ' ')
+      if (i.getAttribute('aria-invalid') === 'true') {
+        const note = document.getElementById(i.getAttribute('aria-describedby') || '')
+        return `${label}: ${note?.innerText || 'invalid, no message'}`
+      }
+      const native = i.form && !i.form.noValidate && i.validationMessage
+      return `${label}: ${native ? 'BROWSER BUBBLE ' + native : 'ok'}`
+    })
+    const a = document.activeElement
+    return [...fields, `cursor → ${a?.labels?.[0]?.innerText.replace(/\s+/g, ' ') || a?.tagName.toLowerCase()}`]
+  }, selector)
 
 const currentStep = (page) =>
   page.locator('nav[aria-label="Кроки оформлення"] [aria-current=step]').innerText().then((t) => t.replace(/\s+/g, ' '))
@@ -287,7 +297,7 @@ export async function runFlows(browser, products) {
         await page.waitForTimeout(200)
         note(w, 'info: names filled, phone empty', await page.locator('main [role=alert]').allInnerTexts())
         await phone.fill('+48 512 345 678')
-        note(w, 'phone: typed «+48 512 345 678» →', await phone.inputValue())
+        note(w, 'phone: pasted «+48 512 345 678» →', `${await phone.inputValue()} | ${(await page.locator('main [role=alert]').allInnerTexts()).join(' ')}`)
         await phone.fill('671234567')
         await email.fill('bad-email')
         await page.getByLabel(/Імʼя/).fill('Maria')
@@ -297,7 +307,7 @@ export async function runFlows(browser, products) {
         note(w, 'Latin name hint', await page.locator('main p[aria-live=polite]').innerText())
         await toShipping.click()
         await page.waitForTimeout(200)
-        note(w, 'bad email', await email.evaluate((i) => i.validationMessage || 'accepted'))
+        note(w, 'bad email', await validity(page, 'main form input[name=email]'))
         await email.fill('')
         await toShipping.click()
         await page.waitForTimeout(300)
@@ -319,7 +329,13 @@ export async function runFlows(browser, products) {
         await shot(page, 'flow-checkout-payment', w)
         note(w, 'review', (await page.locator('main section dl').first().innerText()).replace(/\n+/g, ' | '))
         note(w, 'payment method preselected', (await page.locator('input[name=paymentMethod]:checked').count()) > 0)
-        note(w, 'payment form without a method', await page.getByRole('button', { name: 'Підтвердити замовлення' }).evaluate((b) => (b.form.checkValidity() ? 'valid' : 'blocked by the browser')))
+        // No method is picked, so the form stops before sending (and blockSubmissions would abort it anyway)
+        if (!(await page.locator('input[name=paymentMethod]:checked').count())) {
+          await page.getByRole('button', { name: 'Підтвердити замовлення' }).click()
+          await page.waitForTimeout(300)
+          note(w, 'payment without a method', await validity(page, 'main form input[name=paymentMethod]'))
+          await shot(page, 'flow-checkout-payment-error', w, false)
+        }
         await page.getByRole('button', { name: 'Змінити' }).first().click()
         await page.waitForTimeout(300)
         note(w, '«Змінити» → step', `${await currentStep(page)}, name kept: ${await page.getByLabel(/Імʼя/).inputValue()}`)

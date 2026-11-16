@@ -54,13 +54,25 @@ export function pageChecks() {
     ...document.querySelectorAll('a[href], button, input:not([type=hidden]), select, textarea, [role=button], [role=switch], summary'),
   ].filter((el) => !devOverlay(el) && visible(el))
 
-  // Tap targets under 44px (only meaningful on the phone width)
+  // Tap targets under 44px (only meaningful on the phone width). A control may widen its target with an
+  // invisible absolutely positioned ::before (on itself or on its first child, e.g. a swatch inside a link)
+  const hitBox = (el) => {
+    const r = el.getBoundingClientRect()
+    let w = r.width
+    let h = r.height
+    for (const node of [el, el.firstElementChild].filter(Boolean)) {
+      const b = getComputedStyle(node, '::before')
+      if (b.content === 'none' || b.position !== 'absolute') continue
+      const nr = node.getBoundingClientRect()
+      const px = (v) => parseFloat(v) || 0
+      w = Math.max(w, nr.width - px(b.left) - px(b.right))
+      h = Math.max(h, nr.height - px(b.top) - px(b.bottom))
+    }
+    return { w: Math.round(w), h: Math.round(h) }
+  }
   out.smallTargets = interactive
     .filter((el) => !offCanvas(el))
-    .map((el) => {
-      const r = el.getBoundingClientRect()
-      return { el: describe(el), w: Math.round(r.width), h: Math.round(r.height) }
-    })
+    .map((el) => ({ el: describe(el), ...hitBox(el) }))
     .filter((t) => t.w < 44 || t.h < 44)
 
   out.images = [...document.querySelectorAll('img')]

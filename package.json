@@ -12,7 +12,8 @@
     "generate:types": "payload generate:types",
     "payload": "payload",
     "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "audit": "node scripts/audit/run.js"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.93.0",
@@ -36,10 +37,12 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@types/node": "^22.10.0",
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.0",
     "autoprefixer": "^10.4.20",
+    "playwright": "^1.65.1",
     "postcss": "^8.5.29",
     "tailwindcss": "^3.4.17",
     "typescript": "5.7.3"

@@ -8,24 +8,13 @@ import { cn, plural } from '@/lib/utils'
 /** One color of the hero product: its photo (if any), page and swatch. */
 export type HeroItem = { url?: string; alt: string; href: string; name?: string; hex?: string; lead?: boolean }
 
-/**
- * First-screen layouts, switchable for the client demo via /?hero=a|b|c (see HeroVariantSwitch):
- *  a — text + one large photo (default);
- *  b — text + two large photos (two colors side by side);
- *  c — banner: a wide panel in the studio backdrop colour, photo on the right blending into it.
- */
-export type HeroVariant = 'a' | 'b' | 'c'
-
 // Product photos are shot on a flat #eaeaec backdrop (square 1600px): a panel of the same colour
-// makes photo and panel read as one wide banner in variant c. Keep lg:bg-[#eaeaec] in variant c in sync
+// makes photo and panel read as one wide banner. Keep lg:bg-[#eaeaec] on the section in sync
 // (Tailwind needs the class written out literally).
 const STUDIO_BACKDROP = 'bg-[#eaeaec]'
 
-// No outline: a grey line around the grey studio backdrop only added noise
-const photoFrame = 'relative block overflow-hidden rounded-card bg-placeholder/40'
-
 /**
- * Text column shared by all variants. The page's only H1 is the full store description in a small
+ * Text column of the banner. The page's only H1 is the full store description in a small
  * line (for search engines and readers alike); the eye gets a short phrase in large type instead of
  * four lines of caps. The color swatches switch the photo, so one picture still shows the whole range.
  */
@@ -98,78 +87,47 @@ function HeroText({
   )
 }
 
-function Photo({ item, sizes, className }: { item: HeroItem; sizes: string; className?: string }) {
-  if (!item.url) return null
-  return (
-    <Link href={item.href} className={cn(photoFrame, className)}>
-      <Image key={item.url} src={item.url} alt={item.alt} fill priority quality={90} sizes={sizes} className="object-cover" />
-    </Link>
-  )
-}
-
-export function HeroSection({ items, variant = 'a' }: { items: HeroItem[]; variant?: HeroVariant }) {
+/**
+ * First screen: a banner. Desktop — one wide panel in the studio backdrop colour, the text on the left and
+ * the model filling the right half; phones — a regular photo on top and the text below on white.
+ * The swatches switch the photo, so one picture still shows the whole range.
+ */
+export function HeroSection({ items }: { items: HeroItem[] }) {
   // Swatches are in colour order; the photo shown on load is the lead (newest) colour
   const [active, setActive] = useState(() => Math.max(0, items.findIndex((i) => i.lead)))
   const current = items[active]
-  // Only colors with a photo can be shown; variant b pairs the current one with the next of those
-  const withPhotos = items.filter((i) => i.url)
-  const text = (className?: string) => (
-    <HeroText items={items} active={active} onSelect={setActive} className={className} />
-  )
-
-  if (variant === 'b') {
-    // Two colors side by side: the selected one and the next
-    const second = withPhotos.length > 1 ? withPhotos[(withPhotos.indexOf(current) + 1) % withPhotos.length] : undefined
-    return (
-      <section className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:gap-16">
-        {text('lg:py-10')}
-        {current && (
-          <div className="grid grid-cols-2 gap-3 lg:gap-6">
-            <Photo item={current} sizes="(max-width: 1024px) 50vw, 340px" className="aspect-[3/4]" />
-            {second && <Photo item={second} sizes="(max-width: 1024px) 50vw, 340px" className="aspect-[3/4]" />}
-          </div>
-        )}
-      </section>
-    )
-  }
-
-  if (variant === 'c') {
-    return (
-      // Mobile: a regular photo on top and the text below on white (flex-col-reverse), no big grey panel.
-      // Desktop: one wide panel in the backdrop colour, text on the left, the model filling the right half.
-      <section className="flex flex-col-reverse gap-6 lg:relative lg:block lg:overflow-hidden lg:rounded-card lg:bg-[#eaeaec]">
-        {text('lg:relative lg:z-10 lg:max-w-[50%] lg:py-20 lg:pl-16 xl:max-w-[700px]')}
-        {current?.url && (
-          <Link
-            href={current.href}
-            // Desktop: both edges fade into the panel, as some photos have a backdrop a shade off #eaeaec or a light vignette
-            className={cn(
-              'relative block aspect-[4/5] overflow-hidden rounded-card',
-              STUDIO_BACKDROP,
-              'lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-1/2 lg:rounded-none xl:w-[58%] lg:bg-transparent lg:[mask-image:linear-gradient(to_right,transparent,black_25%,black_85%,transparent)]',
-            )}
-          >
-            <Image
-              key={current.url}
-              src={current.url}
-              alt={current.alt}
-              fill
-              priority
-              quality={90}
-              sizes="(max-width: 1024px) 100vw, 720px"
-              // The model is centred in a square shot: cover + a top anchor makes her fill the panel height
-              className="object-cover object-[50%_20%] lg:object-[50%_10%]"
-            />
-          </Link>
-        )}
-      </section>
-    )
-  }
 
   return (
-    <section className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_480px] lg:gap-16">
-      {text('lg:py-10')}
-      {current && <Photo item={current} sizes="(max-width: 1024px) 100vw, 480px" className="aspect-[4/5]" />}
+    <section className="flex flex-col-reverse gap-6 lg:relative lg:block lg:overflow-hidden lg:rounded-card lg:bg-[#eaeaec]">
+      <HeroText
+        items={items}
+        active={active}
+        onSelect={setActive}
+        className="lg:relative lg:z-10 lg:max-w-[50%] lg:py-20 lg:pl-16 xl:max-w-[700px]"
+      />
+      {current?.url && (
+        <Link
+          href={current.href}
+          // Desktop: both edges fade into the panel, as some photos have a backdrop a shade off #eaeaec or a light vignette
+          className={cn(
+            'relative block aspect-[4/5] overflow-hidden rounded-card',
+            STUDIO_BACKDROP,
+            'lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-1/2 lg:rounded-none xl:w-[58%] lg:bg-transparent lg:[mask-image:linear-gradient(to_right,transparent,black_25%,black_85%,transparent)]',
+          )}
+        >
+          <Image
+            key={current.url}
+            src={current.url}
+            alt={current.alt}
+            fill
+            priority
+            quality={90}
+            sizes="(max-width: 1024px) 100vw, 720px"
+            // The model is centred in a square shot: cover + a top anchor makes her fill the panel height
+            className="object-cover object-[50%_20%] lg:object-[50%_10%]"
+          />
+        </Link>
+      )}
     </section>
   )
 }

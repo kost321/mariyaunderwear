@@ -38,3 +38,7 @@ local-data/
 *.dump
 *.dump.gpg
 *.xlsx
+
+# UX/UI audit output (npm run audit): regenerated on every run, the report itself is kept
+/docs/audit/screenshots/
+/docs/audit/raw/

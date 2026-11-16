@@ -321,14 +321,35 @@ export async function runFlows(browser, products) {
         note(w, 'payment method preselected', (await page.locator('input[name=paymentMethod]:checked').count()) > 0)
         note(w, 'payment form without a method', await page.getByRole('button', { name: 'Підтвердити замовлення' }).evaluate((b) => (b.form.checkValidity() ? 'valid' : 'blocked by the browser')))
         await page.getByRole('button', { name: 'Змінити' }).first().click()
-        await page.waitForTimeout(200)
+        await page.waitForTimeout(300)
         note(w, '«Змінити» → step', `${await currentStep(page)}, name kept: ${await page.getByLabel(/Імʼя/).inputValue()}`)
+        // A forward tab must not skip the checks of the step on screen
+        await phone.fill('')
         await page.getByRole('button', { name: /Оплата/ }).first().click()
-        await page.waitForTimeout(200)
-        note(w, 'step tab «Оплата» → step', await currentStep(page))
-        await page.goBack()
-        await page.waitForTimeout(1000)
-        note(w, 'browser Back from checkout →', `${page.url().replace(BASE, '')} | h1: ${await page.locator('main h1').innerText().catch(() => '?')}`)
+        await page.waitForTimeout(300)
+        note(w, 'tab «Оплата» with the phone cleared → step', `${await currentStep(page)} | ${(await page.locator('main [role=alert]').allInnerTexts()).join(' ')}`)
+        await phone.fill('671234567')
+        await page.getByRole('button', { name: /Оплата/ }).first().click()
+        await page.waitForTimeout(300)
+        note(w, 'tab «Оплата» with the phone fixed → step', await currentStep(page))
+
+        // Browser history walks the steps, a reload keeps the place
+        const where = async () => `${page.url().replace(BASE, '')} | ${await currentStep(page).catch(async () => 'h1: ' + (await page.locator('main h1').innerText().catch(() => '?')))}`
+        const history = []
+        for (const [label, go] of [
+          ['Back', () => page.goBack()],
+          ['Back', () => page.goBack()],
+          ['Forward', () => page.goForward()],
+          ['Reload', () => page.reload()],
+        ]) {
+          await go()
+          await page.waitForTimeout(1200)
+          history.push(`${label} → ${await where()}`)
+        }
+        note(w, 'browser history in checkout', history)
+        await page.goto(BASE + '/cart?step=payment', { waitUntil: 'networkidle' })
+        await page.waitForTimeout(800)
+        note(w, 'link to /cart?step=payment (reached) →', await where())
         note(w, 'console', log.console.concat(log.pageErrors))
         await ctx.close()
       })

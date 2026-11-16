@@ -190,13 +190,24 @@ export async function runFlows(browser, products) {
         await page.goto(`${BASE}/product/${products.inStock}`, { waitUntil: 'networkidle' })
         note(w, 'preselected size', await page.locator('main button[aria-pressed="true"]').allInnerTexts())
 
-        // Add without a size (only possible when several sizes are in stock)
+        // Add without a size (only possible when several sizes are in stock), then pick the first one in stock
         const add = page.getByRole('button', { name: /Додати в кошик/ }).locator('visible=true').first()
         if ((await page.locator('main button[aria-pressed="true"]').count()) === 0) {
           await add.click()
           await page.waitForTimeout(300)
           note(w, 'add without a size', await page.locator('main [role=alert]').allInnerTexts())
+          const firstSize = page.locator('main button[aria-pressed="false"]:not([disabled])').first()
+          note(w, 'picked size', await firstSize.innerText())
+          await firstSize.click()
         }
+        const plus = page.getByRole('button', { name: 'Збільшити кількість' }).first()
+        let qty = 1
+        while (!(await plus.isDisabled()) && qty < 10) {
+          await plus.click()
+          qty++
+        }
+        note(w, 'quantity stops at', `${qty} (stock of the size)`)
+        for (let i = 1; i < qty; i++) await page.getByRole('button', { name: 'Зменшити кількість' }).first().click()
 
         const chart = page.getByRole('button', { name: 'Розмірна таблиця' })
         if (await chart.count()) {

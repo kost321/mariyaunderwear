@@ -38,8 +38,8 @@ export function pageChecks() {
     }
     return false
   }
-  // Fixed off-canvas panels (the closed burger menu) are not overflow
-  const offCanvas = (el) => !!el.closest('[aria-hidden="true"]')
+  // Fixed off-canvas panels (the closed burger menu: inert or aria-hidden) are not overflow
+  const offCanvas = (el) => !!el.closest('[aria-hidden="true"], [inert]')
   out.overflowing = [...document.querySelectorAll('body *')]
     .filter((el) => !devOverlay(el) && !offCanvas(el) && visible(el))
     .filter((el) => {
@@ -56,7 +56,7 @@ export function pageChecks() {
 
   // Tap targets under 44px (only meaningful on the phone width)
   out.smallTargets = interactive
-    .filter((el) => !el.closest('[aria-hidden="true"]'))
+    .filter((el) => !offCanvas(el))
     .map((el) => {
       const r = el.getBoundingClientRect()
       return { el: describe(el), w: Math.round(r.width), h: Math.round(r.height) }

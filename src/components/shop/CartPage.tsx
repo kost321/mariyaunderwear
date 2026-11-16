@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Check, ChevronDown, Loader2, ShoppingBag, X } from 'lucide-react'
 import { lineMax, useCart } from '@/hooks/useCart'
 import { cn, colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
@@ -32,6 +32,7 @@ const CHECKOUT_STEPS = [
   { id: 'payment', label: 'Оплата' },
 ] as const
 type CheckoutStep = (typeof CHECKOUT_STEPS)[number]['id']
+const stepIndex = (step: CheckoutStep) => CHECKOUT_STEPS.findIndex((s) => s.id === step)
 
 const photo = 'relative overflow-hidden rounded-card bg-placeholder/40'
 
@@ -260,10 +261,18 @@ function RemovedToast({ onUndo, onClose }: { onUndo: () => void; onClose: () => 
 
 export function CartPage() {
   const { items, ready, totalCount, totalPrice, removeItem, restoreItem, updateQuantity, applyStock, clear } = useCart()
-  const [step, setStep] = useState<Step>('cart')
-  const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('info')
+  const router = useRouter()
+  // The step lives in the address (/cart?step=info|shipping|payment): the browser's Back and Forward walk the
+  // checkout steps instead of leaving the cart, and a reload keeps the place. No ?step is the cart itself.
+  const stepParam = useSearchParams().get('step')
+  const checkoutStep = CHECKOUT_STEPS.find((s) => s.id === stepParam)?.id ?? null
+  const step: Step = checkoutStep ? 'checkout' : 'cart'
   // Furthest step reached; you can also go back to it via the tab
   const [reached, setReached] = useState(0)
+  // The form of the step on screen ("Інформація" or "Доставка"), and where a forward tab click is heading:
+  // the click goes through that form, so its fields are checked before the step is left
+  const stepForm = useRef<HTMLFormElement>(null)
+  const pendingStep = useRef<CheckoutStep | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(false)
@@ -300,7 +309,6 @@ export function CartPage() {
   // The order went through and the "order accepted" page is opening: the cart is already empty by then,
   // so this keeps "Кошик порожній" from flashing for a moment
   const [redirecting, setRedirecting] = useState(false)
-  const router = useRouter()
   // Consent to the public offer: required before checkout
   const [agreed, setAgreed] = useState(false)
   // "Оформити замовлення" stays clickable; pressed without the consent it points at the checkbox
@@ -349,6 +357,10 @@ export function CartPage() {
         setForm((prev) => ({ ...prev, ...saved.form }))
         setFirstName(saved.firstName ?? '')
         setLastName(saved.lastName ?? '')
+        // The consent and the steps passed come back too, so a reload or Back/Forward does not send the
+        // shopper to tick the box again
+        setAgreed(saved.agreed === true)
+        setReached(Math.min(Math.max(Number(saved.reached) || 0, 0), CHECKOUT_STEPS.length - 1))
       }
     } catch {
       // a broken draft is ignored
@@ -356,20 +368,44 @@ export function CartPage() {
     setRestored(true)
   }, [])
   useEffect(() => {
-    if (restored) sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify({ form, firstName, lastName }))
-  }, [restored, form, firstName, lastName])
+    if (restored)
+      sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify({ form, firstName, lastName, agreed, reached }))
+  }, [restored, form, firstName, lastName, agreed, reached])
 
-  function goTo(next: Step) {
+  // A step opened by its address (a reload, Back/Forward, a pasted link) that was not reached yet, or without
+  // the offer consent, falls back to the furthest place the shopper may be
+  useEffect(() => {
+    if (!restored || !ready || !items.length || !checkoutStep) return
+    if (!agreed) router.replace('/cart', { scroll: false })
+    else if (stepIndex(checkoutStep) > reached) router.replace(`/cart?step=${CHECKOUT_STEPS[reached].id}`, { scroll: false })
+  }, [restored, ready, items.length, checkoutStep, agreed, reached, router])
+
+  /** Opens the cart (null) or a checkout step as a new history entry, from the top of the page */
+  function show(next: CheckoutStep | null) {
     setRemoved(null)
-    setStep(next)
+    router.push(next ? `/cart?step=${next}` : '/cart', { scroll: false })
     window.scrollTo({ top: 0 })
   }
 
   function goToCheckoutStep(next: CheckoutStep) {
-    const index = CHECKOUT_STEPS.findIndex((s) => s.id === next)
-    setReached((r) => Math.max(r, index))
-    setCheckoutStep(next)
-    window.scrollTo({ top: 0 })
+    setReached((r) => Math.max(r, stepIndex(next)))
+    show(next)
+  }
+
+  /** Step tab: going back is always open; going forward submits the current step's form, so it is checked */
+  function selectStep(target: CheckoutStep) {
+    if (!checkoutStep || stepIndex(target) <= stepIndex(checkoutStep)) return show(target)
+    if (!stepForm.current?.reportValidity()) return
+    pendingStep.current = target
+    stepForm.current.requestSubmit()
+  }
+
+  /** A step's form passed: on to the tab that was clicked if the steps before it are filled in, else the next step */
+  function advance(next: CheckoutStep) {
+    let target = pendingStep.current ?? next
+    pendingStep.current = null
+    if (target === 'payment' && !(form.city.trim() && form.novaPoshtaBranch.trim())) target = 'shipping'
+    goToCheckoutStep(target)
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -496,7 +532,7 @@ export function CartPage() {
                   consentRef.current?.focus()
                   return
                 }
-                goTo('checkout')
+                goToCheckoutStep('info')
               }}
               className="mt-4 flex h-12 w-full items-center justify-center rounded-card bg-ink text-[15px] text-white transition-colors hover:bg-ink/90"
             >
@@ -519,7 +555,7 @@ export function CartPage() {
     <div className="pb-6">
       <button
         type="button"
-        onClick={() => goTo('cart')}
+        onClick={() => show(null)}
         className="inline-flex items-center gap-2 text-sm text-brown underline-offset-4 transition-colors hover:text-ink hover:underline"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
@@ -549,7 +585,7 @@ export function CartPage() {
             <OrderSummary items={items} total={totalPrice} />
             <button
               type="button"
-              onClick={() => goTo('cart')}
+              onClick={() => show(null)}
               className="mt-4 text-sm text-brown underline underline-offset-4 transition-colors hover:text-ink"
             >
               Змінити в кошику
@@ -560,19 +596,21 @@ export function CartPage() {
 
       <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-16">
         <section className="max-w-[560px]">
-          <CheckoutSteps current={checkoutStep} reached={reached} onSelect={setCheckoutStep} />
+          <CheckoutSteps current={checkoutStep ?? 'info'} reached={reached} onSelect={selectStep} />
 
           {checkoutStep === 'info' && (
             <form
+              ref={stepForm}
               className="mt-8"
               onSubmit={(e) => {
                 e.preventDefault()
                 if (!normalizeUaPhone(form.phone)) {
+                  pendingStep.current = null
                   setPhoneError(PHONE_ERROR)
                   phone.ref.current?.focus()
                   return
                 }
-                goToCheckoutStep('shipping')
+                advance('shipping')
               }}
             >
               <h2 className={subheading}>Контактні дані</h2>
@@ -637,10 +675,11 @@ export function CartPage() {
 
           {checkoutStep === 'shipping' && (
             <form
+              ref={stepForm}
               className="mt-8"
               onSubmit={(e) => {
                 e.preventDefault()
-                goToCheckoutStep('payment')
+                advance('payment')
               }}
             >
               <h2 className={subheading}>Доставка Новою поштою</h2>
@@ -702,7 +741,7 @@ export function CartPage() {
                     <dd className="min-w-0 flex-1 text-ink">{row.value}</dd>
                     <button
                       type="button"
-                      onClick={() => setCheckoutStep(row.step)}
+                      onClick={() => show(row.step)}
                       className="shrink-0 text-brown underline underline-offset-4 transition-colors hover:text-ink"
                     >
                       Змінити
@@ -778,7 +817,7 @@ export function CartPage() {
             </h2>
             <button
               type="button"
-              onClick={() => goTo('cart')}
+              onClick={() => show(null)}
               className="text-sm text-brown underline underline-offset-4 transition-colors hover:text-ink"
             >
               Змінити

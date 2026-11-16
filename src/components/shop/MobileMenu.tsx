@@ -5,11 +5,14 @@ import Link from 'next/link'
 import { Instagram, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CONTACTS } from '@/lib/contacts'
+import { useModalFocus } from '@/hooks/useModalFocus'
 
 export type MenuCategory = { slug: string; title: string }
 
 /**
  * Side menu opened by the burger: navigation + catalog categories.
+ * Closed, it stays in the DOM for the slide animation but is `inert`: its links are out of the Tab order
+ * and hidden from screen readers. Open, the focus moves into it and stays there (useModalFocus).
  */
 export function MobileMenu({
   open,
@@ -22,6 +25,8 @@ export function MobileMenu({
   links: { href: string; label: string }[]
   categories: MenuCategory[]
 }) {
+  const panel = useModalFocus<HTMLElement>(open)
+
   // Esc closes the menu; the page underneath does not scroll
   useEffect(() => {
     if (!open) return
@@ -37,10 +42,11 @@ export function MobileMenu({
   return (
     <div
       className={cn('fixed inset-0 z-50 transition-opacity', open ? 'opacity-100' : 'pointer-events-none opacity-0')}
-      aria-hidden={!open}
+      inert={!open}
     >
       <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
       <aside
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label="Меню"

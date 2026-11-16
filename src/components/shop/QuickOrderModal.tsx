@@ -10,6 +10,7 @@ import { newOrderKey, SERVER_ERROR, submitOrder } from '@/lib/submitOrder'
 import { CONTACTS, phoneHref } from '@/lib/contacts'
 import { colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
 import { usePhoneMask } from '@/hooks/usePhoneMask'
+import { useModalFocus } from '@/hooks/useModalFocus'
 import { FormField } from '@/components/shop/FormField'
 
 /**
@@ -34,6 +35,9 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
     setPhoneError('')
     setPhoneValue(next)
   })
+
+  // Keyboard focus moves into the window and stays there until it closes
+  const panel = useModalFocus<HTMLDivElement>(open)
 
   // Esc closes, the page under the window does not scroll
   useEffect(() => {
@@ -106,6 +110,7 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
       aria-labelledby="quick-order-title"
     >
       <div
+        ref={panel}
         className="relative max-h-[90vh] w-full overflow-y-auto overscroll-contain rounded-t-card bg-white px-5 pb-6 pt-3 shadow-xl sm:max-w-md sm:rounded-card sm:px-8 sm:pb-8 sm:pt-7"
         onClick={(e) => e.stopPropagation()}
       >

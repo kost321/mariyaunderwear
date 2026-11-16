@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { parseSizeChart, sameSize } from '@/lib/productText'
 import { cn } from '@/lib/utils'
+import { useModalFocus } from '@/hooks/useModalFocus'
 
 /**
  * "Розмірна таблиця" link + the chart in a dialog: a bottom sheet on phones (full width, rounded top,
@@ -19,6 +20,8 @@ import { cn } from '@/lib/utils'
 export function SizeChart({ html, selected }: { html?: string | null; selected?: string }) {
   const [open, setOpen] = useState(false)
   const chart = useMemo(() => parseSizeChart(html), [html])
+  // Keyboard focus moves into the window and stays there until it closes
+  const panel = useModalFocus<HTMLDivElement>(open)
 
   useEffect(() => {
     if (!open) return
@@ -57,6 +60,7 @@ export function SizeChart({ html, selected }: { html?: string | null; selected?:
             aria-labelledby="size-chart-title"
           >
             <div
+              ref={panel}
               className="relative max-h-[85vh] w-full overflow-y-auto overscroll-contain rounded-t-card bg-white px-5 pb-6 pt-3 shadow-xl sm:max-w-xl sm:rounded-card sm:px-8 sm:pb-7 sm:pt-7"
               onClick={(e) => e.stopPropagation()}
             >

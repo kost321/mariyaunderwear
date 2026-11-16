@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { useModalFocus } from '@/hooks/useModalFocus'
 
 export type LightboxPhoto = { url: string; alt: string }
 
@@ -21,6 +22,8 @@ export function PhotoLightbox({
   onClose: () => void
 }) {
   const touchStartX = useRef<number | null>(null)
+  // Mounted only while open: the focus moves in and stays there until it closes
+  const viewer = useModalFocus<HTMLDivElement>(true)
   const count = photos.length
   const photo = photos[index]
 
@@ -49,6 +52,7 @@ export function PhotoLightbox({
 
   return (
     <div
+      ref={viewer}
       className="fixed inset-0 z-50 bg-ink/90"
       onClick={onClose}
       onTouchStart={(e) => {

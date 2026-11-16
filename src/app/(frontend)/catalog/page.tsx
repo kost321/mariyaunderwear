@@ -175,7 +175,8 @@ export default async function CatalogPage({
   // Capsules like the site's buttons (rounded-full = the 26px radius at this height)
   const chip = (active: boolean) =>
     cn(
-      'flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-4 text-sm transition-colors',
+      // 36px capsule, 44px tap target (the row has py-1 so the strip is not clipped by its scroll)
+      "relative flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-4 text-sm transition-colors before:absolute before:inset-x-0 before:-inset-y-1 before:content-['']",
       active ? 'border-ink bg-ink text-white' : 'border-brown/40 text-brown hover:border-ink hover:text-ink',
     )
 
@@ -215,7 +216,7 @@ export default async function CatalogPage({
         {categories.length > 0 && (
           <nav
             aria-label="Категорії"
-            className="-mx-[var(--gutter)] order-2 flex min-w-0 gap-2 overflow-x-auto px-[var(--gutter)] [scrollbar-width:none] lg:order-1 lg:mx-0 lg:flex-wrap lg:px-0 [&::-webkit-scrollbar]:hidden"
+            className="-mx-[var(--gutter)] order-2 -my-1 flex min-w-0 gap-2 overflow-x-auto px-[var(--gutter)] py-1 [scrollbar-width:none] lg:order-1 lg:mx-0 lg:flex-wrap lg:px-0 [&::-webkit-scrollbar]:hidden"
           >
             <Link href={catalogUrl({ q: params.q })} className={chip(allProducts)} aria-current={allProducts ? 'page' : undefined}>
               Усі товари
@@ -251,7 +252,7 @@ export default async function CatalogPage({
       </div>
 
       <div className="mt-8 lg:col-start-2 lg:row-start-3">
-        <div className="mb-6 flex items-center justify-between text-sm text-brown/60">
+        <div className="mb-6 flex items-center justify-between text-sm text-brown">
           <p>
             {products.length} {plural(products.length, ['товар', 'товари', 'товарів'])}
           </p>

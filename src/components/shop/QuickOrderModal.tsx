@@ -120,7 +120,7 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-brown transition-colors hover:bg-cream hover:text-ink sm:right-4 sm:top-4"
+          className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full text-brown transition-colors hover:bg-cream hover:text-ink sm:right-3 sm:top-3"
           aria-label="Закрити"
         >
           <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />

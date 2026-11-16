@@ -206,7 +206,7 @@ function BagItem({
             type="button"
             onClick={onRemove}
             aria-label={`Прибрати з кошика: ${title}`}
-            className="-mr-2 -mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-brown transition-colors [@media(hover:hover)]:hover:bg-cream [@media(hover:hover)]:hover:text-ink"
+            className="-mr-3 -mt-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-brown transition-colors [@media(hover:hover)]:hover:bg-cream [@media(hover:hover)]:hover:text-ink"
           >
             <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
           </button>
@@ -459,7 +459,7 @@ export function CartPage() {
       <div className="pb-6">
         <Breadcrumbs items={[{ name: 'Головна', href: '/' }, { name: 'Кошик' }]} />
         <h1 className="heading-page mt-2">
-          Кошик <span className="text-brown/60">({totalCount})</span>
+          Кошик <span className="text-brown/80">({totalCount})</span>
         </h1>
 
         <div className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-16">
@@ -573,7 +573,7 @@ export function CartPage() {
           className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left text-[15px] text-ink"
         >
           <span>
-            Ваше замовлення <span className="text-brown/60">({totalCount})</span>
+            Ваше замовлення <span className="text-brown">({totalCount})</span>
           </span>
           <span className="flex items-center gap-2 font-medium tabular-nums">
             {formatPrice(totalPrice)}
@@ -813,7 +813,7 @@ export function CartPage() {
         <aside className="hidden rounded-card bg-[#f4efeb] px-8 py-7 lg:sticky lg:top-8 lg:block">
           <div className="mb-5 flex items-baseline justify-between gap-4">
             <h2 className="text-lg font-medium text-ink">
-              Ваше замовлення <span className="text-brown/60">({totalCount})</span>
+              Ваше замовлення <span className="text-brown">({totalCount})</span>
             </h2>
             <button
               type="button"

@@ -49,7 +49,7 @@ function HeroText({
 
       {swatchCount > 1 && (
         <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex gap-2" role="group" aria-label="Кольори">
+          <div className="flex gap-3" role="group" aria-label="Кольори">
             {items.map((item, i) =>
               !item.hex ? null : !item.url ? (
                 // No photo to switch to yet: the swatch opens that color's page instead
@@ -57,7 +57,7 @@ function HeroText({
                   key={item.href}
                   href={item.href}
                   aria-label={item.name ?? item.alt}
-                  className="h-7 w-7 rounded-full border border-brown/30 transition-transform hover:scale-110"
+                  className="relative h-8 w-8 rounded-full border border-brown/30 transition-transform before:absolute before:-inset-1.5 before:rounded-full before:content-[''] hover:scale-110"
                   style={{ backgroundColor: item.hex }}
                 />
               ) : (
@@ -68,7 +68,8 @@ function HeroText({
                   aria-pressed={i === active}
                   aria-label={item.name ?? item.alt}
                   className={cn(
-                    'h-7 w-7 rounded-full border border-brown/30 transition-transform',
+                    // 32px swatch, 44px tap target; gap-3 keeps the targets from overlapping
+                    "relative h-8 w-8 rounded-full border border-brown/30 transition-transform before:absolute before:-inset-1.5 before:rounded-full before:content-['']",
                     i === active ? 'ring-1 ring-ink ring-offset-2' : 'hover:scale-110',
                   )}
                   style={{ backgroundColor: item.hex }}
@@ -77,7 +78,7 @@ function HeroText({
             )}
           </div>
           {/* The selected colour is named here, not in a hover tooltip that floats away from the swatch */}
-          <span className="text-sm text-brown/80" aria-live="polite">
+          <span className="text-sm text-brown" aria-live="polite">
             {items[active]?.name && <span className="text-ink">{items[active].name} · </span>}
             {swatchCount} {plural(swatchCount, ['колір', 'кольори', 'кольорів'])}
           </span>

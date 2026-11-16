@@ -49,7 +49,7 @@ export function SocialLinks({
             {...(href.startsWith('http') && { target: '_blank', rel: 'noopener noreferrer' })}
             aria-label={label}
             title={label}
-            className={`flex min-h-10 min-w-10 items-center justify-center transition-colors ${
+            className={`flex min-h-11 min-w-11 items-center justify-center transition-colors ${
               tone === 'light' ? 'text-sand hover:text-white' : 'text-brown hover:text-ink'
             }`}
           >

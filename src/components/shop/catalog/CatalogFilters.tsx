@@ -45,7 +45,7 @@ function Section({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between text-sm text-brown"
+        className="-my-3 flex w-full items-center justify-between py-3 text-sm text-brown"
       >
         {title}
         <ChevronRight className={cn('h-4 w-4 text-ink transition-transform', open && '-rotate-90')} strokeWidth={1.5} />
@@ -83,7 +83,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
         aria-expanded={mobileOpen}
         aria-controls="catalog-filters"
         className={cn(
-          'flex h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors lg:hidden',
+          'flex h-11 items-center gap-2 rounded-full border px-4 text-sm transition-colors lg:hidden',
           mobileOpen || activeCount > 0 ? 'border-ink text-ink' : 'border-brown/40 text-brown',
         )}
       >
@@ -92,7 +92,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
       </button>
       {/* Desktop: the panel is always open, so this is just its heading, in the sans like the rest of the sidebar */}
       <p className="hidden text-base text-ink lg:block">
-        Фільтри{activeCount > 0 && <span className="text-brown/70"> ({activeCount})</span>}
+        Фільтри{activeCount > 0 && <span className="text-brown"> ({activeCount})</span>}
       </p>
 
       <div id="catalog-filters" className={cn('mt-1 lg:block', mobileOpen ? 'block' : 'hidden')}>
@@ -142,7 +142,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
                     title={colorLabel(color.name)}
                     onClick={() => update({ color: toggle(params.colors, color.name).join(',') || undefined })}
                     className={cn(
-                      'h-8 w-8 rounded-full border transition-transform',
+                      "relative h-8 w-8 rounded-full border transition-transform before:absolute before:-inset-1.5 before:rounded-full before:content-['']",
                       isLightColor(color.hex) || !color.hex ? 'border-brown/40' : 'border-transparent',
                       on ? 'ring-1 ring-ink ring-offset-2' : 'hover:scale-110',
                     )}
@@ -164,10 +164,10 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
             role="switch"
             aria-checked={params.inStockOnly}
             onClick={() => update({ stock: params.inStockOnly ? undefined : 'in' })}
-            className="flex w-full items-center justify-between gap-3 text-left text-sm text-brown"
+            className="-my-2.5 flex w-full items-center justify-between gap-3 py-2.5 text-left text-sm text-brown"
           >
             <span>
-              Тільки в наявності <span className="text-brown/60">({facets.inStock})</span>
+              Тільки в наявності <span className="text-brown">({facets.inStock})</span>
             </span>
             <span
               aria-hidden
@@ -248,7 +248,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
               setMax('')
               update({ size: undefined, color: undefined, material: undefined, stock: undefined, min: undefined, max: undefined })
             }}
-            className="mt-4 text-xs text-brown/60 underline-offset-4 hover:underline"
+            className="mt-4 text-xs text-brown underline-offset-4 hover:underline"
           >
             Скинути фільтри
           </button>
@@ -270,10 +270,12 @@ export function SortSelect({ value }: { value: CatalogParams['sort'] }) {
   return (
     <label className="flex items-center gap-2 text-sm text-ink">
       <span className="hidden sm:inline">Сортування</span>
+      {/* The visible "Сортування" is hidden on phones, so the select carries its own name for screen readers */}
       <select
         value={value}
+        aria-label="Сортування"
         onChange={(e) => update({ sort: e.target.value === 'new' ? undefined : e.target.value })}
-        className="cursor-pointer bg-transparent text-sm text-brown/70 focus:outline-none"
+        className="-my-3 cursor-pointer bg-transparent py-3 text-sm text-brown focus:outline-none"
       >
         {SORT_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>
@@ -339,7 +341,7 @@ export function CatalogSearch({ value }: { value?: string }) {
         placeholder="Пошук"
         aria-label="Пошук товарів"
         autoComplete="off"
-        className="h-10 w-full rounded-full border border-brown/30 bg-white pl-10 pr-10 text-sm text-ink placeholder:text-brown/70 focus:border-ink focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+        className="h-11 w-full rounded-full border border-brown/30 bg-white pl-10 lg:h-10 pr-10 text-sm text-ink placeholder:text-brown/70 focus:border-ink focus:outline-none [&::-webkit-search-cancel-button]:hidden"
       />
       {q && (
         <button
@@ -349,7 +351,7 @@ export function CatalogSearch({ value }: { value?: string }) {
             field.current?.focus()
           }}
           aria-label="Очистити пошук"
-          className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-brown hover:bg-cream"
+          className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-brown before:absolute before:-inset-2 before:content-[''] hover:bg-cream"
         >
           <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
         </button>

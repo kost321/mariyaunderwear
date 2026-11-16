@@ -61,7 +61,7 @@ export function Header({ categories, showBestsellers }: { categories: MenuCatego
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
-            className="-m-2 p-2 lg:hidden"
+            className="-m-2 flex h-11 w-11 items-center justify-center lg:hidden"
             aria-label="Відкрити меню"
           >
             <Image src="/brand/burger.svg" alt="" width={28} height={18} />

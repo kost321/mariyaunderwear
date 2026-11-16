@@ -50,7 +50,8 @@ export function ProductCard({
             )}
           />
         ) : (
-          <div className={cn('flex h-full items-center justify-center text-sm text-brown/60', soldOut && 'opacity-75')}>
+          // Not dimmed when sold out (unlike the photo): the badge says it, and dimmed text would be unreadable
+          <div className="flex h-full items-center justify-center text-sm text-brown">
             немає фото
           </div>
         )}
@@ -79,7 +80,7 @@ export function ProductCard({
             {formatPrice(product.price)}
           </p>
           {swatch && (
-            <span className="flex min-w-0 items-center gap-1.5 text-sm leading-5 text-brown/80">
+            <span className="flex min-w-0 items-center gap-1.5 text-sm leading-5 text-brown">
               <span
                 aria-hidden
                 className={cn('h-2.5 w-2.5 shrink-0 rounded-full border', isLightColor(swatch) ? 'border-brown/40' : 'border-transparent')}

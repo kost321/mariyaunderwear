@@ -285,7 +285,8 @@ export function ProductDetails({
   // dark with a white edge so it shows on any colour
   const swatchClass = (active: boolean, unavailable = false) =>
     cn(
-      'relative block h-9 w-9 rounded-full border transition-transform',
+      // 36px swatch, 44px tap target (before: — after: draws the sold-out diagonal)
+      "relative block h-9 w-9 rounded-full border transition-transform before:absolute before:-inset-1 before:rounded-full before:content-['']",
       active ? 'border-ink ring-1 ring-ink ring-offset-2' : 'border-brown/30 hover:scale-105',
       unavailable &&
         "after:absolute after:left-1/2 after:top-[-3px] after:h-[calc(100%+6px)] after:w-[1.5px] after:-translate-x-1/2 after:rotate-45 after:bg-ink after:shadow-[0_0_0_1px_white] after:content-['']",
@@ -374,13 +375,13 @@ export function ProductDetails({
           {shortProductTitle(product.title)}
         </h1>
         <p className="mt-3 text-2xl text-ink lg:mt-4">{formatPrice(product.price)}</p>
-        {product.sku && <p className="mt-4 text-xs text-brown/80">Артикул: {product.sku}</p>}
+        {product.sku && <p className="mt-4 text-xs text-brown">Артикул: {product.sku}</p>}
         {/* The composition right by the price: the name says «шовк Армані», shoppers want to know what it is */}
         {facts?.composition && (
-          <p className={cn('text-xs text-brown/80', product.sku ? 'mt-1' : 'mt-4')}>Склад: {facts.composition}</p>
+          <p className={cn('text-xs text-brown', product.sku ? 'mt-1' : 'mt-4')}>Склад: {facts.composition}</p>
         )}
         {materials.length > 0 && (
-          <p className={cn('text-xs text-brown/80', product.sku || facts?.composition ? 'mt-1' : 'mt-4')}>
+          <p className={cn('text-xs text-brown', product.sku || facts?.composition ? 'mt-1' : 'mt-4')}>
             Матеріал:{' '}
             {materials.map((m, i) => (
               <span key={m.id}>
@@ -399,7 +400,7 @@ export function ProductDetails({
             <p className={label}>
               Колір{product.colorName ? `: ${colorLabel(product.colorName)}` : ''}
             </p>
-            <div className="mt-3 flex flex-wrap gap-1">
+            <div className="mt-3 flex flex-wrap gap-2">
               {colorVariants.map((v) => {
                 const isCurrent = v.id === product.id
                 const name = v.colorName ? colorLabel(v.colorName) : v.title
@@ -422,7 +423,7 @@ export function ProductDetails({
         {!showVariantSwitch && colors.length > 0 && (
           <div className="mt-8">
             <p className={label}>Колір{color ? `: ${colorLabel(color)}` : ''}</p>
-            <div className="mt-3 flex flex-wrap gap-1">
+            <div className="mt-3 flex flex-wrap gap-2">
               {colors.map((c) => (
                 <button
                   key={c.id ?? c.name}
@@ -466,7 +467,8 @@ export function ProductDetails({
                   aria-pressed={size === s.value}
                   title={soldOut(s) ? 'Немає в наявності' : undefined}
                   className={cn(
-                    'flex h-9 min-w-9 items-center justify-center rounded-full border px-2.5 text-xs transition-colors',
+                    // 36px capsule, 44px tap target: the gap-2 between sizes leaves room for the 4px around each
+                    "relative flex h-9 min-w-9 items-center justify-center rounded-full border px-2.5 text-xs transition-colors before:absolute before:-inset-1 before:content-['']",
                     soldOut(s)
                       ? 'cursor-not-allowed border-[#d4d4d4] text-brown/40 line-through'
                       : size === s.value
@@ -524,7 +526,7 @@ export function ProductDetails({
             <button
               type="button"
               onClick={() => !needsSize() && setQuickOpen(true)}
-              className="mt-2 h-10 w-full rounded-card border border-brown/40 text-sm text-brown transition-colors hover:border-brown"
+              className="mt-2 h-11 w-full rounded-card border border-brown/40 text-sm lg:h-10 text-brown transition-colors hover:border-brown"
             >
               Купити в 1 клік
             </button>

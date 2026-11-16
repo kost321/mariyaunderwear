@@ -93,7 +93,7 @@ export default async function OrderPage({ params }: Params) {
       <div className="mt-12 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-16">
         <section aria-labelledby="order-items">
           <h2 id="order-items" className="text-lg font-medium text-ink">
-            Склад замовлення <span className="text-brown/60">({count})</span>
+            Склад замовлення <span className="text-brown">({count})</span>
           </h2>
           <ul className="mt-4 divide-y divide-brown/15 border-y border-brown/15">
             {lines.map((line, i) => {

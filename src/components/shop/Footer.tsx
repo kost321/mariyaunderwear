@@ -24,7 +24,11 @@ function LinkList({ items }: { items: FooterLink[] }) {
           {!item.href ? (
             <span>{item.label}</span>
           ) : (
-            <Link href={item.href} className="transition-colors hover:text-white">
+            <Link
+              href={item.href}
+              // The strip above and below fills the gap between the lines: the whole row is the tap target
+              className="relative transition-colors before:absolute before:inset-x-0 before:-inset-y-1 before:content-[''] hover:text-white"
+            >
               {item.label}
             </Link>
           )}
@@ -44,7 +48,7 @@ function ContactsBlock() {
         {CONTACTS.phone && (
           <div>
             <p className={contactLabel}>Клієнтська турбота</p>
-            <a href={`tel:${phoneHref(CONTACTS.phone)}`} className={`${contactValue} hover:underline`}>
+            <a href={`tel:${phoneHref(CONTACTS.phone)}`} className={`${contactValue} relative before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] hover:underline`}>
               {CONTACTS.phone}
             </a>
           </div>
@@ -65,7 +69,7 @@ function ContactsBlock() {
 function Column({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-5">
-      <p className="text-sm font-medium leading-5 text-sand/60">{title}</p>
+      <p className="text-sm font-medium leading-5 text-sand/80">{title}</p>
       {children}
     </section>
   )

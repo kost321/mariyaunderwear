@@ -40,7 +40,7 @@ export function LegalPage({
       />
       <Breadcrumbs items={[{ name: 'Головна', href: '/' }, { name: title }]} />
       <h1 className="heading-page mt-2">{title}</h1>
-      {edition && <p className="mt-3 text-sm text-brown/80">Редакція від {edition}</p>}
+      {edition && <p className="mt-3 text-sm text-brown">Редакція від {edition}</p>}
 
       {/*
         Desktop: the text on the left, the contents in the free right half, sticky so it stays at hand while

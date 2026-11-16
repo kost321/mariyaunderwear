@@ -45,7 +45,8 @@ export function SizeChart({ html, selected }: { html?: string | null; selected?:
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs text-brown/80 underline underline-offset-2 transition-colors hover:text-brown"
+        // 16px line of text, 44px tap target from the strip above and below
+        className="relative text-xs text-brown underline underline-offset-2 transition-colors before:absolute before:-inset-x-1 before:-inset-y-3.5 before:content-[''] hover:text-ink"
       >
         Розмірна таблиця
       </button>
@@ -70,7 +71,7 @@ export function SizeChart({ html, selected }: { html?: string | null; selected?:
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-brown transition-colors hover:bg-cream hover:text-ink sm:right-4 sm:top-4"
+                className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full text-brown transition-colors hover:bg-cream hover:text-ink sm:right-3 sm:top-3"
                 aria-label="Закрити"
               >
                 <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -82,7 +83,7 @@ export function SizeChart({ html, selected }: { html?: string | null; selected?:
 
               {chart ? (
                 <>
-                  {chart.caption && <p className="mt-1 text-sm text-brown/80">{chart.caption}</p>}
+                  {chart.caption && <p className="mt-1 text-sm text-brown">{chart.caption}</p>}
                   <table className="mt-5 w-full border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-brown/15">
@@ -90,7 +91,7 @@ export function SizeChart({ html, selected }: { html?: string | null; selected?:
                           <th
                             key={i}
                             scope="col"
-                            className={cn('pb-2 font-normal text-brown/80', i === 0 ? 'pl-2 text-left' : 'pr-2 text-right')}
+                            className={cn('pb-2 font-normal text-brown', i === 0 ? 'pl-2 text-left' : 'pr-2 text-right')}
                           >
                             {h}
                           </th>

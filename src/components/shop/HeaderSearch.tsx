@@ -33,10 +33,10 @@ function ResultRow({ item, onPick }: { item: SearchItem; onPick: () => void }) {
                 style={{ backgroundColor: item.hex }}
               />
             )}
-            {item.color && <span className="truncate text-brown/80">{item.color}</span>}
+            {item.color && <span className="truncate text-brown">{item.color}</span>}
           </span>
         </span>
-        {!item.inStock && <span className="hidden shrink-0 text-xs text-brown/70 sm:block">Немає в наявності</span>}
+        {!item.inStock && <span className="hidden shrink-0 text-xs text-brown sm:block">Немає в наявності</span>}
       </Link>
     </li>
   )
@@ -159,7 +159,7 @@ export function HeaderSearch({ onClose }: { onClose: () => void }) {
                 <p className="text-sm text-ink">Нічого не знайдено за запитом «{query}»</p>
                 {data.suggestions.length > 0 && (
                   <>
-                    <p className="mt-4 text-sm text-brown/80">Є в наявності:</p>
+                    <p className="mt-4 text-sm text-brown">Є в наявності:</p>
                     <ul className="mt-2 grid gap-1 md:grid-cols-2 md:gap-x-6">
                       {data.suggestions.map((item) => (
                         <ResultRow key={item.href} item={item} onPick={onClose} />

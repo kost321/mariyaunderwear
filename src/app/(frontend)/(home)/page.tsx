@@ -119,11 +119,11 @@ export default async function HomePage() {
             <div className="mb-8 flex items-baseline justify-between gap-4 lg:mb-10">
               <h2 className="heading-section">
                 Новинки
-                <span className="ml-2 font-sans text-base text-brown/70">({newest.length})</span>
+                <span className="ml-2 font-sans text-base text-brown">({newest.length})</span>
               </h2>
               <Link
                 href="/catalog?sort=new"
-                className="shrink-0 text-base text-brown underline-offset-4 transition-colors hover:text-ink hover:underline"
+                className="relative shrink-0 text-base text-brown underline-offset-4 transition-colors before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-[''] hover:text-ink hover:underline"
               >
                 Дивитись усі
               </Link>

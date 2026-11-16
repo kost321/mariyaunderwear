@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 /**
  * Quantity control in a horizontal capsule: − 1 +. Shared by the product page and the cart lines,
  * so both look the same. `max` caps the "+" (the stock of the chosen size, when known).
+ * The 32px buttons get a 44px tap target from an invisible pseudo-element.
  */
 export function QuantityStepper({
   value,
@@ -30,7 +31,7 @@ export function QuantityStepper({
         type="button"
         onClick={() => onChange(Math.max(1, value - 1))}
         disabled={value <= 1}
-        className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
+        className="relative flex h-8 w-8 items-center justify-center before:absolute before:-inset-1.5 before:content-[''] disabled:opacity-40"
         aria-label="Зменшити кількість"
       >
         −
@@ -42,7 +43,7 @@ export function QuantityStepper({
         type="button"
         onClick={() => onChange(max ? Math.min(max, value + 1) : value + 1)}
         disabled={max !== undefined && value >= max}
-        className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
+        className="relative flex h-8 w-8 items-center justify-center before:absolute before:-inset-1.5 before:content-[''] disabled:opacity-40"
         aria-label="Збільшити кількість"
       >
         +

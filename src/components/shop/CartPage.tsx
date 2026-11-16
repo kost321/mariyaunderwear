@@ -16,7 +16,8 @@ import { CONTACTS, phoneHref } from '@/lib/contacts'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 import type { StockResponse } from '@/app/(frontend)/api/stock/route'
 import { PAYMENT_METHODS } from '@/lib/payment'
-import { normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
+import { FOREIGN_PHONE_ERROR, normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
+import { FIELD_ERRORS, focusFirstInvalid, isEmail } from '@/lib/formErrors'
 import { newOrderKey, SERVER_ERROR, submitOrder } from '@/lib/submitOrder'
 import { usePhoneMask } from '@/hooks/usePhoneMask'
 
@@ -33,6 +34,9 @@ const CHECKOUT_STEPS = [
 ] as const
 type CheckoutStep = (typeof CHECKOUT_STEPS)[number]['id']
 const stepIndex = (step: CheckoutStep) => CHECKOUT_STEPS.findIndex((s) => s.id === step)
+
+/** Checkout fields that can carry a message under them */
+type FieldName = 'phone' | 'email' | 'firstName' | 'lastName' | 'city' | 'novaPoshtaBranch' | 'paymentMethod'
 
 const photo = 'relative overflow-hidden rounded-card bg-placeholder/40'
 
@@ -299,8 +303,11 @@ export function CartPage() {
   useEffect(() => {
     orderKey.current = newOrderKey()
   }, [items])
-  // Checked on the first step: otherwise a typo only surfaces after delivery and payment are filled in
-  const [phoneError, setPhoneError] = useState('')
+  // Messages under the fields. The forms check themselves (noValidate, lib/formErrors): every message at once,
+  // in the site's words and style, instead of the browser's bubble; a field's message goes once it is edited
+  const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({})
+  const clearError = (name: string) =>
+    setErrors((prev) => (prev[name as FieldName] ? { ...prev, [name]: undefined } : prev))
   // Names are checked softly: Latin letters get a hint (Nova Poshta matches the passport), nothing is blocked
   const [namesTouched, setNamesTouched] = useState(false)
   const latinName = namesTouched && /[a-z]/i.test(firstName + lastName)
@@ -342,10 +349,14 @@ export function CartPage() {
     email: '',
     comment: '',
   })
-  const phone = usePhoneMask(form.phone, (next) => {
-    setPhoneError('')
-    setForm((prev) => ({ ...prev, phone: next }))
-  })
+  const phone = usePhoneMask(
+    form.phone,
+    (next) => {
+      clearError('phone')
+      setForm((prev) => ({ ...prev, phone: next }))
+    },
+    () => setErrors((prev) => ({ ...prev, phone: FOREIGN_PHONE_ERROR })),
+  )
 
   // What is typed survives a reload of the page or a crash screen ("Спробувати ще раз" re-mounts the cart):
   // kept for this tab only (sessionStorage) and dropped once the order is placed
@@ -395,9 +406,8 @@ export function CartPage() {
   /** Step tab: going back is always open; going forward submits the current step's form, so it is checked */
   function selectStep(target: CheckoutStep) {
     if (!checkoutStep || stepIndex(target) <= stepIndex(checkoutStep)) return show(target)
-    if (!stepForm.current?.reportValidity()) return
     pendingStep.current = target
-    stepForm.current.requestSubmit()
+    stepForm.current?.requestSubmit()
   }
 
   /** A step's form passed: on to the tab that was clicked if the steps before it are filled in, else the next step */
@@ -408,13 +418,44 @@ export function CartPage() {
     goToCheckoutStep(target)
   }
 
+  /**
+   * Shows the messages of one step (undefined clears a field's message). With any message the forward tab
+   * click is dropped and the cursor goes to the first wrong field; returns whether the step is valid.
+   */
+  function check(messages: Partial<Record<FieldName, string>>) {
+    setErrors((prev) => ({ ...prev, ...messages }))
+    if (!Object.values(messages).some(Boolean)) return true
+    pendingStep.current = null
+    focusFirstInvalid(stepForm.current)
+    return false
+  }
+
+  // The phone is checked on the first step: otherwise a typo only surfaces after delivery and payment
+  const infoValid = () =>
+    check({
+      phone: normalizeUaPhone(form.phone) ? undefined : PHONE_ERROR,
+      email: !form.email?.trim() || isEmail(form.email) ? undefined : FIELD_ERRORS.email,
+      firstName: firstName.trim() ? undefined : FIELD_ERRORS.firstName,
+      lastName: lastName.trim() ? undefined : FIELD_ERRORS.lastName,
+    })
+
+  const shippingValid = () =>
+    check({
+      city: form.city.trim() ? undefined : FIELD_ERRORS.city,
+      novaPoshtaBranch: form.novaPoshtaBranch.trim() ? undefined : FIELD_ERRORS.novaPoshtaBranch,
+    })
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    if (e.target.name === 'phone') setPhoneError('')
+    clearError(e.target.name)
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!form.paymentMethod) {
+      check({ paymentMethod: FIELD_ERRORS.paymentMethod })
+      return
+    }
     // The disabled button is not enough on its own: a double click or Enter can land before React re-renders
     if (!items.length || submitting.current) return
     submitting.current = true
@@ -602,15 +643,10 @@ export function CartPage() {
             <form
               ref={stepForm}
               className="mt-8"
+              noValidate
               onSubmit={(e) => {
                 e.preventDefault()
-                if (!normalizeUaPhone(form.phone)) {
-                  pendingStep.current = null
-                  setPhoneError(PHONE_ERROR)
-                  phone.ref.current?.focus()
-                  return
-                }
-                advance('shipping')
+                if (infoValid()) advance('shipping')
               }}
             >
               <h2 className={subheading}>Контактні дані</h2>
@@ -627,10 +663,11 @@ export function CartPage() {
                   onChange={phone.onChange}
                   onBlur={() => {
                     // A half-typed number is pointed out on leaving the field; an untouched one only on "Доставка"
-                    if (uaPhoneDigits(form.phone) > 0 && !normalizeUaPhone(form.phone)) setPhoneError(PHONE_ERROR)
+                    if (uaPhoneDigits(form.phone) > 0 && !normalizeUaPhone(form.phone))
+                      setErrors((prev) => ({ ...prev, phone: PHONE_ERROR }))
                   }}
                   placeholder="+380 (__) ___ __ __"
-                  error={phoneError}
+                  error={errors.phone}
                   hint="Менеджер зателефонує, щоб підтвердити замовлення"
                 />
                 <FormField
@@ -641,6 +678,7 @@ export function CartPage() {
                   value={form.email}
                   onChange={handleChange}
                   placeholder="name@example.com"
+                  error={errors.email}
                 />
               </div>
 
@@ -651,16 +689,24 @@ export function CartPage() {
                   required
                   autoComplete="given-name"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={(e) => {
+                    clearError('firstName')
+                    setFirstName(e.target.value)
+                  }}
                   onBlur={() => setNamesTouched(true)}
+                  error={errors.firstName}
                 />
                 <FormField
                   label="Прізвище"
                   required
                   autoComplete="family-name"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={(e) => {
+                    clearError('lastName')
+                    setLastName(e.target.value)
+                  }}
                   onBlur={() => setNamesTouched(true)}
+                  error={errors.lastName}
                 />
               </div>
               <p aria-live="polite" className={cn('mt-1.5 px-5 text-xs leading-5', latinName ? 'text-ink' : 'text-brown')}>
@@ -677,9 +723,10 @@ export function CartPage() {
             <form
               ref={stepForm}
               className="mt-8"
+              noValidate
               onSubmit={(e) => {
                 e.preventDefault()
-                advance('payment')
+                if (shippingValid()) advance('payment')
               }}
             >
               <h2 className={subheading}>Доставка Новою поштою</h2>
@@ -691,6 +738,7 @@ export function CartPage() {
                   autoComplete="address-level2"
                   value={form.city}
                   onChange={handleChange}
+                  error={errors.city}
                 />
                 <FormField
                   label="№ відділення"
@@ -699,6 +747,7 @@ export function CartPage() {
                   value={form.novaPoshtaBranch}
                   onChange={handleChange}
                   placeholder="Наприклад, 12"
+                  error={errors.novaPoshtaBranch}
                 />
                 <div className="sm:col-span-2">
                   <label htmlFor="checkout-comment" className="mb-1.5 block text-sm text-brown">
@@ -724,7 +773,7 @@ export function CartPage() {
           )}
 
           {checkoutStep === 'payment' && (
-            <form onSubmit={handleSubmit} className="mt-8">
+            <form ref={stepForm} noValidate onSubmit={handleSubmit} className="mt-8">
               <h2 className={subheading}>Перевірте дані</h2>
               <dl className="mt-4 divide-y divide-brown/15 border-y border-brown/15 text-sm">
                 {[
@@ -758,7 +807,11 @@ export function CartPage() {
                       key={m.value}
                       className={cn(
                         'flex cursor-pointer items-start gap-3 rounded-2xl border px-5 py-4 text-sm transition-colors',
-                        form.paymentMethod === m.value ? 'border-ink bg-[#f4efeb]' : 'border-brown/30 hover:border-brown',
+                        form.paymentMethod === m.value
+                          ? 'border-ink bg-[#f4efeb]'
+                          : errors.paymentMethod
+                            ? 'border-destructive'
+                            : 'border-brown/30 hover:border-brown',
                       )}
                     >
                       <input
@@ -766,8 +819,13 @@ export function CartPage() {
                         name="paymentMethod"
                         value={m.value}
                         checked={form.paymentMethod === m.value}
-                        onChange={() => setForm((prev) => ({ ...prev, paymentMethod: m.value }))}
+                        onChange={() => {
+                          clearError('paymentMethod')
+                          setForm((prev) => ({ ...prev, paymentMethod: m.value }))
+                        }}
                         required
+                        aria-invalid={errors.paymentMethod ? true : undefined}
+                        aria-describedby={errors.paymentMethod ? 'payment-method-error' : undefined}
                         className="mt-1 accent-ink"
                       />
                       <span>
@@ -777,6 +835,11 @@ export function CartPage() {
                     </label>
                   ))}
                 </div>
+                {errors.paymentMethod && (
+                  <p id="payment-method-error" role="alert" className="mt-2 px-5 text-xs leading-5 text-destructive">
+                    {errors.paymentMethod}
+                  </p>
+                )}
               </fieldset>
               <p className="mt-4 text-sm leading-6 text-brown">
                 Менеджер зателефонує, щоб підтвердити замовлення та спосіб оплати. Онлайн-оплати на сайті немає.

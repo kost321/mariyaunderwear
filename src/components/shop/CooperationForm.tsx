@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FormField as Field } from '@/components/shop/FormField'
+import { FIELD_ERRORS, focusFirstInvalid, isEmail } from '@/lib/formErrors'
 
 const EMPTY = { firstName: '', lastName: '', email: '', company: '', phone: '', message: '' }
 
@@ -12,13 +13,27 @@ export function CooperationForm() {
   const [form, setForm] = useState(EMPTY)
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [error, setError] = useState('')
+  // Messages under the required fields, checked by the form itself (noValidate) and shown all at once
+  const [fieldErrors, setFieldErrors] = useState<{ firstName?: string; email?: string }>({})
+  const formRef = useRef<HTMLFormElement>(null)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const name = e.target.name
+    setFieldErrors((prev) => (name in prev ? { ...prev, [name]: undefined } : prev))
+    setForm((prev) => ({ ...prev, [name]: e.target.value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const messages = {
+      firstName: form.firstName.trim() ? undefined : FIELD_ERRORS.firstName,
+      email: !form.email.trim() ? FIELD_ERRORS.emailRequired : isEmail(form.email) ? undefined : FIELD_ERRORS.email,
+    }
+    setFieldErrors(messages)
+    if (messages.firstName || messages.email) {
+      focusFirstInvalid(formRef.current)
+      return
+    }
     setStatus('sending')
     setError('')
     try {
@@ -56,10 +71,10 @@ export function CooperationForm() {
 
   return (
     // One gap for rows and columns, so first and last name sit as far apart as the rows
-    <form onSubmit={handleSubmit} className="grid gap-5 sm:grid-cols-2">
-      <Field {...field('firstName')} label="Імʼя" required autoComplete="given-name" maxLength={100} />
+    <form ref={formRef} noValidate onSubmit={handleSubmit} className="grid gap-5 sm:grid-cols-2">
+      <Field {...field('firstName')} label="Імʼя" required autoComplete="given-name" maxLength={100} error={fieldErrors.firstName} />
       <Field {...field('lastName')} label="Прізвище" autoComplete="family-name" maxLength={100} />
-      <Field {...field('email')} label="Email" type="email" required autoComplete="email" maxLength={120} placeholder="name@example.com" className="sm:col-span-2" />
+      <Field {...field('email')} label="Email" type="email" required autoComplete="email" maxLength={120} placeholder="name@example.com" className="sm:col-span-2" error={fieldErrors.email} />
       <Field {...field('company')} label="Організація / компанія / магазин" autoComplete="organization" maxLength={200} className="sm:col-span-2" />
       <Field {...field('phone')} label="Телефон" type="tel" inputMode="tel" autoComplete="tel" maxLength={30} placeholder="+380" className="sm:col-span-2" />
 

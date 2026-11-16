@@ -1,7 +1,7 @@
 'use client'
 
 import { useLayoutEffect, useRef } from 'react'
-import { formatUaPhoneInput, UA_PHONE_PREFIX } from '@/lib/phone'
+import { formatUaPhoneInput, isForeignPhoneInput, UA_PHONE_PREFIX } from '@/lib/phone'
 
 /**
  * Phone mask "+380 (67) 123 45 67" for a controlled input (checkout and quick order). The value lives with
@@ -9,8 +9,9 @@ import { formatUaPhoneInput, UA_PHONE_PREFIX } from '@/lib/phone'
  * (applied in a layout effect, once React has written the new value). Backspace over a bracket or a space
  * removes the digit before it, otherwise the mask would put the separator straight back.
  * Start the value at UA_PHONE_PREFIX: the country code is already typed in and cannot be erased.
+ * A foreign number ("+48 …") is refused: the value stays as it was and `onForeign` lets the form say why.
  */
-export function usePhoneMask(value: string, onValue: (next: string) => void) {
+export function usePhoneMask(value: string, onValue: (next: string) => void, onForeign?: () => void) {
   const ref = useRef<HTMLInputElement>(null)
   const caret = useRef<number | null>(null)
 
@@ -22,6 +23,10 @@ export function usePhoneMask(value: string, onValue: (next: string) => void) {
 
   function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     let raw = e.target.value
+    if (isForeignPhoneInput(raw)) {
+      onForeign?.()
+      return
+    }
     let at = e.target.selectionStart ?? raw.length
     if (formatUaPhoneInput(raw) === value && raw.length < value.length) {
       const digitAt = raw.slice(0, at).search(/\d\D*$/)

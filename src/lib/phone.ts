@@ -27,6 +27,21 @@ export function normalizeUaPhone(input: string): string | null {
 /** Shown by the order API and by the forms before sending, so the wording is the same everywhere. */
 export const PHONE_ERROR = 'Вкажіть український номер телефону, наприклад +380 67 123 45 67'
 
+/** Shown when a foreign number ("+48 …") is pasted or typed into the masked field. */
+export const FOREIGN_PHONE_ERROR = 'Потрібен український номер: +380 і 9 цифр'
+
+/**
+ * A foreign international number pasted or typed into the masked field ("+48 512 345 678", also after the
+ * "+380 " already in it). The mask would keep only its digits and turn it into a wrong +380 number that
+ * passes the check, so the field refuses it instead. Looks at the digits after the last "+".
+ */
+export function isForeignPhoneInput(raw: string): boolean {
+  const plus = raw.lastIndexOf('+')
+  if (plus < 0) return false
+  const head = raw.slice(plus + 1).replace(/\D/g, '').slice(0, 3)
+  return head.length > 0 && !'380'.startsWith(head)
+}
+
 /** What the checkout phone field starts with: the country code is already typed in. */
 export const UA_PHONE_PREFIX = '+380 '
 

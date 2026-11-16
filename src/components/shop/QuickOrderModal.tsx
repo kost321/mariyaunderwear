@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { Check, Loader2, X } from 'lucide-react'
 import type { CartItem } from '@/types/shop'
-import { normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
+import { FOREIGN_PHONE_ERROR, normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
+import { FIELD_ERRORS, focusFirstInvalid } from '@/lib/formErrors'
 import { newOrderKey, SERVER_ERROR, submitOrder } from '@/lib/submitOrder'
 import { CONTACTS, phoneHref } from '@/lib/contacts'
 import { colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
@@ -25,16 +26,21 @@ import { FormField } from '@/components/shop/FormField'
 export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClose: () => void; item: CartItem }) {
   const [name, setName] = useState('')
   const [phoneValue, setPhoneValue] = useState(UA_PHONE_PREFIX)
+  const [nameError, setNameError] = useState('')
   const [phoneError, setPhoneError] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [orderId, setOrderId] = useState<number | null>(null)
   const submitting = useRef(false)
   const orderKey = useRef('')
-  const phone = usePhoneMask(phoneValue, (next) => {
-    setPhoneError('')
-    setPhoneValue(next)
-  })
+  const phone = usePhoneMask(
+    phoneValue,
+    (next) => {
+      setPhoneError('')
+      setPhoneValue(next)
+    },
+    () => setPhoneError(FOREIGN_PHONE_ERROR),
+  )
 
   // Keyboard focus moves into the window and stays there until it closes
   const panel = useModalFocus<HTMLDivElement>(open)
@@ -57,6 +63,7 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
   useEffect(() => {
     if (!open) return
     setError('')
+    setNameError('')
     setPhoneError('')
     setOrderId(null)
     orderKey.current = newOrderKey()
@@ -70,9 +77,13 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (submitting.current) return
-    if (!normalizeUaPhone(phoneValue)) {
-      setPhoneError(PHONE_ERROR)
-      phone.ref.current?.focus()
+    // Both fields are checked at once (noValidate: the site's messages, not the browser's bubble)
+    const nameMissing = !name.trim()
+    const phoneWrong = !normalizeUaPhone(phoneValue)
+    setNameError(nameMissing ? FIELD_ERRORS.firstName : '')
+    setPhoneError(phoneWrong ? PHONE_ERROR : '')
+    if (nameMissing || phoneWrong) {
+      focusFirstInvalid(panel.current)
       return
     }
     submitting.current = true
@@ -147,7 +158,7 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form noValidate onSubmit={handleSubmit}>
             <h2 id="quick-order-title" className="pr-10 font-serif text-2xl text-ink-text">
               Швидке замовлення
             </h2>
@@ -166,7 +177,17 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
             </div>
 
             <div className="mt-5 grid gap-4">
-              <FormField label="Імʼя" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+              <FormField
+                label="Імʼя"
+                required
+                autoComplete="name"
+                value={name}
+                onChange={(e) => {
+                  setNameError('')
+                  setName(e.target.value)
+                }}
+                error={nameError}
+              />
               <FormField
                 label="Телефон"
                 required

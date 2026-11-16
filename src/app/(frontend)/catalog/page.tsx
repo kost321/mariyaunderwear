@@ -17,9 +17,22 @@ const catalogUrl = (query: Record<string, string | undefined>) => {
 
 /**
  * Nothing matched: say why (search or filters) and offer a way back to the products,
- * instead of a bare "not found".
+ * instead of a bare "not found". A search inside a section (a category or «Бестселери») says so:
+ * the chip narrows the search without it being obvious, while the product may sit in another section.
  */
-function EmptyResult({ params, suggestions }: { params: ReturnType<typeof parseCatalogParams>; suggestions: Product[] }) {
+function EmptyResult({
+  params,
+  suggestions,
+  section,
+  elsewhere,
+}: {
+  params: ReturnType<typeof parseCatalogParams>
+  suggestions: Product[]
+  /** Title of the active section; undefined in «Усі товари» */
+  section?: string
+  /** How many products the same search finds in the whole catalogue (searched only inside a section) */
+  elsewhere: number
+}) {
   const hasFilters =
     params.sizes.length > 0 ||
     params.colors.length > 0 ||
@@ -34,7 +47,14 @@ function EmptyResult({ params, suggestions }: { params: ReturnType<typeof parseC
       : ['Немає товарів з такими фільтрами', 'Спробуйте прибрати частину фільтрів або подивіться весь каталог.']
     : hasFilters
       ? [`За запитом «${params.q}» з такими фільтрами нічого немає`, 'Спробуйте скинути фільтри — можливо, товар є в іншому розмірі чи кольорі.']
-      : [`Нічого не знайдено за запитом «${params.q}»`, 'Перевірте написання або спробуйте коротше слово, наприклад «сорочка».']
+      : section && elsewhere > 0
+        ? [
+            `У розділі «${section}» нічого не знайдено за запитом «${params.q}»`,
+            `В усіх товарах за цим запитом є ${elsewhere} ${plural(elsewhere, ['товар', 'товари', 'товарів'])}.`,
+          ]
+        : [`Нічого не знайдено за запитом «${params.q}»`, 'Перевірте написання або спробуйте коротше слово, наприклад «сорочка».']
+  // The same search without the section: only when it finds something, otherwise it is another empty page
+  const searchAll = params.q && section && elsewhere > 0
   const button =
     'flex h-11 min-w-[200px] items-center justify-center rounded-card px-6 text-sm transition-colors'
 
@@ -59,9 +79,15 @@ function EmptyResult({ params, suggestions }: { params: ReturnType<typeof parseC
             Скинути фільтри
           </Link>
         ) : null}
-        <Link href="/catalog" className={`${button} bg-ink text-white hover:bg-ink/90`}>
-          Усі товари
-        </Link>
+        {searchAll ? (
+          <Link href={catalogUrl({ q: params.q })} className={`${button} bg-ink text-white hover:bg-ink/90`}>
+            Шукати в усіх товарах
+          </Link>
+        ) : (
+          <Link href="/catalog" className={`${button} bg-ink text-white hover:bg-ink/90`}>
+            Усі товари
+          </Link>
+        )}
       </div>
 
       {/* A few products in stock instead of an empty page */}
@@ -140,6 +166,11 @@ export default async function CatalogPage({
   const suggestions = products.length
     ? []
     : (await getProducts({ limit: 30 })).filter((p) => isProductInStock(p.sizes)).slice(0, 3)
+  const sectionTitle = params.bestseller ? 'Бестселери' : activeCategory?.title
+  // A search inside a section found nothing: count the same search in the whole catalogue, so the empty
+  // state can point there (filters are left out, as «Шукати в усіх товарах» drops them too)
+  const elsewhere =
+    !products.length && params.q && sectionTitle ? (await getProducts({ q: params.q, limit: 1000 })).length : 0
 
   // Capsules like the site's buttons (rounded-full = the 26px radius at this height)
   const chip = (active: boolean) =>
@@ -234,7 +265,7 @@ export default async function CatalogPage({
             ))}
           </div>
         ) : (
-          <EmptyResult params={params} suggestions={suggestions} />
+          <EmptyResult params={params} suggestions={suggestions} section={sectionTitle} elsewhere={elsewhere} />
         )}
       </div>
     </div>

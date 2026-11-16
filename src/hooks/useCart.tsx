@@ -12,6 +12,16 @@ import type { CartItem } from '@/types/shop'
 
 const STORAGE_KEY = 'olga-shop-cart'
 
+/** The order API refuses more than 99 of a line; lines saved before `maxQuantity` existed get this cap. */
+const MAX_LINE_QUANTITY = 99
+
+/** Most units of a line the cart allows: the stock snapshot, never more than the API accepts. */
+export const lineMax = (item: Pick<CartItem, 'maxQuantity'>): number =>
+  Math.min(item.maxQuantity ?? MAX_LINE_QUANTITY, MAX_LINE_QUANTITY)
+
+const clampQuantity = (item: CartItem, quantity: number): number =>
+  Math.max(1, Math.min(lineMax(item), quantity))
+
 interface CartContextValue {
   items: CartItem[]
   /** false until the cart is read from localStorage: an empty list then does not mean an empty cart */
@@ -23,6 +33,8 @@ interface CartContextValue {
   /** Puts a removed line back at its old place ("Повернути" in the cart toast) */
   restoreItem: (item: CartItem, index: number) => void
   updateQuantity: (index: number, quantity: number) => void
+  /** Replaces the stock snapshots with the current stock (productId → size → units) and trims the quantities */
+  applyStock: (stock: Record<string, Record<string, number>>) => void
   clear: () => void
 }
 
@@ -66,10 +78,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       )
       if (idx >= 0) {
         const next = [...prev]
-        next[idx] = { ...next[idx], quantity: next[idx].quantity + item.quantity }
+        // The newer stock snapshot wins: the shop may have restocked or sold out since the first add.
+        const merged = { ...next[idx], maxQuantity: item.maxQuantity ?? next[idx].maxQuantity }
+        next[idx] = { ...merged, quantity: clampQuantity(merged, next[idx].quantity + item.quantity) }
         return next
       }
-      return [...prev, item]
+      return [...prev, { ...item, quantity: clampQuantity(item, item.quantity) }]
     })
   }, [])
 
@@ -84,8 +98,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQuantity = useCallback((index: number, quantity: number) => {
     setItems((prev) =>
       prev.map((item, i) =>
-        i === index ? { ...item, quantity: Math.max(1, quantity) } : item,
+        i === index ? { ...item, quantity: clampQuantity(item, quantity) } : item,
       ),
+    )
+  }, [])
+
+  const applyStock = useCallback((stock: Record<string, Record<string, number>>) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        // A product or size the shop no longer has counts as 0: the line stays, marked as not available
+        const maxQuantity = stock[item.productId]?.[item.size ?? ''] ?? 0
+        const next = { ...item, maxQuantity }
+        return { ...next, quantity: clampQuantity(next, item.quantity) }
+      }),
     )
   }, [])
 
@@ -110,6 +135,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     removeItem,
     restoreItem,
     updateQuantity,
+    applyStock,
     clear,
   }
 

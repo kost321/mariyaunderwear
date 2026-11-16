@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Check, ChevronDown, Loader2, ShoppingBag, X } from 'lucide-react'
-import { useCart } from '@/hooks/useCart'
+import { lineMax, useCart } from '@/hooks/useCart'
 import { cn, colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
 import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
 import { FormField } from '@/components/shop/FormField'
@@ -14,6 +14,7 @@ import { QuantityStepper } from '@/components/shop/QuantityStepper'
 import { primaryButton } from '@/components/shop/StatusScreen'
 import { CONTACTS, phoneHref } from '@/lib/contacts'
 import type { CartItem, CheckoutForm } from '@/types/shop'
+import type { StockResponse } from '@/app/(frontend)/api/stock/route'
 import { PAYMENT_METHODS } from '@/lib/payment'
 import { normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
 import { newOrderKey, SERVER_ERROR, submitOrder } from '@/lib/submitOrder'
@@ -184,6 +185,8 @@ function BagItem({
   onQuantity: (q: number) => void
 }) {
   const title = shortProductTitle(item.title)
+  // Stock refreshed by the cart page (applyStock) came back as 0: the line cannot be ordered
+  const soldOut = item.maxQuantity === 0
   return (
     <li className="flex gap-4 py-5 sm:gap-5">
       <Link href={`/product/${item.slug}`} className={cn(photo, 'aspect-[4/5] w-24 shrink-0 rounded-2xl sm:w-28')}>
@@ -196,6 +199,7 @@ function BagItem({
               {title}
             </Link>
             <p className="mt-1 text-sm text-brown">{variantLine(item)}</p>
+            {soldOut && <p className="mt-1 text-sm text-destructive">Немає в наявності</p>}
           </div>
           <button
             type="button"
@@ -207,7 +211,11 @@ function BagItem({
           </button>
         </div>
         <div className="mt-auto flex items-center justify-between gap-3 pt-3">
-          <QuantityStepper value={item.quantity} onChange={onQuantity} label={`Кількість: ${title}`} />
+          {soldOut ? (
+            <span />
+          ) : (
+            <QuantityStepper value={item.quantity} onChange={onQuantity} max={lineMax(item)} label={`Кількість: ${title}`} />
+          )}
           <div className="text-right">
             <p className="text-[15px] font-medium tabular-nums text-ink">{formatPrice(item.price * item.quantity)}</p>
             {item.quantity > 1 && <p className="text-xs tabular-nums text-brown">{formatPrice(item.price)} за шт.</p>}
@@ -251,7 +259,7 @@ function RemovedToast({ onUndo, onClose }: { onUndo: () => void; onClose: () => 
 }
 
 export function CartPage() {
-  const { items, ready, totalCount, totalPrice, removeItem, restoreItem, updateQuantity, clear } = useCart()
+  const { items, ready, totalCount, totalPrice, removeItem, restoreItem, updateQuantity, applyStock, clear } = useCart()
   const [step, setStep] = useState<Step>('cart')
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('info')
   // Furthest step reached; you can also go back to it via the tab
@@ -260,6 +268,21 @@ export function CartPage() {
   const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // Current stock for the products in the cart: the snapshot taken when adding goes stale (sold out since,
+  // carts saved before it existed). Fetched again only when the set of products changes; on a network
+  // error the snapshot stays and the order API still checks the stock.
+  const productIds = [...new Set(items.map((i) => i.productId))].sort().join(',')
+  useEffect(() => {
+    if (!ready || !productIds) return
+    const controller = new AbortController()
+    fetch(`/api/stock?ids=${productIds}`, { signal: controller.signal, cache: 'no-store' })
+      .then((res) => (res.ok ? (res.json() as Promise<StockResponse>) : null))
+      .then((data) => data && applyStock(data.stock))
+      .catch(() => {})
+    return () => controller.abort()
+  }, [ready, productIds, applyStock])
+  const hasSoldOut = items.some((i) => i.maxQuantity === 0)
+  const [soldOutMessage, setSoldOutMessage] = useState(false)
   // Guard against a second submit while the order is on its way
   const submitting = useRef(false)
   // Key of this checkout attempt, sent with every retry; a new one once the cart changes
@@ -464,6 +487,10 @@ export function CartPage() {
             <button
               type="button"
               onClick={() => {
+                if (hasSoldOut) {
+                  setSoldOutMessage(true)
+                  return
+                }
                 if (!agreed) {
                   setConsentMissing(true)
                   consentRef.current?.focus()
@@ -475,6 +502,11 @@ export function CartPage() {
             >
               Оформити замовлення
             </button>
+            {soldOutMessage && hasSoldOut && (
+              <p role="alert" className="mt-2 text-[13px] text-destructive">
+                Приберіть з кошика товари, яких немає в наявності
+              </p>
+            )}
           </aside>
         </div>
         {toast}

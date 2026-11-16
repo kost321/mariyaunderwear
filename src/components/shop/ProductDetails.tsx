@@ -195,7 +195,7 @@ export function ProductDetails({
   /** Description, characteristics: under the gallery on desktop (beside the sticky panel), after the panel on phones */
   description?: React.ReactNode
 }) {
-  const { addItem } = useCart()
+  const { items: cartItems, addItem } = useCart()
 
   const images = product.images ?? []
   const sizes = product.sizes ?? []
@@ -247,7 +247,18 @@ export function ProductDetails({
     // otherwise from the legacy colors array (selection within the page).
     color: showVariantSwitch ? (product.colorName ?? undefined) : color,
     quantity,
+    maxQuantity: typeof selectedStock === 'number' && selectedStock > 0 ? selectedStock : undefined,
   }
+
+  // The same line already in the cart: the cart never holds more than the size's stock (useCart clamps),
+  // so say it here instead of a silent "Додано ✓" that adds nothing
+  const inCart = size
+    ? (cartItems.find(
+        (i) => i.productId === selectedItem.productId && i.size === size && i.color === selectedItem.color,
+      )?.quantity ?? 0)
+    : 0
+  const canAdd = Math.max(0, maxQuantity - inCart)
+  const cartHasAll = inCart > 0 && canAdd === 0
 
   function handleSelectSize(value: string, stock?: number | null) {
     setSize(value)
@@ -264,7 +275,7 @@ export function ProductDetails({
   }
 
   function handleAddToCart() {
-    if (allSoldOut || needsSize()) return
+    if (allSoldOut || needsSize() || cartHasAll) return
     addItem(selectedItem)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
@@ -289,13 +300,13 @@ export function ProductDetails({
     <button
       type="button"
       onClick={handleAddToCart}
-      disabled={allSoldOut}
+      disabled={allSoldOut || (cartHasAll && !added)}
       className={cn(
         'h-10 w-full rounded-card bg-ink text-sm text-white transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ink',
         className,
       )}
     >
-      {allSoldOut ? 'Немає в наявності' : added ? 'Додано ✓' : 'Додати в кошик'}
+      {allSoldOut ? 'Немає в наявності' : added ? 'Додано ✓' : cartHasAll ? 'Уже в кошику' : 'Додати в кошик'}
     </button>
   )
 
@@ -480,6 +491,12 @@ export function ProductDetails({
             <p className={label}>Кількість</p>
             <QuantityStepper value={quantity} onChange={setQuantity} max={maxQuantity} />
           </div>
+        )}
+        {!allSoldOut && inCart > 0 && (
+          <p className="mt-2 text-right text-[13px] text-brown">
+            У кошику вже {inCart} шт.
+            {cartHasAll ? ' — це весь залишок' : inCart + quantity > maxQuantity ? `, можна додати ще ${canAdd}` : ''}
+          </p>
         )}
 
         {allSoldOut ? (

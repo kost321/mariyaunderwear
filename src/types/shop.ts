@@ -18,6 +18,8 @@ export interface CartItem {
   size?: string
   color?: string
   quantity: number
+  /** Stock of the chosen size when it was added: caps the quantity in the cart (the order API checks it again) */
+  maxQuantity?: number
 }
 
 /** Data the customer enters at checkout. */

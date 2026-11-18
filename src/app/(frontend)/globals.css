@@ -43,6 +43,22 @@
   .surface-dark :focus-visible {
     outline-color: #fff;
   }
+  /* The shopper asked the system for less motion: hover zooms, slides and fades become instant.
+     Loading spinners keep turning, they say that something is still happening. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .animate-spin {
+      animation-duration: 1s !important;
+      animation-iteration-count: infinite !important;
+    }
+  }
   /* Browser autofill paints filled fields light blue: keep them white with the site's ink text */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,

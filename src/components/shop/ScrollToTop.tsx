@@ -1,13 +1,14 @@
 'use client'
 
 import Image from 'next/image'
+import { scrollBehavior } from '@/lib/utils'
 
 /** Round "Back to top" button in the footer, in the bottom-right corner where it covers no links. */
 export function ScrollToTop() {
   return (
     <button
       type="button"
-      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      onClick={() => window.scrollTo({ top: 0, behavior: scrollBehavior() })}
       aria-label="Нагору"
       className="absolute bottom-6 right-4 opacity-60 transition-opacity hover:opacity-100 lg:bottom-6 lg:right-6"
     >

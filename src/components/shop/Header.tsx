@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 import { Instagram, Search, ShoppingBag, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { CONTACTS } from '@/lib/contacts'
-import { cn } from '@/lib/utils'
+import { cn, scrollBehavior } from '@/lib/utils'
 import { HeaderSearch } from './HeaderSearch'
 import { MobileMenu, type MenuCategory } from './MobileMenu'
 
@@ -47,7 +47,7 @@ export function Header({ categories, showBestsellers }: { categories: MenuCatego
   function onSearchClick() {
     const field = pathname === '/catalog' ? document.getElementById('catalog-search') : null
     if (field) {
-      field.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      field.scrollIntoView({ block: 'center', behavior: scrollBehavior() })
       field.focus({ preventScroll: true })
       return
     }

@@ -23,6 +23,14 @@ export function formatPrice(value: number): string {
   return `${digits} грн`
 }
 
+/**
+ * Scroll behaviour for scrollTo / scrollIntoView: smooth, unless the shopper asked the system for less motion.
+ * CSS `scroll-behavior` does not reach these calls, so they ask for it themselves.
+ */
+export function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+}
+
 /** Ukrainian plural form: plural(1, ['товар', 'товари', 'товарів']) → "товар", 3 → "товари", 5 → "товарів". */
 export function plural(n: number, [one, few, many]: [string, string, string]): string {
   const mod10 = n % 10

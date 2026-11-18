@@ -56,6 +56,9 @@ function EmptyCart() {
   )
 }
 
+/** One cart line = product + size + colour (the React key and the line to refocus after "Повернути") */
+const lineKey = (item: CartItem) => `${item.productId}-${item.size}-${item.color}`
+
 /** "Чайна роза · M": colour in sentence case and the size, as on the catalog cards. */
 const variantLine = (item: CartItem) => [item.color && colorLabel(item.color), item.size].filter(Boolean).join(' · ')
 
@@ -184,12 +187,20 @@ function BagItem({
   item,
   onRemove,
   onQuantity,
+  focusRemove,
 }: {
   item: CartItem
-  onRemove: () => void
+  /** viaKeyboard: the cross was pressed with the keyboard, so the focus has to go somewhere meaningful */
+  onRemove: (viaKeyboard: boolean) => void
   onQuantity: (q: number) => void
+  /** The line was just brought back with "Повернути": the focus returns to its cross */
+  focusRemove?: boolean
 }) {
   const title = shortProductTitle(item.title)
+  const removeButton = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (focusRemove) removeButton.current?.focus({ preventScroll: true })
+  }, [focusRemove])
   // Stock refreshed by the cart page (applyStock) came back as 0: the line cannot be ordered
   const soldOut = item.maxQuantity === 0
   return (
@@ -207,8 +218,10 @@ function BagItem({
             {soldOut && <p className="mt-1 text-sm text-destructive">Немає в наявності</p>}
           </div>
           <button
+            ref={removeButton}
             type="button"
-            onClick={onRemove}
+            // :focus-visible at the moment of the press = Enter or Space, not a tap or a click
+            onClick={(e) => onRemove(e.currentTarget.matches(':focus-visible'))}
             aria-label={`Прибрати з кошика: ${title}`}
             className="-mr-3 -mt-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-brown transition-colors [@media(hover:hover)]:hover:bg-cream [@media(hover:hover)]:hover:text-ink"
           >
@@ -235,11 +248,31 @@ function BagItem({
 const UNDO_MS = 5000
 
 /** Short note at the bottom of the screen after a line is removed, with a way to put it back. */
-function RemovedToast({ onUndo, onClose }: { onUndo: () => void; onClose: () => void }) {
+function RemovedToast({
+  onUndo,
+  onClose,
+  takeFocus,
+}: {
+  onUndo: () => void
+  onClose: () => void
+  /** Removed with the keyboard: the pressed cross is gone with its line, so the focus moves to "Повернути" */
+  takeFocus: boolean
+}) {
+  const undoButton = useRef<HTMLButtonElement>(null)
+  // The countdown waits while the pointer is over the toast or the focus is in it: nobody loses the undo mid-reach
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const paused = hovered || focused
+
   useEffect(() => {
+    if (takeFocus) undoButton.current?.focus({ preventScroll: true })
+  }, [takeFocus])
+
+  useEffect(() => {
+    if (paused) return
     const timer = setTimeout(onClose, UNDO_MS)
     return () => clearTimeout(timer)
-  }, [onClose])
+  }, [paused, onClose])
 
   return (
     // Pinned to the very bottom (above the iPhone home bar), so on phones it covers as little as possible.
@@ -249,9 +282,18 @@ function RemovedToast({ onUndo, onClose }: { onUndo: () => void; onClose: () => 
       role="status"
       className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+12px)] z-50 flex justify-center px-4 lg:bottom-6"
     >
-      <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-brown/15 bg-white py-1.5 pl-5 pr-1.5 text-sm text-ink shadow-[0_8px_24px_rgba(64,54,51,0.18)]">
+      <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false)
+        }}
+        className="pointer-events-auto flex items-center gap-2 rounded-full border border-brown/15 bg-white py-1.5 pl-5 pr-1.5 text-sm text-ink shadow-[0_8px_24px_rgba(64,54,51,0.18)]"
+      >
         <span>Товар видалено</span>
         <button
+          ref={undoButton}
           type="button"
           onClick={onUndo}
           className="rounded-full px-3 py-1.5 font-medium underline underline-offset-4 transition-colors hover:bg-[#f4efeb]"
@@ -322,19 +364,27 @@ export function CartPage() {
   const [consentMissing, setConsentMissing] = useState(false)
   const consentRef = useRef<HTMLInputElement>(null)
   // Last removed line, until the toast closes: a stray click on the cross does not cost the purchase
-  const [removed, setRemoved] = useState<{ item: CartItem; index: number; at: number } | null>(null)
+  const [removed, setRemoved] = useState<{ item: CartItem; index: number; at: number; viaKeyboard: boolean } | null>(null)
   const closeToast = useCallback(() => setRemoved(null), [])
+  // The line just brought back by "Повернути": its cross takes the focus once (BagItem), then this is cleared.
+  // Children run their effects first, so the clearing comes after the focus.
+  const [focusLine, setFocusLine] = useState<string | null>(null)
+  useEffect(() => {
+    if (focusLine) setFocusLine(null)
+  }, [focusLine])
 
-  function remove(index: number) {
-    setRemoved({ item: items[index], index, at: Date.now() })
+  function remove(index: number, viaKeyboard: boolean) {
+    setRemoved({ item: items[index], index, at: Date.now(), viaKeyboard })
     removeItem(index)
   }
 
   const toast = removed && (
     <RemovedToast
       key={removed.at}
+      takeFocus={removed.viaKeyboard}
       onUndo={() => {
         restoreItem(removed.item, removed.index)
+        setFocusLine(lineKey(removed.item))
         setRemoved(null)
       }}
       onClose={closeToast}
@@ -508,10 +558,11 @@ export function CartPage() {
             <ul className="divide-y divide-brown/15 border-y border-brown/15">
               {items.map((item, i) => (
                 <BagItem
-                  key={`${item.productId}-${item.size}-${item.color}`}
+                  key={lineKey(item)}
                   item={item}
-                  onRemove={() => remove(i)}
+                  onRemove={(viaKeyboard) => remove(i, viaKeyboard)}
                   onQuantity={(q) => updateQuantity(i, q)}
+                  focusRemove={focusLine === lineKey(item)}
                 />
               ))}
             </ul>

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
-import { cn, colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
+import { cn, colorLabel, formatPrice, scrollBehavior, shortProductTitle } from '@/lib/utils'
 import { sortByColor } from '@/lib/colors'
 import { QuantityStepper } from '@/components/shop/QuantityStepper'
 import { SizeChart } from '@/components/shop/SizeChart'
@@ -53,7 +53,7 @@ function MobileGallery({
     const i = Math.round(el.scrollLeft / el.clientWidth)
     if (i !== active) onChange(i)
   }
-  const goTo = (i: number) => track.current?.scrollTo({ left: i * track.current.clientWidth, behavior: 'smooth' })
+  const goTo = (i: number) => track.current?.scrollTo({ left: i * track.current.clientWidth, behavior: scrollBehavior() })
 
   if (!photos.length) return <div className="aspect-[3/4] rounded-card bg-placeholder/40 lg:hidden" />
 
@@ -270,7 +270,7 @@ export function ProductDetails({
   function needsSize() {
     if (sizes.length === 0 || size) return false
     setSizeMissing(true)
-    sizesBlock.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    sizesBlock.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'center' })
     return true
   }
 
@@ -532,6 +532,10 @@ export function ProductDetails({
             </button>
           </>
         )}
+        {/* "Додано ✓" is only a change of the button's text, which screen readers keep quiet about: said here */}
+        <p role="status" className="sr-only">
+          {added ? 'Товар додано в кошик' : ''}
+        </p>
 
         <BuyInfo facts={facts} />
       </div>

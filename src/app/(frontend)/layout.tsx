@@ -48,9 +48,19 @@ export default async function FrontendLayout({
     <html lang="uk" className={`${sans.variable} ${serif.variable}`}>
       {/* Room under the footer for the fixed mobile "Add to cart" bar (73px) on product pages */}
       <body className="flex min-h-screen flex-col bg-background font-sans has-[[data-sticky-buy]]:pb-[73px] lg:has-[[data-sticky-buy]]:pb-0">
+        {/* First stop of the Tab key: past the header straight to the page. Hidden until focused */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-white focus:px-5 focus:py-3 focus:text-sm focus:text-ink focus:shadow-lg"
+        >
+          Перейти до вмісту
+        </a>
         <CartProvider>
           <Header categories={categories} showBestsellers={showBestsellers} />
-          <main className="container flex-1 py-8">{children}</main>
+          {/* tabIndex -1: the skip link moves the keyboard focus here, not only the scroll; no ring around the whole page */}
+          <main id="main" tabIndex={-1} className="container flex-1 py-8 outline-none">
+            {children}
+          </main>
           <Footer />
         </CartProvider>
       </body>

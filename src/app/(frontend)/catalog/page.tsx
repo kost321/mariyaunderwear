@@ -253,7 +253,8 @@ export default async function CatalogPage({
 
       <div className="mt-8 lg:col-start-2 lg:row-start-3">
         <div className="mb-6 flex items-center justify-between text-sm text-brown">
-          <p>
+          {/* role=status: a screen reader hears the new count after a filter, the sorting or the search */}
+          <p role="status">
             {products.length} {plural(products.length, ['товар', 'товари', 'товарів'])}
           </p>
           <SortSelect value={params.sort} />

@@ -35,7 +35,7 @@ export default function Cooperation() {
         <section className="max-w-[560px]">
           <h2 className={subheading}>PR</h2>
           <p className={`mt-2 ${text}`}>
-            З питань колаборацій, інтерв&apos;ю та партнерств:{' '}
+            З питань колаборацій, інтервʼю та партнерств:{' '}
             <a href={wholesaleTel} className={link}>
               {CONTACTS.wholesalePhone}
             </a>
@@ -46,7 +46,7 @@ export default function Cooperation() {
           <div className={`mt-2 space-y-4 ${text}`}>
             <p>
               Якщо вас цікавить співпраця з Mariya Underwear у форматі дистрибуції, виставок чи оптового продажу
-              виробів, будемо раді познайомитися. Заповніть форму звʼязку або зв&apos;яжіться з нами напряму.
+              виробів, будемо раді познайомитися. Заповніть форму звʼязку або звʼяжіться з нами напряму.
             </p>
             <p>
               Електронна адреса:{' '}

@@ -140,7 +140,7 @@ export default async function HomePage() {
           <div className="text-center">
             <h2 className="heading-section">Догляд за виробами</h2>
             <p className="mx-auto mt-4 max-w-[685px] text-base leading-6 text-brown">
-              Правильний догляд зберігає м&apos;якість тканини та форму виробу. Ніжне прання при 30°, без відбілювачів,
+              Правильний догляд зберігає мʼякість тканини та форму виробу. Ніжне прання при 30°, без відбілювачів,
               сушіння в розправленому вигляді — і ваші речі довго залишатимуться як нові.
             </p>
           </div>

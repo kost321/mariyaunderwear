@@ -7,12 +7,12 @@ type FooterLink = { label: string; href?: string }
 
 // Items without `href` have no page yet: they are shown as plain text until the pages exist.
 const INFO_LINKS: FooterLink[] = [
-  { href: '/contacts', label: 'Контакти і соцмережі' },
+  { href: '/contacts', label: 'Контакти' },
   { href: '/cooperation', label: 'Співпраця' },
   { href: '/#care', label: 'Догляд' },
   { href: '/oferta', label: 'Договір публічної оферти' },
   { href: '/privacy', label: 'Політика конфіденційності' },
-  { href: '/delivery', label: 'Оплата і доставка' },
+  { href: '/delivery', label: 'Оплата, доставка, повернення' },
 ]
 
 /** Column of links. */

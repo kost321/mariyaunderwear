@@ -53,7 +53,8 @@
   "overrides": {
     "sharp": "$sharp",
     "undici": "^7.30.0",
-    "postcss": "$postcss"
+    "postcss": "$postcss",
+    "happy-dom": "^21.0.4"
   },
   "allowScripts": {
     "esbuild": true,

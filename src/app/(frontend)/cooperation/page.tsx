@@ -15,7 +15,8 @@ export const dynamic = 'force-dynamic'
 // Same text styles as the contacts page: sans subheadings a step bolder, body in the "Про бренд" colour
 const subheading = 'text-base font-medium text-ink'
 const text = 'text-base leading-7 text-brown'
-const link = 'text-ink underline-offset-4 transition-colors hover:underline'
+// Links inside a sentence are underlined all the time: by colour alone they barely stand out (axe link-in-text-block)
+const link = 'text-ink underline underline-offset-4 transition-colors hover:no-underline'
 
 const wholesaleTel = `tel:${phoneHref(CONTACTS.wholesalePhone)}`
 

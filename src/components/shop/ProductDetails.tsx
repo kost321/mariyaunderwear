@@ -55,7 +55,13 @@ function MobileGallery({
   }
   const goTo = (i: number) => track.current?.scrollTo({ left: i * track.current.clientWidth, behavior: scrollBehavior() })
 
-  if (!photos.length) return <div className="aspect-[3/4] rounded-card bg-placeholder/40 lg:hidden" />
+  // Same placeholder as on the catalog card
+  if (!photos.length)
+    return (
+      <div className="flex aspect-[3/4] items-center justify-center rounded-card bg-placeholder/40 text-sm text-brown lg:hidden">
+        немає фото
+      </div>
+    )
 
   return (
     <div className="lg:hidden">
@@ -72,7 +78,11 @@ function MobileGallery({
             className="relative aspect-[3/4] w-full shrink-0 snap-center bg-placeholder/40"
             aria-label={`Фото ${i + 1} з ${photos.length}, збільшити`}
           >
-            <Image src={photo.url} alt={photo.alt} fill priority={i === 0} quality={85} sizes="100vw" className="object-cover" />
+            {/*
+              The carousel is in the HTML on desktop too, only hidden (lg:hidden). "1px" from lg up: the preloaded
+              first photo then takes the smallest file there instead of a full-width one, and Next stops warning
+            */}
+            <Image src={photo.url} alt={photo.alt} fill priority={i === 0} quality={85} sizes="(min-width: 1024px) 1px, 100vw" className="object-cover" />
           </button>
         ))}
       </div>
@@ -326,8 +336,9 @@ export function ProductDetails({
 
       {/* DESKTOP GALLERY: large photo, thumbnails in a column on its left */}
       <div className="hidden lg:col-start-1 lg:row-start-1 lg:grid lg:grid-cols-[80px_minmax(0,1fr)] lg:gap-4">
-        <div className="relative aspect-[3/4] overflow-hidden rounded-card bg-placeholder/40 lg:order-2">
-          {mainUrl && (
+        {/* col-start-2: with one photo or none there is no thumbnail column, and the photo would drop into the 80px cell */}
+        <div className="relative aspect-[3/4] overflow-hidden rounded-card bg-placeholder/40 lg:order-2 lg:col-start-2">
+          {mainUrl ? (
             <button
               type="button"
               onClick={() => setLightboxOpen(true)}
@@ -336,6 +347,8 @@ export function ProductDetails({
             >
               <Image src={mainUrl} alt={mainAlt} fill priority quality={90} sizes="(max-width: 1024px) 100vw, 720px" className="object-cover" />
             </button>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-brown">немає фото</div>
           )}
         </div>
 
@@ -408,7 +421,7 @@ export function ProductDetails({
                 const unavailable = !isProductInStock(v.sizes)
                 const hint = unavailable ? `${name}, немає в наявності` : name
                 return isCurrent ? (
-                  <span key={v.id} title={hint} aria-label={`${hint} (обраний)`} aria-current="true" className={swatchClass(true, unavailable)} style={style} />
+                  <span key={v.id} role="img" title={hint} aria-label={`${hint} (обраний)`} aria-current="true" className={swatchClass(true, unavailable)} style={style} />
                 ) : (
                   <Link key={v.id} href={`/product/${v.slug}`} title={hint} aria-label={hint}>
                     <span className={swatchClass(false, unavailable)} style={style} />

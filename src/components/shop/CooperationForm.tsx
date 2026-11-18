@@ -74,7 +74,7 @@ export function CooperationForm() {
     <form ref={formRef} noValidate onSubmit={handleSubmit} className="grid gap-5 sm:grid-cols-2">
       <Field {...field('firstName')} label="Імʼя" required autoComplete="given-name" maxLength={100} error={fieldErrors.firstName} />
       <Field {...field('lastName')} label="Прізвище" autoComplete="family-name" maxLength={100} />
-      <Field {...field('email')} label="Email" type="email" required autoComplete="email" maxLength={120} placeholder="name@example.com" className="sm:col-span-2" error={fieldErrors.email} />
+      <Field {...field('email')} label="Електронна пошта" type="email" required autoComplete="email" maxLength={120} placeholder="name@example.com" className="sm:col-span-2" error={fieldErrors.email} />
       <Field {...field('company')} label="Організація / компанія / магазин" autoComplete="organization" maxLength={200} className="sm:col-span-2" />
       <Field {...field('phone')} label="Телефон" type="tel" inputMode="tel" autoComplete="tel" maxLength={30} placeholder="+380" className="sm:col-span-2" />
 

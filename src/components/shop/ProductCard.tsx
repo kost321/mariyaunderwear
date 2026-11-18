@@ -16,10 +16,13 @@ import { cn, colorLabel, formatPrice, isLightColor, shortProductTitle } from '@/
 export function ProductCard({
   product,
   sizes = '(max-width: 768px) 50vw, 33vw',
+  priority = false,
   className,
 }: {
   product: Product
   sizes?: string
+  /** For the first cards of a list: the top one is the page's LCP image, so it loads right away */
+  priority?: boolean
   className?: string
 }) {
   // Take the first image from the gallery.
@@ -43,6 +46,7 @@ export function ProductCard({
             alt={alt}
             fill
             sizes={sizes}
+            priority={priority}
             quality={90}
             className={cn(
               'object-cover transition-transform duration-500 group-hover:scale-105',

@@ -95,8 +95,9 @@ function EmptyResult({
         <div className="mt-14 w-full text-left">
           <p className="text-sm text-brown">Є в наявності</p>
           <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:gap-x-10">
-            {suggestions.map((p) => (
-              <ProductCard key={p.id} product={p} sizes="(max-width: 768px) 50vw, 300px" />
+            {/* With nothing found these cards are the first photos on screen, so the first row gets priority too */}
+            {suggestions.map((p, i) => (
+              <ProductCard key={p.id} product={p} sizes="(max-width: 768px) 50vw, 300px" priority={i < 3} />
             ))}
           </div>
         </div>
@@ -262,8 +263,9 @@ export default async function CatalogPage({
 
         {products.length > 0 ? (
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:gap-x-10 lg:gap-y-12">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} sizes="(max-width: 768px) 80vw, 540px" />
+            {/* The first row (3 cards on desktop, 2 + 1 on phones) is above the fold: priority, not lazy */}
+            {products.map((product, i) => (
+              <ProductCard key={product.id} product={product} sizes="(max-width: 768px) 80vw, 540px" priority={i < 3} />
             ))}
           </div>
         ) : (

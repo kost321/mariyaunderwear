@@ -61,7 +61,7 @@ export default async function OrderPage({ params }: Params) {
   const details = [
     { label: 'Отримувач', value: order.customerName },
     { label: 'Телефон', value: formatUaPhoneInput(order.phone) },
-    { label: 'Email', value: order.email },
+    { label: 'Електронна пошта', value: order.email },
     { label: 'Доставка', value: delivery },
     { label: 'Оплата', value: payment ? paymentMethodLabel(payment) : 'уточнимо під час дзвінка' },
     { label: 'Коментар', value: comment },
@@ -132,7 +132,7 @@ export default async function OrderPage({ params }: Params) {
             {details.map((row) => (
               <div key={row.label} className="flex gap-4">
                 <dt className="w-24 shrink-0 text-brown">{row.label}</dt>
-                <dd className={cn('min-w-0 flex-1 text-ink', row.label === 'Email' && 'break-all')}>{row.value}</dd>
+                <dd className={cn('min-w-0 flex-1 text-ink', row.label === 'Електронна пошта' && 'break-all')}>{row.value}</dd>
               </div>
             ))}
           </dl>

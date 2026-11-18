@@ -203,6 +203,8 @@ function BagItem({
   }, [focusRemove])
   // Stock refreshed by the cart page (applyStock) came back as 0: the line cannot be ordered
   const soldOut = item.maxQuantity === 0
+  // The whole stock of the size is in the cart: "+" is greyed out, and this says why (as "це весь залишок" on the product page)
+  const allStock = !soldOut && item.maxQuantity != null && item.quantity >= item.maxQuantity
   return (
     <li className="flex gap-4 py-5 sm:gap-5">
       <Link href={`/product/${item.slug}`} className={cn(photo, 'aspect-[4/5] w-24 shrink-0 rounded-2xl sm:w-28')}>
@@ -216,6 +218,7 @@ function BagItem({
             </Link>
             <p className="mt-1 text-sm text-brown">{variantLine(item)}</p>
             {soldOut && <p className="mt-1 text-sm text-destructive">Немає в наявності</p>}
+            {allStock && <p className="mt-1 text-sm text-brown">Більше немає в наявності</p>}
           </div>
           <button
             ref={removeButton}
@@ -722,7 +725,7 @@ export function CartPage() {
                   hint="Менеджер зателефонує, щоб підтвердити замовлення"
                 />
                 <FormField
-                  label="Email"
+                  label="Електронна пошта"
                   name="email"
                   type="email"
                   autoComplete="email"
@@ -798,6 +801,8 @@ export function CartPage() {
                   value={form.novaPoshtaBranch}
                   onChange={handleChange}
                   placeholder="Наприклад, 12"
+                  // Free text until the Nova Poshta API autocomplete; the hint says a parcel locker number is fine too
+                  hint="Номер відділення або поштомата"
                   error={errors.novaPoshtaBranch}
                 />
                 <div className="sm:col-span-2">

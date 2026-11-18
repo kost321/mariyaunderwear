@@ -14,7 +14,7 @@ type Social = { label: string; href: string; Icon: LucideIcon | typeof TikTok; f
 
 const ALL: Record<'instagram' | 'email' | 'tiktok', Social> = {
   instagram: { label: 'Instagram', href: CONTACTS.instagram, Icon: Instagram },
-  email: { label: 'Email', href: CONTACTS.email && `mailto:${CONTACTS.email}`, Icon: Mail },
+  email: { label: 'Електронна пошта', href: CONTACTS.email && `mailto:${CONTACTS.email}`, Icon: Mail },
   tiktok: { label: 'TikTok', href: CONTACTS.tiktok, Icon: TikTok, filled: true },
 }
 

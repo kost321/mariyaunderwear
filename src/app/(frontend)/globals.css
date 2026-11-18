@@ -39,6 +39,10 @@
     outline: 2px solid #403834;
     outline-offset: 2px;
   }
+  /* On dark surfaces (footer, photo viewer) the ink ring would merge with the background: white there */
+  .surface-dark :focus-visible {
+    outline-color: #fff;
+  }
   /* Browser autofill paints filled fields light blue: keep them white with the site's ink text */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,

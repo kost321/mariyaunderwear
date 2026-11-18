@@ -53,7 +53,7 @@ export function PhotoLightbox({
   return (
     <div
       ref={viewer}
-      className="fixed inset-0 z-50 bg-ink/90"
+      className="surface-dark fixed inset-0 z-50 bg-ink/90"
       onClick={onClose}
       onTouchStart={(e) => {
         touchStartX.current = e.touches[0].clientX

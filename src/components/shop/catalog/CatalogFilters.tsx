@@ -275,7 +275,7 @@ export function SortSelect({ value }: { value: CatalogParams['sort'] }) {
         value={value}
         aria-label="Сортування"
         onChange={(e) => update({ sort: e.target.value === 'new' ? undefined : e.target.value })}
-        className="-my-3 cursor-pointer bg-transparent py-3 text-sm text-brown focus:outline-none"
+        className="-my-3 cursor-pointer rounded-md bg-transparent py-3 text-sm text-brown"
       >
         {SORT_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>

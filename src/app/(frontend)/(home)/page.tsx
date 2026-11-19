@@ -191,36 +191,42 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Tinted band with a photo: plain centred text on white looked empty */}
+        {/* Tinted band with a photo: plain centred text on white looked empty. The photo bleeds to the
+            card edges: framed inside the padding, its grey backdrop read as a second box on the beige. */}
         <section
           aria-labelledby="about"
           className={cn(
-            'grid items-center gap-8 overflow-hidden rounded-card bg-[#f4efeb] p-6 sm:p-10 lg:gap-16 lg:p-14',
-            aboutImage && 'lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]',
+            'grid overflow-hidden rounded-card bg-[#f4efeb]',
+            aboutImage && 'lg:grid-cols-2',
           )}
         >
           {aboutImage && (
-            <Link href={aboutImage.href} className="relative block aspect-[4/5] overflow-hidden rounded-card bg-placeholder/40">
+            <Link
+              href={aboutImage.href}
+              className="relative block aspect-[4/5] sm:aspect-[3/2] lg:aspect-auto lg:min-h-[560px]"
+            >
+              {/* Product shots sit on a flat ~#eaeaec backdrop: brightening it to white and multiplying
+                  onto the beige card makes the backdrop vanish without a cut-out file */}
               <Image
                 src={aboutImage.url}
                 alt={aboutImage.alt}
                 fill
-                sizes="(max-width: 1024px) 90vw, 460px"
+                sizes="(max-width: 1024px) 100vw, 640px"
                 quality={90}
-                className="object-cover"
+                className="object-cover object-top mix-blend-multiply brightness-[1.09]"
               />
             </Link>
           )}
-          <div>
+          <div className="self-center p-6 sm:p-10 lg:px-16 lg:py-14">
             <h2 id="about" className="heading-section">
               Про бренд
             </h2>
-            <div className="mt-6 max-w-[560px] space-y-4 text-base leading-7 text-brown lg:mt-8">
+            <div className="mt-6 max-w-[520px] space-y-4 text-base leading-7 text-brown lg:mt-8 lg:text-lg lg:leading-8">
               {ABOUT_TEXT.map((p) => (
                 <p key={p}>{p}</p>
               ))}
             </div>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:gap-4">
+            <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-8 lg:mt-10">
               <Link
                 href="/catalog"
                 className="flex h-11 w-[220px] items-center justify-center rounded-card bg-ink text-sm text-white transition-colors hover:bg-ink/90"
@@ -232,9 +238,9 @@ export default async function HomePage() {
                   href={CONTACTS.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-11 w-[220px] items-center justify-center rounded-card border border-brown/50 text-sm text-brown transition-colors hover:border-ink hover:text-ink"
+                  className="relative text-sm text-brown underline-offset-4 transition-colors before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] hover:text-ink hover:underline"
                 >
-                  Ми в Instagram
+                  Ми в Instagram →
                 </a>
               )}
             </div>

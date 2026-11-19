@@ -53,9 +53,10 @@ A collection is a database table + access rules + admin fields.
 
 - **`Settings.ts`**: site-wide content, currently the "Delivery and payment" text shown on product pages.
 
-## Custom admin `src/admin/torgsoft-import/`
+## Custom admin `src/admin/`
 
-A custom admin page and sidebar link for importing prices, per-size stock and materials from a Torgsoft Excel/CSV export. The server side lives in `lib/torgsoftImport.ts` and `lib/torgsoftImportEndpoint.ts`.
+- **`torgsoft-import/`**: a custom admin page and sidebar link for importing prices, per-size stock and materials from a Torgsoft Excel/CSV export. The server side lives in `lib/torgsoftImport.ts` and `lib/torgsoftImportEndpoint.ts`.
+- **`help/`**: the «Довідка» page at `/admin/help` (sidebar: «Довідка → Як користуватися адмінкою»). It renders [docs/admin-guide.md](docs/admin-guide.md), the owner's guide to every admin feature, in Ukrainian. **Update the guide with every admin-facing change.** Login required (custom views are not protected by Payload on their own).
 
 ---
 

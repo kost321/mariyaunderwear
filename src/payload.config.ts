@@ -35,8 +35,16 @@ export default buildConfig({
           Component: '/src/admin/torgsoft-import/TorgsoftImportView#TorgsoftImportView',
           path: '/torgsoft-import',
         },
+        // Owner's guide to the admin, rendered from docs/admin-guide.md
+        help: {
+          Component: '/src/admin/help/HelpView#HelpView',
+          path: '/help',
+        },
       },
-      afterNavLinks: ['/src/admin/torgsoft-import/TorgsoftNavLink#TorgsoftNavLink'],
+      afterNavLinks: [
+        '/src/admin/torgsoft-import/TorgsoftNavLink#TorgsoftNavLink',
+        '/src/admin/help/HelpNavLink#HelpNavLink',
+      ],
     },
   },
 

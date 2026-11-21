@@ -88,7 +88,7 @@ export const Reviews: CollectionConfig = {
       defaultValue: false,
       admin: {
         position: 'sidebar',
-        description: 'Блок «Відгуки» на головній. Якщо не відмічено жодного — там показуються останні опубліковані.',
+        description: 'Блок «Відгуки» на головній. Без галочки відгук є тільки на сторінці товару.',
       },
     },
     {

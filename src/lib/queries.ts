@@ -219,17 +219,22 @@ export async function getProductReviews(productIds: (number | string)[]): Promis
 }
 
 /**
- * Reviews for the home page block: those ticked «Показувати на головній», otherwise the latest published.
+ * Reviews for the home page block: only published ones ticked «Показувати на головній». No fallback to
+ * the latest: the owner expects an unticked review to stay off the home page.
  */
 export async function getHomeReviews(): Promise<Review[]> {
   try {
     const payload = await getPayload()
-    const find = (where: Where) =>
+    const result = await payload.find({
+      collection: 'reviews',
+      where: { status: { equals: 'approved' }, showOnHome: { equals: true } },
+      sort: '-createdAt',
+      limit: 12,
       // depth 2: the card footer shows the product's first photo
-      payload.find({ collection: 'reviews', where, sort: '-createdAt', limit: 12, depth: 2, overrideAccess: false })
-    const picked = await find({ status: { equals: 'approved' }, showOnHome: { equals: true } })
-    if (picked.docs.length > 0) return picked.docs
-    return (await find({ status: { equals: 'approved' } })).docs
+      depth: 2,
+      overrideAccess: false,
+    })
+    return result.docs
   } catch {
     return []
   }

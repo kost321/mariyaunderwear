@@ -4,11 +4,11 @@ import { ReviewCard } from '@/components/shop/reviews/ReviewCard'
 import { ProductSlider } from './ProductSlider'
 
 /**
- * "Відгуки" on the home page, right after "Новинки": published reviews (those ticked for the home page
- * first), three to a row, and a link to the pinned «Відгуки» stories in Instagram.
+ * "Відгуки" on the home page, right after "Новинки": published reviews ticked «Показувати на головній»,
+ * three to a row, and a link to the pinned «Відгуки» stories in Instagram.
  * Three fill a desktop row exactly (no arrows); on phones the cards scroll sideways like "Новинки"
  * instead of a long column.
- * Until there are reviews in the admin, only the heading and the Instagram link are shown.
+ * Until a review is ticked, only the heading and the Instagram link are shown.
  */
 export function HomeReviews({ reviews }: { reviews: ReviewView[] }) {
   const instagram = CONTACTS.instagramReviews && (

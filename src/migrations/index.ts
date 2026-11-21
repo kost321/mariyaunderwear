@@ -11,6 +11,7 @@ import * as migration_20261028_120000_order_payment_ttn from './20261028_120000_
 import * as migration_20261101_120000_materials from './20261101_120000_materials';
 import * as migration_20261101_150000_materials_care_text from './20261101_150000_materials_care_text';
 import * as migration_20261112_120000_products_bestseller from './20261112_120000_products_bestseller';
+import * as migration_20261121_120000_reviews from './20261121_120000_reviews';
 
 export const migrations = [
   {
@@ -77,5 +78,10 @@ export const migrations = [
     up: migration_20261112_120000_products_bestseller.up,
     down: migration_20261112_120000_products_bestseller.down,
     name: '20261112_120000_products_bestseller',
+  },
+  {
+    up: migration_20261121_120000_reviews.up,
+    down: migration_20261121_120000_reviews.down,
+    name: '20261121_120000_reviews',
   },
 ];

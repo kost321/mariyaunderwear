@@ -72,6 +72,7 @@ export interface Config {
     categories: Category;
     materials: Material;
     orders: Order;
+    reviews: Review;
     media: Media;
     users: User;
     'payload-kv': PayloadKv;
@@ -86,6 +87,7 @@ export interface Config {
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     materials: MaterialsSelect<false> | MaterialsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
+    reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -346,6 +348,53 @@ export interface Order {
   createdAt: string;
 }
 /**
+ * Відгуки з форми на сайті приходять зі статусом «На перевірці» — на сайті вони зʼявляться, коли ви змініть статус на «Опубліковано».
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviews".
+ */
+export interface Review {
+  id: number;
+  status: 'pending' | 'approved' | 'rejected';
+  /**
+   * «Форма на сайті» ставиться сама, коли відгук приходить із сайту. Вручну її обрати не можна.
+   */
+  source: 'site' | 'instagram' | 'other';
+  /**
+   * Блок «Відгуки» на головній. Якщо не відмічено жодного — там показуються останні опубліковані.
+   */
+  showOnHome?: boolean | null;
+  /**
+   * Як підписати відгук на сайті: імʼя або нік в Instagram.
+   */
+  authorName: string;
+  /**
+   * Відгук показується на сторінці цього товару і всіх його кольорів. Порожньо — відгук про магазин загалом (тільки на головній).
+   */
+  product?: (number | null) | Product;
+  /**
+   * Для відгуків з Instagram можна не ставити — тоді зірки не показуються.
+   */
+  rating?: number | null;
+  text?: string | null;
+  size?: string | null;
+  fit?: ('small' | 'fits' | 'large') | null;
+  /**
+   * Скриншот повідомлення чи сторіс. Перед завантаженням замажте імʼя, фото профілю й номер телефону, якщо людина не погодилась їх показувати.
+   */
+  screenshot?: (number | null) | Media;
+  /**
+   * Необовʼязково: якщо відгук — публічний пост або коментар.
+   */
+  link?: string | null;
+  /**
+   * Необовʼязково. Показується під відгуком.
+   */
+  reply?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
@@ -415,6 +464,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'orders';
         value: number | Order;
+      } | null)
+    | ({
+        relationTo: 'reviews';
+        value: number | Review;
       } | null)
     | ({
         relationTo: 'media';
@@ -572,6 +625,26 @@ export interface OrdersSelect<T extends boolean = true> {
         id?: T;
       };
   totalPrice?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviews_select".
+ */
+export interface ReviewsSelect<T extends boolean = true> {
+  status?: T;
+  source?: T;
+  showOnHome?: T;
+  authorName?: T;
+  product?: T;
+  rating?: T;
+  text?: T;
+  size?: T;
+  fit?: T;
+  screenshot?: T;
+  link?: T;
+  reply?: T;
   updatedAt?: T;
   createdAt?: T;
 }

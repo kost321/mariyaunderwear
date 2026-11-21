@@ -16,6 +16,7 @@ import { ProductModels } from './collections/ProductModels'
 import { Products } from './collections/Products'
 import { Materials } from './collections/Materials'
 import { Orders } from './collections/Orders'
+import { Reviews } from './collections/Reviews'
 import { Settings } from './globals/Settings'
 import { torgsoftImportHandler } from './lib/torgsoftImportEndpoint'
 
@@ -54,7 +55,7 @@ export default buildConfig({
   },
 
   // Register all collections.
-  collections: [Products, ProductModels, Categories, Materials, Orders, Media, Users],
+  collections: [Products, ProductModels, Categories, Materials, Orders, Reviews, Media, Users],
 
   // Global store settings.
   globals: [Settings],

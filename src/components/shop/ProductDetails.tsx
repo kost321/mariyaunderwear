@@ -12,6 +12,8 @@ import { QuantityStepper } from '@/components/shop/QuantityStepper'
 import { SizeChart } from '@/components/shop/SizeChart'
 import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
+import { Stars } from '@/components/shop/reviews/Stars'
+import { reviewsCountLabel } from '@/lib/reviews'
 import { useCart } from '@/hooks/useCart'
 import { isProductInStock, isSizeAvailable } from '@/lib/stock'
 import { productMaterials } from '@/lib/catalog'
@@ -196,6 +198,7 @@ export function ProductDetails({
   colorVariants = [],
   facts,
   description,
+  rating,
 }: {
   product: Product
   /** Other color cards of the same model (linked by the model field). */
@@ -204,6 +207,8 @@ export function ProductDetails({
   facts?: ProductFacts
   /** Description, characteristics: under the gallery on desktop (beside the sticky panel), after the panel on phones */
   description?: React.ReactNode
+  /** Average rating and review count: stars under the title, a link down to the reviews */
+  rating?: { average: number; count: number }
 }) {
   const { items: cartItems, addItem } = useCart()
 
@@ -387,6 +392,12 @@ export function ProductDetails({
         <h1 className="font-serif text-[30px] leading-[36px] text-ink-text lg:text-[40px] lg:leading-[46px]">
           {shortProductTitle(product.title)}
         </h1>
+        {rating && (
+          <a href="#reviews" className="mt-2 inline-flex items-center gap-2 text-sm text-brown hover:text-ink">
+            <Stars value={rating.average} size={14} />
+            <span className="underline-offset-2 hover:underline">{reviewsCountLabel(rating.count)}</span>
+          </a>
+        )}
         <p className="mt-3 text-2xl text-ink lg:mt-4">{formatPrice(product.price)}</p>
         {product.sku && <p className="mt-4 text-xs text-brown">Артикул: {product.sku}</p>}
         {/* The composition right by the price: the name says «шовк Армані», shoppers want to know what it is */}

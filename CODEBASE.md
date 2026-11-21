@@ -46,6 +46,7 @@ A collection is a database table + access rules + admin fields.
 - **`Categories.ts`**: product categories (`title`, `slug`, `image`).
 - **`Materials.ts`**: fabric reference list (`title`, `slug`, `showOnHome`, `sortOrder`, `image`, `careText`: care advice shown over the home page card on hover, under it on touch screens). Products link to it (`materials`, hasMany); powers the material line on the product page, the catalog "Матеріал" filter and the fabric block on the home page. The Torgsoft import creates missing materials from the "Матеріал" column.
 - **`Orders.ts`**: customer orders. Each line stores a snapshot of title, price, size, color and quantity. `totalPrice` is recalculated on the server. Orders can only be created by the server route `/api/order`.
+- **`Reviews.ts`**: customer reviews (`status` pending/approved/rejected, `source` site/instagram/other, `showOnHome`, `authorName`, `product`, `rating`, `text`, `size`, `fit`, `screenshot`, `link`, `reply`). The public reads only approved ones. Site reviews come only through `/api/review`; Instagram ones are added by hand with a screenshot.
 - **`Media.ts`**: image library stored in Cloudinary. The database keeps only the filename and URL.
 - **`Users.ts`**: CMS administrators with access to `/admin`. Customers do not register.
 
@@ -65,13 +66,14 @@ A collection is a database table + access rules + admin fields.
 The public part of the site.
 
 - **`layout.tsx`**: shared layout (Header, Footer, CartProvider) and site-wide SEO metadata.
-- **`page.tsx`**: home page: hero (store description as the only H1 in a small line, short phrase in large type, one photo of the newest model with color swatches that switch it), trust row (delivery, payment, returns, made in Ukraine), "Новинки" slider, fabric block (Materials with `showOnHome`, placeholders until any are marked), "Про бренд" (draft text in `ABOUT_TEXT`). Rendered on every request.
+- **`page.tsx`**: home page: hero (store description as the only H1 in a small line, short phrase in large type, one photo of the newest model with color swatches that switch it), trust row (delivery, payment, returns, made in Ukraine), "Новинки" slider, "Відгуки" (`HomeReviews`, right after the products), fabric block (Materials with `showOnHome`, placeholders until any are marked), "Про бренд" (draft text in `ABOUT_TEXT`). Rendered on every request.
 - **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, material, "in stock only" (`stock=in`), price and sorting are applied in memory (`lib/catalog.ts`); orderable products always come before sold-out ones. Search: a field next to the category chips (`CatalogSearch`) filters the grid as you type (debounced `?q=` without a page reload); on /catalog the header's search icon focuses it. No matches → in-stock suggestions.
 - **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams`, `generateMetadata`, canonical URL and JSON-LD `Product` markup.
 - **`cart/page.tsx`**: cart and checkout.
 - **`api/search/route.ts`**: `GET ?q=` live results for the header search panel (short title, price, colour, thumbnail, stock; in-stock suggestions when nothing matches). Same matching as `/catalog?q=`.
 - **`order/[token]/page.tsx`**: "order accepted" page (number, what happens next, order lines, details and totals on a warm panel). Opens only with a valid signed token, so order numbers cannot be walked through; noindex, no referrer. Delivery is read back from `comment` ("city | branch | comment") until orders get delivery fields.
 - **`api/order/route.ts`**: order endpoint. Validates input, rate-limits by IP, re-reads prices and stock from the database, saves the order and emails the owner. Repeat-safe: the checkout sends an `orderKey` with every retry and `lib/idempotency` returns the already created order instead of a second one (in memory, 30 min). Both the checkout and the quick order send through `lib/submitOrder` (timeout, error texts, order key) and mask the phone with `hooks/usePhoneMask`; the checkout keeps a draft of the form in sessionStorage so a reload or the error screen does not lose it. The checkout locks the button while sending, waits up to 30 s and on failure shows the error under the button with a retry, keeping the form. The answer carries a signed `token` (`lib/orderToken`: id + expiry + HMAC with `PAYLOAD_SECRET`, 30 days); the cart then opens `/order/<token>`, and the customer's email links to it.
+- **`api/review/route.ts`**: review endpoint for the product page form: validates, rate-limits by IP, drops bots through a hidden `website` field, saves the review as `pending` and emails the owner a link to it in the admin.
 - **`src/app/robots.ts`, `src/app/sitemap.ts`**: `robots.txt` and `sitemap.xml`.
 
 ## Payload `src/app/(payload)/`
@@ -96,6 +98,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 - **`shop/JsonLd.tsx`**: structured data for Google: `JsonLd` (escaped script tag), `storeLd` (store + site search, home page), `breadcrumbsLd` (category and product pages).
 - **`shop/catalog/`**: `CatalogFilters` (sticky sidebar on desktop: size and colour as round buttons, an "in stock only" switch, the price range hidden while every product costs the same).
 - **`shop/home/`**: `HeroSection` (first screen in three layouts: a — text + one photo, default; b — two photos; c — banner on the studio backdrop colour; search moved to the header's search icon), `HeroVariantSwitch` (client demo only: `/?hero=a|b|c` shows a floating switch; remove with the unused layouts once one is chosen), `TrustStrip` (store promises under the hero; keep in sync with `/delivery` and the checkout), `ProductSlider`, `ArrowButton`.
+- **`shop/reviews/`**: `ProductReviews` (the "Відгуки" section of the product page: average, fit summary, list 3 at a time, form closed until asked for, `ReviewForm`), `ReviewCard` (screenshot opens in `PhotoLightbox`), `Stars`. A review is shown on every colour card of its model. `shop/home/HomeReviews` is the home page block (`ProductSlider perView={3}`: three to a desktop row, sideways scroll on phones; product footer with photo; link to the pinned Instagram stories `CONTACTS.instagramReviews`).
 - **`ui/button.tsx`**: base button with style variants (CVA).
 
 ## Hooks `src/hooks/`
@@ -116,6 +119,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 | `slug.ts` | Slug generation with Cyrillic transliteration |
 | `torgsoftImport.ts` | Parses and applies a Torgsoft export |
 | `torgsoftImportEndpoint.ts` | `POST /api/torgsoft-import` (admins only) |
+| `reviews.ts` | Review helpers shared by server and client: `FIT_LABELS`, `summarizeReviews` (average, fit majority), `toReviewView` (plain data for client cards), Ukrainian plural `reviewsCountLabel` |
 | `utils.ts` | `formatPrice` (hryvnias), `cn` (class merging) |
 
 ## Migrations `src/migrations/`

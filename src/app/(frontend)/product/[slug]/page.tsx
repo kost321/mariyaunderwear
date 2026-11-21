@@ -4,6 +4,7 @@ import {
   getProductBySlug,
   getAllProductSlugs,
   getColorVariants,
+  getProductReviews,
 } from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
 import { ProductDetails, type ProductFacts } from '@/components/shop/ProductDetails'
@@ -16,6 +17,8 @@ import { JsonLd, SITE_URL, breadcrumbsLd } from '@/components/shop/JsonLd'
 import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
 import { modelName } from '@/lib/utils'
 import { formatDescriptionHtml, formatSpecsHtml, paragraphs, specValue } from '@/lib/productText'
+import { summarizeReviews, toReviewView } from '@/lib/reviews'
+import { ProductReviews } from '@/components/shop/reviews/ProductReviews'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -104,9 +107,12 @@ export default async function ProductPage({ params }: Params) {
     typeof product.model === 'object' && product.model !== null
       ? product.model.id
       : product.model
-  const [colorVariants] = await Promise.all([
-    modelId ? getColorVariants(modelId) : Promise.resolve([]),
-  ])
+  const colorVariants = modelId ? await getColorVariants(modelId) : []
+  // Reviews are shared by every colour of the model: fit and fabric are the same
+  const reviews = await getProductReviews([product.id, ...colorVariants.map((v) => v.id).filter((id) => id !== product.id)])
+  const reviewSummary = summarizeReviews(reviews)
+  // Google expects ratings collected on the site itself, so Instagram and hand-added ones stay out of the markup
+  const siteRatings = reviews.filter((r) => r.source === 'site' && typeof r.rating === 'number')
 
   // relatedProducts: products hand-picked in the admin (relationship, hasMany).
   // With depth: 2 Payload returns them as full objects, not just ids.
@@ -149,6 +155,22 @@ export default async function ProductPage({ params }: Params) {
       description: truncate(toPlainText(product.description), 500),
     }),
     brand: { '@type': 'Brand', name: 'Mariya Underwear' },
+    ...(siteRatings.length > 0 && {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: summarizeReviews(siteRatings).average,
+        reviewCount: siteRatings.length,
+        bestRating: 5,
+        worstRating: 1,
+      },
+      review: siteRatings.slice(0, 5).map((r) => ({
+        '@type': 'Review',
+        author: { '@type': 'Person', name: r.authorName },
+        datePublished: r.createdAt.slice(0, 10),
+        reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+        ...(r.text && { reviewBody: r.text }),
+      })),
+    }),
     offers: {
       '@type': 'Offer',
       url: `${SITE_URL}/product/${slug}`,
@@ -174,6 +196,7 @@ export default async function ProductPage({ params }: Params) {
           product={product}
           colorVariants={colorVariants}
           facts={facts}
+          rating={reviewSummary.average ? { average: reviewSummary.average, count: reviews.length } : undefined}
           description={
             // Care lives in the "Склад і догляд" block next to the buy button, so it is not repeated here
             <ProductDescription
@@ -189,6 +212,12 @@ export default async function ProductPage({ params }: Params) {
           }
         />
       </div>
+
+      <ProductReviews
+        reviews={reviews.map((r) => toReviewView(r, getMediaUrl))}
+        summary={reviewSummary}
+        productId={product.id}
+      />
 
       {/* "Frequently bought together": products hand-picked in the admin */}
       {relatedProducts.length > 0 && (

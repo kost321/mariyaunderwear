@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { Where } from 'payload'
 import { getPayload } from './payload'
-import type { Product, Category, Material } from '@/payload-types'
+import type { Product, Category, Material, Review } from '@/payload-types'
 import { sortByColor } from '@/lib/colors'
 
 /**
@@ -193,4 +193,44 @@ export async function getAllProductSlugs(): Promise<string[]> {
   })
 
   return result.docs.map((doc) => doc.slug).filter(Boolean) as string[]
+}
+
+/**
+ * Published reviews of a product and all its colour cards (one model = one set of reviews), newest first.
+ */
+export async function getProductReviews(productIds: (number | string)[]): Promise<Review[]> {
+  if (productIds.length === 0) return []
+  try {
+    const payload = await getPayload()
+    const result = await payload.find({
+      collection: 'reviews',
+      where: { status: { equals: 'approved' }, product: { in: productIds } },
+      sort: '-createdAt',
+      limit: 200,
+      depth: 1,
+      // As a visitor: only published reviews, whatever the caller passes
+      overrideAccess: false,
+    })
+    return result.docs
+  } catch {
+    // The reviews table is not created yet (before the migration)
+    return []
+  }
+}
+
+/**
+ * Reviews for the home page block: those ticked «Показувати на головній», otherwise the latest published.
+ */
+export async function getHomeReviews(): Promise<Review[]> {
+  try {
+    const payload = await getPayload()
+    const find = (where: Where) =>
+      // depth 2: the card footer shows the product's first photo
+      payload.find({ collection: 'reviews', where, sort: '-createdAt', limit: 12, depth: 2, overrideAccess: false })
+    const picked = await find({ status: { equals: 'approved' }, showOnHome: { equals: true } })
+    if (picked.docs.length > 0) return picked.docs
+    return (await find({ status: { equals: 'approved' } })).docs
+  } catch {
+    return []
+  }
 }

@@ -25,6 +25,8 @@ export const CONTACTS = {
   /** The same address split into parts, for Google structured data (components/shop/JsonLd) */
   addressParts: { street: 'вул. Мазепи, 12', city: 'Шептицький', region: 'Львівська область' },
   instagram: 'https://www.instagram.com/mariyaunderwear',
+  /** Pinned stories «Відгуки» in Instagram: the home page reviews block links to them */
+  instagramReviews: 'https://www.instagram.com/stories/highlights/18075096355729771/',
   tiktok: 'https://www.tiktok.com/@mariyaunderwear',
 }
 

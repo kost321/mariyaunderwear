@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Product } from '@/payload-types'
-import { getHomeMaterials, getProducts } from '@/lib/queries'
+import { getHomeMaterials, getHomeReviews, getProducts } from '@/lib/queries'
 import { availableFirst } from '@/lib/catalog'
 import { sortByColor } from '@/lib/colors'
 import { getMediaAlt, getMediaUrl } from '@/lib/media'
@@ -9,6 +9,8 @@ import { ProductCard } from '@/components/shop/ProductCard'
 import { HeroSection, type HeroItem } from '@/components/shop/home/HeroSection'
 import { ProductSlider } from '@/components/shop/home/ProductSlider'
 import { TrustStrip } from '@/components/shop/home/TrustStrip'
+import { HomeReviews } from '@/components/shop/home/HomeReviews'
+import { toReviewView } from '@/lib/reviews'
 import { JsonLd, storeLd } from '@/components/shop/JsonLd'
 import { CONTACTS } from '@/lib/contacts'
 import { cn, colorLabel } from '@/lib/utils'
@@ -78,7 +80,7 @@ const FALLBACK_FABRICS = ['Шовк', 'Бавовна', 'Мікромасло', 
 }))
 
 export default async function HomePage() {
-  const [products, homeMaterials] = await Promise.all([getProducts(), getHomeMaterials()])
+  const [products, homeMaterials, homeReviews] = await Promise.all([getProducts(), getHomeMaterials(), getHomeReviews()])
   const fabrics = homeMaterials.length
     ? homeMaterials.map((m) => ({
         title: m.title,
@@ -135,6 +137,9 @@ export default async function HomePage() {
             </ProductSlider>
           </section>
         )}
+
+        {/* Reviews right after the products: what other buyers say matters most next to what is for sale */}
+        <HomeReviews reviews={homeReviews.map((r) => toReviewView(r, getMediaUrl))} />
 
         <section id="care" className="scroll-mt-8">
           <div className="text-center">

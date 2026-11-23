@@ -19,7 +19,9 @@ export const Products: CollectionConfig = {
   slug: 'products',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'price', 'category', 'bestseller', 'active'],
+    defaultColumns: ['title', 'sku', 'price', 'category', 'bestseller', 'active'],
+    // The search box above the list looks in the title and the SKU.
+    listSearchableFields: ['title', 'sku'],
     group: 'Каталог',
   },
   labels: {

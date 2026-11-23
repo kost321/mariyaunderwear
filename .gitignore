@@ -42,3 +42,6 @@ local-data/
 # UX/UI audit output (npm run audit): regenerated on every run, the report itself is kept
 /docs/audit/screenshots/
 /docs/audit/raw/
+
+# Playwright MCP console logs and screenshots
+/.playwright-mcp/

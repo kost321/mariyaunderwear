@@ -1,17 +1,29 @@
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import { buttonVariants } from '@/components/ui/button'
+import { HomeLink, StatusScreen, primaryButton } from '@/components/shop/StatusScreen'
 
+/**
+ * 404 inside a language: unknown addresses ([...rest]/page.tsx) and missing products.
+ * The tab title comes from [...rest]/page.tsx (Next does not take metadata from not-found.tsx there).
+ */
 export default function NotFound() {
   const t = useTranslations('NotFound')
 
   return (
-    <section className="flex flex-col items-center justify-center gap-6 py-24 text-center">
-      <h1 className="text-3xl font-bold">{t('title')}</h1>
-      <p className="max-w-md text-muted-foreground">{t('text')}</p>
-      <Link href="/catalog" className={buttonVariants()}>
+    <StatusScreen
+      title="404"
+      subtitle={t('title')}
+      text={
+        <>
+          <p>{t('text1')}</p>
+          <p>{t('text2')}</p>
+        </>
+      }
+    >
+      <Link href="/catalog" className={primaryButton}>
         {t('toCatalog')}
       </Link>
-    </section>
+      <HomeLink />
+    </StatusScreen>
   )
 }

@@ -1,22 +1,24 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
-import type { Locale } from 'next-intl'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { Link } from '@/i18n/navigation'
-import { routing, ogLocales, localePath } from '@/i18n/routing'
+import { routing, ogLocales, localePath, type Locale } from '@/i18n/routing'
+import { alternates } from '@/lib/seo'
 import {
   getProductBySlug,
   getAllProductSlugs,
   getColorVariants,
 } from '@/lib/queries'
 import { getMediaUrl } from '@/lib/media'
-import { ProductDetails } from '@/components/shop/ProductDetails'
+import { ProductDetails, type ProductFacts } from '@/components/shop/ProductDetails'
 import { ProductDescription } from '@/components/shop/ProductDescription'
 import { ProductCard } from '@/components/shop/ProductCard'
-import { alternates } from '@/lib/seo'
 import type { Product } from '@/payload-types'
 import { isProductInStock } from '@/lib/stock'
+import { productMaterials } from '@/lib/catalog'
+import { JsonLd, SITE_URL, breadcrumbsLd } from '@/components/shop/JsonLd'
+import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
+import { modelName } from '@/lib/utils'
+import { formatDescriptionHtml, formatSpecsHtml, paragraphs, specValue } from '@/lib/productText'
 
 type Params = { params: Promise<{ locale: Locale; slug: string }> }
 
@@ -42,8 +44,6 @@ export async function generateStaticParams() {
   }
 }
 
-const serverUrl = (process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
-
 /** HTML description → plain text (for meta description and JSON-LD). */
 function toPlainText(html?: string | null): string {
   return (html ?? '')
@@ -58,6 +58,10 @@ function toPlainText(html?: string | null): string {
     .trim()
 }
 
+// Google shows about 60 characters of a title: the " — Mariya Underwear" suffix is added only when it still fits
+const TITLE_SUFFIX = ' — Mariya Underwear'
+const TITLE_MAX = 60
+
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
   return `${text.slice(0, max).replace(/\s+\S*$/, '')}…`
@@ -66,30 +70,27 @@ function truncate(text: string, max: number): string {
 /** Dynamic SEO metadata based on the product. */
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { locale, slug } = await params
-  const t = await getTranslations({ locale, namespace: 'Meta' })
+  const t = await getTranslations({ locale, namespace: 'ProductPage' })
   const product = await getProductBySlug(slug, locale)
-  if (!product) return { title: t('productNotFound') }
+  if (!product) return { title: t('notFound') }
 
   const ogImage = getMediaUrl(product.images?.[0]?.image)
-  // title is not null in practice: required in Ukrainian + fallback to uk.
   const title = product.title ?? ''
 
   const plain = toPlainText(product.description)
-  const description = plain
-    ? truncate(plain, 155)
-    : t('productDescription', { title })
+  const description = plain ? truncate(plain, 155) : t('metaDescription', { title })
 
   return {
-    title,
+    title: title.length + TITLE_SUFFIX.length <= TITLE_MAX ? title : { absolute: title },
     description,
     alternates: alternates(locale, `/product/${slug}`),
-    // The page openGraph fully replaces the layout openGraph, so locale is repeated.
     openGraph: {
-      locale: ogLocales[locale],
       title,
       description,
+      locale: ogLocales[locale],
       url: `${localePath(locale)}/product/${slug}`,
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      // A page-level openGraph replaces the layout's one, so without a photo fall back to the site image
+      images: [ogImage ? { url: ogImage } : { url: '/brand/og-image.png', width: 1200, height: 630 }],
     },
   }
 }
@@ -97,7 +98,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function ProductPage({ params }: Params) {
   const { locale, slug } = await params
   setRequestLocale(locale)
-  const t = await getTranslations('Product')
+  const t = await getTranslations({ locale, namespace: 'ProductPage' })
+  const common = await getTranslations({ locale, namespace: 'Common' })
   const product = await getProductBySlug(slug, locale)
 
   // If the product does not exist or is inactive, return 404.
@@ -119,6 +121,26 @@ export default async function ProductPage({ params }: Params) {
     (item): item is Product => typeof item === 'object' && item !== null,
   )
 
+  // Breadcrumbs for search results: Головна › category › product
+  const category = typeof product.category === 'object' && product.category !== null ? product.category : null
+  const title = product.title ?? ''
+  const breadcrumbs = [
+    { name: common('home'), url: '/' },
+    ...(category?.slug
+      ? [{ name: category.title ?? '', url: `/catalog?category=${encodeURIComponent(category.slug)}` }]
+      : [{ name: t('catalog'), url: '/catalog' }]),
+    { name: title, url: `/product/${slug}` },
+  ]
+
+  // For the block under the buy button: composition from the characteristics table, the care text.
+  // The table is translated in the admin, so its row label is looked up in every language.
+  const facts: ProductFacts = {
+    composition:
+      specValue(product.descriptionHtml, 'Матеріал', 'Склад', 'Materiał', 'Skład', 'Material', 'Composition', 'Fabric')?.toLowerCase() ??
+      null,
+    care: paragraphs(product.careHtml),
+  }
+
   // Structured data for Google (price, availability, photos in search results).
   // Same rule as the page and the order API (lib/stock): empty stock = not in stock.
   const outOfStock = !isProductInStock(product.sizes)
@@ -128,16 +150,19 @@ export default async function ProductPage({ params }: Params) {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: product.title,
+    name: title,
     ...(imageUrls.length > 0 && { image: imageUrls }),
     ...(product.sku && { sku: product.sku }),
+    ...(productMaterials(product).length > 0 && {
+      material: productMaterials(product).map((m) => m.title).join(', '),
+    }),
     ...(toPlainText(product.description) && {
       description: truncate(toPlainText(product.description), 500),
     }),
     brand: { '@type': 'Brand', name: 'Mariya Underwear' },
     offers: {
       '@type': 'Offer',
-      url: `${serverUrl}${localePath(locale)}/product/${slug}`,
+      url: `${SITE_URL}${localePath(locale)}/product/${slug}`,
       priceCurrency: 'UAH',
       price: product.price,
       availability: outOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
@@ -145,37 +170,45 @@ export default async function ProductPage({ params }: Params) {
   }
 
   return (
-    // pb-20 leaves room for the fixed "Add to cart" button on mobile
-    <article className="pb-20 lg:pb-0">
-      {/* Escape "<" so the product text cannot close the script tag */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+    <article>
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbsLd(breadcrumbs, locale)} />
+      <Breadcrumbs
+        items={[
+          { name: common('home'), href: '/' },
+          { name: t('catalog'), href: '/catalog' },
+          { name: modelName(title) },
+        ]}
       />
-      <nav className="mb-6 hidden lg:block">
-        <Link href="/catalog" aria-label={t('backToCatalog')} className="inline-block transition-opacity hover:opacity-70">
-          <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="h-[14px] w-[61px]" />
-        </Link>
-      </nav>
-
-      <ProductDetails product={product} colorVariants={colorVariants} />
-
-      {/* Description, composition and care: under the gallery at full block width, as in the design */}
-      <div className="mx-auto mt-12 lg:mt-[100px] lg:max-w-[911px]">
-        <ProductDescription
-          sections={[
-            { html: product.description },
-            // "Характеристики:" is already in the admin text itself, so we do not add our own heading
-            { html: product.descriptionHtml },
-            { title: t('careTitle'), html: product.careHtml },
-          ]}
+      <div className="mt-4 lg:mt-6">
+        <ProductDetails
+          product={product}
+          colorVariants={colorVariants}
+          facts={facts}
+          description={
+            // Care lives in the "Склад і догляд" block next to the buy button, so it is not repeated here
+            <ProductDescription
+              sections={[
+                { html: formatDescriptionHtml(product.description) },
+                // Some admin texts already start with "Характеристики:"; the heading is added only where it is missing
+                {
+                  title: /Характеристик|Charakterystyk|Specyfikacj|Characteristic|Specification/i.test(
+                    product.descriptionHtml ?? '',
+                  )
+                    ? undefined
+                    : t('specs'),
+                  html: formatSpecsHtml(product.descriptionHtml),
+                },
+              ]}
+            />
+          }
         />
       </div>
 
       {/* "Frequently bought together": products hand-picked in the admin */}
       {relatedProducts.length > 0 && (
         <section className="mt-16 lg:mt-[100px]">
-          <h2 className="border-b border-brown/40 pb-5 font-serif text-xl uppercase leading-10 tracking-[2px] text-brown">
+          <h2 className="border-b border-brown/15 pb-5 font-serif text-[28px] leading-9 text-ink-text">
             {t('related')}
           </h2>
           <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-3 lg:gap-x-[41px] lg:gap-y-12">

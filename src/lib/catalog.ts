@@ -1,5 +1,6 @@
-import type { Product } from '@/payload-types'
+import type { Material, Product } from '@/payload-types'
 import { isProductInStock, isSizeAvailable } from '@/lib/stock'
+import { compareColors } from '@/lib/colors'
 
 /**
  * Catalog filters. There are not many products, so we filter in memory after
@@ -7,14 +8,21 @@ import { isProductInStock, isSizeAvailable } from '@/lib/stock'
  */
 
 export type CatalogSort = 'new' | 'price-asc' | 'price-desc'
-export type CatalogStock = 'in' | 'out'
 
 export type CatalogParams = {
   category?: string
   q?: string
   sizes: string[]
   colors: string[]
-  stock?: CatalogStock
+  /** Material slugs. */
+  materials: string[]
+  /** Only products that can be ordered now ("Тільки в наявності"). */
+  inStockOnly: boolean
+  /**
+   * The «Бестселери» section: only products ticked «Бестселер» in the admin (?bestseller=1).
+   * It is one of the catalog chips, like a category, so it never combines with one.
+   */
+  bestseller: boolean
   min?: number
   max?: number
   sort: CatalogSort
@@ -32,13 +40,15 @@ const num = (v: string | string[] | undefined) => {
 
 export function parseCatalogParams(raw: RawParams): CatalogParams {
   const sort = first(raw.sort)
-  const stock = first(raw.stock)
+  const bestseller = first(raw.bestseller) === '1'
   return {
-    category: first(raw.category) || undefined,
+    category: bestseller ? undefined : first(raw.category) || undefined,
     q: first(raw.q)?.trim() || undefined,
     sizes: list(raw.size),
     colors: list(raw.color),
-    stock: stock === 'in' || stock === 'out' ? stock : undefined,
+    materials: list(raw.material),
+    inStockOnly: first(raw.stock) === 'in',
+    bestseller,
     min: num(raw.min),
     max: num(raw.max),
     sort: sort === 'price-asc' || sort === 'price-desc' ? sort : 'new',
@@ -83,13 +93,19 @@ function productColors(p: Product): string[] {
   return productColorList(p).map((c) => c.name)
 }
 
+/** Populated materials of a product (depth ≥ 1); bare ids are skipped. */
+export function productMaterials(p: Pick<Product, 'materials'>): Material[] {
+  return (p.materials ?? []).filter((m): m is Material => typeof m === 'object' && m !== null)
+}
+
 export function filterProducts(products: Product[], params: CatalogParams): Product[] {
   const result = products.filter((p) => {
     if (params.sizes.length && !productSizes(p).some((s) => params.sizes.includes(s))) return false
     if (params.colors.length && !productColors(p).some((c) => params.colors.includes(c))) return false
+    if (params.materials.length && !productMaterials(p).some((m) => m.slug && params.materials.includes(m.slug)))
+      return false
     // With sizes selected, "in stock" means one of the selected sizes is available, not any size
-    if (params.stock === 'in' && !inStock(p, params.sizes)) return false
-    if (params.stock === 'out' && inStock(p)) return false
+    if (params.inStockOnly && !inStock(p, params.sizes)) return false
     if (params.min && p.price < params.min) return false
     if (params.max && p.price > params.max) return false
     return true
@@ -98,13 +114,23 @@ export function filterProducts(products: Product[], params: CatalogParams): Prod
   if (params.sort === 'price-asc') result.sort((a, b) => a.price - b.price)
   if (params.sort === 'price-desc') result.sort((a, b) => b.price - a.price)
   // 'new': order from getProducts (-createdAt)
-  return result
+  return availableFirst(result)
+}
+
+/**
+ * Products that can be ordered go first, sold-out ones after them, so a shopper does not open
+ * a card only to find every size crossed out. The sort is stable: the chosen order holds inside each group.
+ */
+export function availableFirst(products: Product[]): Product[] {
+  return [...products].sort((a, b) => Number(inStock(b)) - Number(inStock(a)))
 }
 
 export type CatalogFacets = {
   sizes: string[]
   colors: { name: string; hex: string | null }[]
-  stock: { in: number; out: number }
+  materials: { slug: string; title: string }[]
+  /** How many products can be ordered now. */
+  inStock: number
   priceMin: number
   priceMax: number
 }
@@ -113,10 +139,12 @@ export type CatalogFacets = {
 export function getFacets(products: Product[]): CatalogFacets {
   const sizes = new Set<string>()
   const colors = new Map<string, string | null>()
+  const materials = new Map<string, Material>()
 
   for (const p of products) {
     productSizes(p).forEach((s) => sizes.add(s))
     for (const c of productColorList(p)) if (!colors.get(c.name)) colors.set(c.name, c.hex)
+    for (const m of productMaterials(p)) if (m.slug) materials.set(m.slug, m)
   }
 
   const rank = (s: string) => {
@@ -128,8 +156,14 @@ export function getFacets(products: Product[]): CatalogFacets {
 
   return {
     sizes: [...sizes].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b)),
-    colors: [...colors].map(([name, hex]) => ({ name, hex })).sort((a, b) => a.name.localeCompare(b.name, 'uk')),
-    stock: { in: inStockCount, out: products.length - inStockCount },
+    colors: [...colors].map(([name, hex]) => ({ name, hex })).sort((a, b) => compareColors(a.name, b.name)),
+    materials: [...materials.values()]
+      .sort(
+        (a, b) =>
+          (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || (a.title ?? '').localeCompare(b.title ?? '', 'uk'),
+      )
+      .map((m) => ({ slug: m.slug!, title: m.title ?? '' })),
+    inStock: inStockCount,
     priceMin: prices.length ? Math.min(...prices) : 0,
     priceMax: prices.length ? Math.max(...prices) : 0,
   }

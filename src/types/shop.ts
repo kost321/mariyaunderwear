@@ -2,6 +2,7 @@
  * UI types for the store, independent of the Payload schema.
  * Product/category types come from the generated payload-types.ts.
  */
+import type { PaymentMethod } from '@/lib/payment'
 
 /** Cart line (stored in localStorage on the client). */
 export interface CartItem {
@@ -17,6 +18,8 @@ export interface CartItem {
   size?: string
   color?: string
   quantity: number
+  /** Stock of the chosen size when it was added: caps the quantity in the cart (the order API checks it again) */
+  maxQuantity?: number
 }
 
 /** Data the customer enters at checkout. */
@@ -27,4 +30,6 @@ export interface CheckoutForm {
   novaPoshtaBranch: string
   email?: string
   comment?: string
+  /** Empty for the quick order: the manager agrees on it by phone. */
+  paymentMethod?: PaymentMethod
 }

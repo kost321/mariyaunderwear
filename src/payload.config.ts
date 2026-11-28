@@ -14,6 +14,7 @@ import { Media } from './collections/Media'
 import { Categories } from './collections/Categories'
 import { ProductModels } from './collections/ProductModels'
 import { Products } from './collections/Products'
+import { Materials } from './collections/Materials'
 import { Orders } from './collections/Orders'
 import { Settings } from './globals/Settings'
 import { torgsoftImportHandler } from './lib/torgsoftImportEndpoint'
@@ -34,8 +35,16 @@ export default buildConfig({
           Component: '/src/admin/torgsoft-import/TorgsoftImportView#TorgsoftImportView',
           path: '/torgsoft-import',
         },
+        // Owner's guide to the admin, rendered from docs/admin-guide.md
+        help: {
+          Component: '/src/admin/help/HelpView#HelpView',
+          path: '/help',
+        },
       },
-      afterNavLinks: ['/src/admin/torgsoft-import/TorgsoftNavLink#TorgsoftNavLink'],
+      afterNavLinks: [
+        '/src/admin/torgsoft-import/TorgsoftNavLink#TorgsoftNavLink',
+        '/src/admin/help/HelpNavLink#HelpNavLink',
+      ],
     },
   },
 
@@ -58,7 +67,7 @@ export default buildConfig({
   },
 
   // Register all collections.
-  collections: [Products, ProductModels, Categories, Orders, Media, Users],
+  collections: [Products, ProductModels, Categories, Materials, Orders, Media, Users],
 
   // Global store settings.
   globals: [Settings],

@@ -1,4 +1,6 @@
 import type { CollectionConfig } from 'payload'
+import { PAYMENT_METHODS } from '@/lib/payment'
+import { sendSms, smsText } from '@/lib/turbosms'
 
 /**
  * Orders: customer orders.
@@ -20,7 +22,16 @@ export const Orders: CollectionConfig = {
   slug: 'orders',
   admin: {
     useAsTitle: 'orderNumber',
-    defaultColumns: ['orderNumber', 'customerName', 'totalPrice', 'status', 'createdAt'],
+    defaultColumns: [
+      'orderNumber',
+      'customerName',
+      'totalPrice',
+      'paymentMethod',
+      'paymentReceived',
+      'ttn',
+      'status',
+      'createdAt',
+    ],
     group: 'Магазин',
   },
   labels: {
@@ -54,6 +65,18 @@ export const Orders: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      // SMS with the TTN once the manager enters it (or corrects it) in the admin.
+      // sendSms never throws, so a TurboSMS failure does not block saving the order.
+      async ({ doc, previousDoc, operation }) => {
+        const ttn = typeof doc.ttn === 'string' ? doc.ttn.trim() : ''
+        const prevTtn = typeof previousDoc?.ttn === 'string' ? previousDoc.ttn.trim() : ''
+        if (operation === 'update' && ttn && ttn !== prevTtn && doc.status !== 'cancelled') {
+          await sendSms(doc.phone, smsText.orderShipped(doc.id, ttn))
+        }
+        return doc
+      },
+    ],
   },
   fields: [
     {
@@ -79,6 +102,36 @@ export const Orders: CollectionConfig = {
       ],
       admin: {
         position: 'sidebar',
+      },
+    },
+    {
+      name: 'paymentMethod',
+      label: 'Спосіб оплати',
+      type: 'select',
+      options: PAYMENT_METHODS.map(({ value, label }) => ({ value, label })),
+      admin: {
+        position: 'sidebar',
+        description: 'Обирає покупець на сайті; менеджер уточнює під час дзвінка.',
+      },
+    },
+    {
+      name: 'paymentReceived',
+      label: 'Оплата отримана',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Передоплата надійшла на рахунок або післяплату отримано від Нової пошти.',
+      },
+    },
+    {
+      name: 'ttn',
+      label: 'ТТН Нової пошти',
+      type: 'text',
+      maxLength: 30,
+      admin: {
+        position: 'sidebar',
+        description: 'Після збереження покупцю піде SMS з цим номером.',
       },
     },
     {

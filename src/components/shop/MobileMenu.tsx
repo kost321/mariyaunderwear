@@ -2,15 +2,19 @@
 
 import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { Instagram, X } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
-import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { LanguageSwitcher } from '@/components/shop/LanguageSwitcher'
+import { CONTACTS } from '@/lib/contacts'
+import { useModalFocus } from '@/hooks/useModalFocus'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 export type MenuCategory = { slug: string; title: string }
 
 /**
  * Side menu opened by the burger: navigation + catalog categories.
+ * Closed, it stays in the DOM for the slide animation but is `inert`: its links are out of the Tab order
+ * and hidden from screen readers. Open, the focus moves into it and stays there (useModalFocus).
  */
 export function MobileMenu({
   open,
@@ -24,6 +28,7 @@ export function MobileMenu({
   categories: MenuCategory[]
 }) {
   const t = useTranslations('Header')
+  const panel = useModalFocus<HTMLElement>(open)
 
   // Esc closes the menu; the page underneath does not scroll
   useEffect(() => {
@@ -40,10 +45,11 @@ export function MobileMenu({
   return (
     <div
       className={cn('fixed inset-0 z-50 transition-opacity', open ? 'opacity-100' : 'pointer-events-none opacity-0')}
-      aria-hidden={!open}
+      inert={!open}
     >
       <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
       <aside
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label={t('menu')}
@@ -52,13 +58,14 @@ export function MobileMenu({
           open ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <button type="button" onClick={onClose} className="-m-2 self-end p-2 text-brown" aria-label={t('closeMenu')}>
+        <button type="button" onClick={onClose} className="-m-2.5 self-end p-2.5 text-brown" aria-label={t('closeMenu')}>
           <X className="h-6 w-6" strokeWidth={1.5} />
         </button>
 
-        <nav className="mt-6 flex flex-col gap-5 font-serif text-2xl uppercase tracking-[2px] text-ink-text">
+        <nav className="mt-6 flex flex-col gap-2 font-serif text-2xl text-ink-text">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} onClick={onClose}>
+            // 32px line + py-1.5 = a 44px tap target; gap-2 keeps the old 20px between the words
+            <Link key={link.href} href={link.href} onClick={onClose} className="py-1.5">
               {link.label}
             </Link>
           ))}
@@ -66,11 +73,11 @@ export function MobileMenu({
 
         {categories.length > 0 && (
           <div className="mt-10">
-            <p className="text-[10px] font-bold uppercase tracking-[0.4px] text-pink">{t('categories')}</p>
-            <ul className="mt-4 flex flex-col gap-3 text-base tracking-[1px] text-brown">
+            <p className="text-sm text-brown">{t('categories')}</p>
+            <ul className="mt-2 flex flex-col text-base text-brown">
               {categories.map((c) => (
                 <li key={c.slug}>
-                  <Link href={`/catalog?category=${c.slug}`} onClick={onClose} className="hover:opacity-70">
+                  <Link href={`/catalog?category=${c.slug}`} onClick={onClose} className="block py-2.5 hover:opacity-70">
                     {c.title}
                   </Link>
                 </li>
@@ -79,8 +86,23 @@ export function MobileMenu({
           </div>
         )}
 
-        <div className="mt-10">
-          <LanguageSwitcher />
+        <div className="mt-auto flex flex-col gap-6 pt-10">
+          {/* The header shows the language switch only on desktop */}
+          <div className="-mx-1.5 text-sm">
+            <LanguageSwitcher />
+          </div>
+          {/* On narrow phones the header has no room for the Instagram icon, so it lives here */}
+          {CONTACTS.instagram && (
+            <a
+              href={CONTACTS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 text-base text-brown hover:text-ink"
+            >
+              <Instagram className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+              {t('instagram')}
+            </a>
+          )}
         </div>
       </aside>
     </div>

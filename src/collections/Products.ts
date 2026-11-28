@@ -20,7 +20,9 @@ export const Products: CollectionConfig = {
   slug: 'products',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'price', 'category', 'active'],
+    defaultColumns: ['title', 'sku', 'price', 'category', 'bestseller', 'active'],
+    // The search box above the list looks in the title and the SKU.
+    listSearchableFields: ['title', 'sku'],
     group: 'Каталог',
   },
   labels: {
@@ -71,6 +73,17 @@ export const Products: CollectionConfig = {
       },
     },
     {
+      name: 'bestseller',
+      label: 'Бестселер',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Показувати в розділі «Бестселери» (пункт меню в шапці). Поки жоден товар не відмічено, пункт меню прихований.',
+      },
+    },
+    {
       name: 'price',
       label: 'Ціна, ₴',
       type: 'number',
@@ -113,6 +126,17 @@ export const Products: CollectionConfig = {
       type: 'relationship',
       relationTo: 'categories',
       required: true,
+    },
+    {
+      name: 'materials',
+      label: 'Матеріал',
+      type: 'relationship',
+      relationTo: 'materials',
+      hasMany: true,
+      admin: {
+        description:
+          'Тканина товару; можна кілька (напр. мікромасло + мереживо). Показується на сторінці товару та у фільтрі каталогу. Імпорт із Торгсофт заповнює це поле з колонки «Матеріал». Довідник — «Каталог → Матеріали».',
+      },
     },
     {
       name: 'model',

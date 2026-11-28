@@ -1,376 +1,968 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
-import { Link } from '@/i18n/navigation'
-import { X } from 'lucide-react'
-import { useCart } from '@/hooks/useCart'
-import { cn, formatPrice } from '@/lib/utils'
+import { Link, useRouter } from '@/i18n/navigation'
+import { ArrowLeft, Check, ChevronDown, Loader2, ShoppingBag, X } from 'lucide-react'
+import { lineMax, useCart } from '@/hooks/useCart'
+import { cn, colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
+import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
+import { FormField } from '@/components/shop/FormField'
+import { OrderTotals } from '@/components/shop/OrderTotals'
+import { QuantityStepper } from '@/components/shop/QuantityStepper'
+import { primaryButton } from '@/components/shop/StatusScreen'
+import { CONTACTS, phoneHref } from '@/lib/contacts'
 import type { CartItem, CheckoutForm } from '@/types/shop'
+import type { StockResponse } from '@/app/(frontend)/api/stock/route'
+import { PAYMENT_METHODS } from '@/lib/payment'
+import { normalizeUaPhone, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
+import { focusFirstInvalid, isEmail } from '@/lib/formErrors'
+import { newOrderKey, submitOrder } from '@/lib/submitOrder'
+import { usePhoneMask } from '@/hooks/usePhoneMask'
 
-type Step = 'cart' | 'checkout' | 'success'
+type Step = 'cart' | 'checkout'
 
-// Checkout tabs from the design: Information → Shipping → Payment
-const CHECKOUT_STEPS = ['info', 'shipping', 'payment'] as const
-type CheckoutStep = (typeof CHECKOUT_STEPS)[number]
+/** Draft of the checkout form in sessionStorage */
+const CHECKOUT_DRAFT_KEY = 'olga-checkout-draft'
 
-const photo = 'relative overflow-hidden rounded-card border border-[#d9d9d9] bg-placeholder/40'
-const pill =
-  'flex h-10 w-full items-center justify-center rounded-card bg-cream/70 text-xs uppercase tracking-[1px] text-ink transition-colors hover:bg-cream disabled:opacity-60'
-const field =
-  'h-11 w-full border border-[#b6ada3] px-5 text-xs text-ink placeholder:text-brown/50 focus:border-ink focus:outline-none'
+// Checkout tabs from the design: Information → Shipping → Payment (labels: Cart.steps.*)
+const CHECKOUT_STEPS = [{ id: 'info' }, { id: 'shipping' }, { id: 'payment' }] as const
+type CheckoutStep = (typeof CHECKOUT_STEPS)[number]['id']
+const stepIndex = (step: CheckoutStep) => CHECKOUT_STEPS.findIndex((s) => s.id === step)
 
-/** Empty cart / thank-you: heading + button to the catalog. */
-function Message({ title, text }: { title: string; text?: string }) {
+/** Checkout fields that can carry a message under them */
+type FieldName = 'phone' | 'email' | 'firstName' | 'lastName' | 'city' | 'novaPoshtaBranch' | 'paymentMethod'
+
+const photo = 'relative overflow-hidden rounded-card bg-placeholder/40'
+
+/** Empty cart: what happened and the way back to the catalog, instead of a blank page. */
+function EmptyCart() {
   const t = useTranslations('Cart')
   return (
-    <div className="flex flex-col items-center gap-5 py-24 text-center">
-      <h1 className="font-serif text-2xl uppercase tracking-[2px] text-ink lg:text-[32px]">{title}</h1>
-      {text && <p className="text-sm tracking-[1px] text-brown/60">{text}</p>}
-      <Link href="/catalog" className={cn(pill, 'mt-4 w-[265px]')}>
+    <div className="flex min-h-[50vh] flex-col items-center justify-center py-16 text-center">
+      <ShoppingBag className="h-12 w-12 text-sand" strokeWidth={1} aria-hidden />
+      <h1 className="heading-page mt-5">{t('empty')}</h1>
+      <p className="mt-4 max-w-[420px] text-balance text-base leading-7 text-brown">{t('emptyText')}</p>
+      <Link href="/catalog" className={cn(primaryButton, 'mt-8')}>
         {t('toCatalog')}
       </Link>
     </div>
   )
 }
 
-/** "Next" button with an arrow, like "Shipping →" in the design. */
-function NextButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
+/** One cart line = product + size + colour (the React key and the line to refocus after "Повернути") */
+const lineKey = (item: CartItem) => `${item.productId}-${item.size}-${item.color}`
+
+/** "Чайна роза · M": colour in sentence case and the size, as on the catalog cards. */
+const variantLine = (item: CartItem) => [item.color && colorLabel(item.color), item.size].filter(Boolean).join(' · ')
+
+/** Section title inside the checkout forms ("Контактні дані"), in normal case like the cart's "Підсумок". */
+const subheading = 'text-lg font-medium text-ink'
+
+/** Main checkout button: dark, the full width of the form; "Доставка ⟶" with the long arrow of the design. */
+function NextButton({
+  children,
+  busy,
+  arrow = true,
+}: {
+  children: React.ReactNode
+  /** The order is on its way: the button is locked but stays dark (a greyed-out one looks broken) */
+  busy?: boolean
+  arrow?: boolean
+}) {
   return (
-    <div className="mt-6 flex justify-end">
-      <button
-        type="submit"
-        disabled={disabled}
-        className="flex h-11 w-full items-center justify-between rounded-card bg-cream/70 px-6 font-serif text-sm text-ink transition-colors hover:bg-cream disabled:opacity-60 sm:w-[231px]"
-      >
-        {children}
-        <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100" />
-      </button>
-    </div>
+    <button
+      type="submit"
+      disabled={busy}
+      aria-busy={busy || undefined}
+      className={cn(
+        'mt-8 flex h-12 w-full items-center rounded-card bg-ink text-[15px] text-white transition-colors enabled:hover:bg-ink/90 disabled:cursor-wait',
+        arrow ? 'justify-between pl-7 pr-5' : 'justify-center',
+      )}
+    >
+      {children}
+      {/* The arrow file is brown; brightness-0 + invert turns it white on the dark button */}
+      {arrow && <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100 brightness-0 invert" />}
+    </button>
   )
 }
 
-/** "Summary" block: subtotal, delivery, total. */
-function Totals({ total, large }: { total: number; large?: boolean }) {
+/** Step tabs "1 Інформація · 2 Доставка · 3 Оплата": the current one underlined, passed ones ticked and reopenable. */
+function CheckoutSteps({
+  current,
+  reached,
+  onSelect,
+}: {
+  current: CheckoutStep
+  reached: number
+  onSelect: (step: CheckoutStep) => void
+}) {
+  const t = useTranslations('Cart.steps')
+  const currentIndex = CHECKOUT_STEPS.findIndex((s) => s.id === current)
+  return (
+    <nav aria-label={t('label')}>
+      <ol className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[15px]">
+        {CHECKOUT_STEPS.map((s, i) => {
+          const isCurrent = i === currentIndex
+          return (
+            <li key={s.id} className="flex items-center gap-3">
+              {i > 0 && (
+                // Lifted by the height of the underline under the step names, so it sits on their middle
+                <span aria-hidden className="mb-[6px] text-brown/40">
+                  ·
+                </span>
+              )}
+              <button
+                type="button"
+                disabled={i > reached}
+                aria-current={isCurrent ? 'step' : undefined}
+                onClick={() => onSelect(s.id)}
+                className={cn(
+                  'flex items-center gap-1.5 border-b-2 pb-1 transition-colors',
+                  isCurrent
+                    ? 'border-ink font-medium text-ink'
+                    : 'border-transparent text-brown enabled:hover:text-ink disabled:text-brown/50',
+                )}
+              >
+                {i < currentIndex ? (
+                  <Check className="h-4 w-4" strokeWidth={2} aria-label={t('done')} />
+                ) : (
+                  <span className="tabular-nums">{i + 1}</span>
+                )}
+                {t(s.id)}
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
+  )
+}
+
+/** Line of the "Ваше замовлення" panel: small photo, the name as in the cart, colour · size, amount. */
+function SummaryItem({ item }: { item: CartItem }) {
   const t = useTranslations('Cart')
-  const tc = useTranslations('Common')
+  const currency = useTranslations('Common')('currency')
+  return (
+    <li className="flex gap-3">
+      <div className={cn(photo, 'aspect-[4/5] w-16 shrink-0 rounded-xl')}>
+        {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="64px" className="object-cover" />}
+      </div>
+      <div className="min-w-0 flex-1 text-sm">
+        <p className="leading-5 text-ink">{shortProductTitle(item.title)}</p>
+        <p className="mt-1 text-brown">
+          {variantLine(item)}
+          {item.quantity > 1 && ` · ${t('pcs', { count: item.quantity })}`}
+        </p>
+      </div>
+      <p className="shrink-0 text-sm tabular-nums text-ink">{formatPrice(item.price * item.quantity, currency)}</p>
+    </li>
+  )
+}
+
+/** Contents of "Ваше замовлення": the lines and the totals (desktop panel and the phone drop-down). */
+function OrderSummary({ items, total }: { items: CartItem[]; total: number }) {
   return (
     <>
-      <dl className="space-y-1.5 text-xs tracking-[1px] text-brown">
-        <div className="flex justify-between">
-          <dt>{t('subtotal')}</dt>
-          <dd className="font-serif text-ink/50">{formatPrice(total, tc('currency'))}</dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt>{t('delivery')}</dt>
-          <dd className="text-right text-[10px] text-brown/50">{t('deliveryCost')}</dd>
-        </div>
-      </dl>
-      <div className="mt-4 flex items-baseline justify-between border-t border-[#b6ada3] pt-4">
-        <span className={cn('font-serif uppercase tracking-[1px] text-ink', large ? 'text-base' : 'text-sm')}>{t('total')}</span>
-        <span className="font-serif text-base tracking-[1px] text-brown">{formatPrice(total, tc('currency'))}</span>
+      <ul className="space-y-4">
+        {items.map((item) => (
+          <SummaryItem key={`${item.productId}-${item.size}-${item.color}`} item={item} />
+        ))}
+      </ul>
+      <div className="mt-5 border-t border-brown/15 pt-5">
+        <OrderTotals total={total} />
       </div>
     </>
   )
 }
 
-/** Cart line: large photo; on the right remove, size, color, quantity. */
+/**
+ * Cart line: a small photo on the left; title, colour · size, the quantity capsule (same as on the product
+ * page), the amount and remove on the right. Several products stay readable as a list.
+ */
 function BagItem({
   item,
   onRemove,
   onQuantity,
+  focusRemove,
 }: {
   item: CartItem
-  onRemove: () => void
+  /** viaKeyboard: the cross was pressed with the keyboard, so the focus has to go somewhere meaningful */
+  onRemove: (viaKeyboard: boolean) => void
   onQuantity: (q: number) => void
+  /** The line was just brought back with "Повернути": the focus returns to its cross */
+  focusRemove?: boolean
 }) {
   const t = useTranslations('Cart')
-  const tc = useTranslations('Common')
+  const common = useTranslations('Common')
+  const currency = common('currency')
+  const title = shortProductTitle(item.title)
+  const removeButton = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (focusRemove) removeButton.current?.focus({ preventScroll: true })
+  }, [focusRemove])
+  // Stock refreshed by the cart page (applyStock) came back as 0: the line cannot be ordered
+  const soldOut = item.maxQuantity === 0
+  // The whole stock of the size is in the cart: "+" is greyed out, and this says why (as "це весь залишок" on the product page)
+  const allStock = !soldOut && item.maxQuantity != null && item.quantity >= item.maxQuantity
   return (
-    <div>
-      <div className="flex gap-4">
-        <Link href={`/product/${item.slug}`} className={cn(photo, 'aspect-[265/313] flex-1')}>
-          {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="(max-width: 1024px) 90vw, 540px" className="object-cover" />}
-        </Link>
-        <div className="flex w-[25px] flex-col items-center gap-6 text-sm text-ink">
-          <button type="button" onClick={onRemove} aria-label={t('remove', { title: item.title })} className="text-brown/70 hover:text-ink">
-            <X className="h-5 w-5" strokeWidth={1.25} />
+    <li className="flex gap-4 py-5 sm:gap-5">
+      <Link href={`/product/${item.slug}`} className={cn(photo, 'aspect-[4/5] w-24 shrink-0 rounded-2xl sm:w-28')}>
+        {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="112px" className="object-cover" />}
+      </Link>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Link href={`/product/${item.slug}`} className="text-[15px] leading-6 text-ink underline-offset-4 hover:underline">
+              {title}
+            </Link>
+            <p className="mt-1 text-sm text-brown">{variantLine(item)}</p>
+            {soldOut && <p className="mt-1 text-sm text-destructive">{t('outOfStock')}</p>}
+            {allStock && <p className="mt-1 text-sm text-brown">{t('noMore')}</p>}
+          </div>
+          <button
+            ref={removeButton}
+            type="button"
+            // :focus-visible at the moment of the press = Enter or Space, not a tap or a click
+            onClick={(e) => onRemove(e.currentTarget.matches(':focus-visible'))}
+            aria-label={t('remove', { title })}
+            className="-mr-3 -mt-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-brown transition-colors [@media(hover:hover)]:hover:bg-cream [@media(hover:hover)]:hover:text-ink"
+          >
+            <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
           </button>
-          {item.size && <span className="mt-6">{item.size}</span>}
-          <div className="flex flex-col border border-brown/60 text-xs">
-            <button
-              type="button"
-              onClick={() => onQuantity(item.quantity + 1)}
-              aria-label={t('increase')}
-              className="h-[22px] w-[25px]"
-            >
-              +
-            </button>
-            <span className="h-[22px] w-[25px] border-y border-brown/60 text-center leading-[20px] tabular-nums" aria-live="polite">
-              {item.quantity}
-            </span>
-            <button
-              type="button"
-              onClick={() => onQuantity(item.quantity - 1)}
-              disabled={item.quantity <= 1}
-              aria-label={t('decrease')}
-              className="h-[22px] w-[25px] disabled:opacity-30"
-            >
-              −
-            </button>
+        </div>
+        <div className="mt-auto flex items-center justify-between gap-3 pt-3">
+          {soldOut ? (
+            <span />
+          ) : (
+            <QuantityStepper value={item.quantity} onChange={onQuantity} max={lineMax(item)} label={t('quantityOf', { title })} />
+          )}
+          <div className="text-right">
+            <p className="text-[15px] font-medium tabular-nums text-ink">{formatPrice(item.price * item.quantity, currency)}</p>
+            {item.quantity > 1 && (
+              <p className="text-xs tabular-nums text-brown">{common('perItem', { price: formatPrice(item.price, currency) })}</p>
+            )}
           </div>
         </div>
       </div>
-      <div className="mt-3 flex items-end justify-between gap-3 pr-[41px]">
-        <div className="min-w-0">
-          {item.color && <p className="font-serif text-xs text-brown/50">{item.color}</p>}
-          <p className="mt-1 font-serif text-sm text-ink">{item.title}</p>
-        </div>
-        <p className="shrink-0 whitespace-nowrap font-serif text-sm text-ink/50">{formatPrice(item.price * item.quantity, tc('currency'))}</p>
+    </li>
+  )
+}
+
+/** How long "Товар видалено · Повернути" stays on screen */
+const UNDO_MS = 5000
+
+/** Short note at the bottom of the screen after a line is removed, with a way to put it back. */
+function RemovedToast({
+  onUndo,
+  onClose,
+  takeFocus,
+}: {
+  onUndo: () => void
+  onClose: () => void
+  /** Removed with the keyboard: the pressed cross is gone with its line, so the focus moves to "Повернути" */
+  takeFocus: boolean
+}) {
+  const t = useTranslations('Cart')
+  const undoButton = useRef<HTMLButtonElement>(null)
+  // The countdown waits while the pointer is over the toast or the focus is in it: nobody loses the undo mid-reach
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const paused = hovered || focused
+
+  useEffect(() => {
+    if (takeFocus) undoButton.current?.focus({ preventScroll: true })
+  }, [takeFocus])
+
+  useEffect(() => {
+    if (paused) return
+    const timer = setTimeout(onClose, UNDO_MS)
+    return () => clearTimeout(timer)
+  }, [paused, onClose])
+
+  return (
+    // Pinned to the very bottom (above the iPhone home bar), so on phones it covers as little as possible.
+    // Light with a border and a shadow: readable over the white page, the beige summary and the dark footer.
+    // The strip itself lets clicks through, only the toast catches them.
+    <div
+      role="status"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+12px)] z-50 flex justify-center px-4 lg:bottom-6"
+    >
+      <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false)
+        }}
+        className="pointer-events-auto flex items-center gap-2 rounded-full border border-brown/15 bg-white py-1.5 pl-5 pr-1.5 text-sm text-ink shadow-[0_8px_24px_rgba(64,54,51,0.18)]"
+      >
+        <span>{t('removed')}</span>
+        <button
+          ref={undoButton}
+          type="button"
+          onClick={onUndo}
+          className="rounded-full px-3 py-1.5 font-medium underline underline-offset-4 transition-colors hover:bg-[#f4efeb]"
+        >
+          {t('undo')}
+        </button>
       </div>
     </div>
   )
 }
 
 export function CartPage() {
+  const { items, ready, totalCount, totalPrice, removeItem, restoreItem, updateQuantity, applyStock, clear } = useCart()
   const t = useTranslations('Cart')
-  const tc = useTranslations('Common')
+  const tField = useTranslations('Fields')
+  const tPhone = useTranslations('Phone')
+  const tOrder = useTranslations('Order')
+  const tPayment = useTranslations('Payment')
+  const common = useTranslations('Common')
+  const currency = common('currency')
   const locale = useLocale()
-  const { items, totalCount, totalPrice, removeItem, updateQuantity, clear } = useCart()
-  const [step, setStep] = useState<Step>('cart')
-  const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('info')
+  const router = useRouter()
+  // The step lives in the address (/cart?step=info|shipping|payment): the browser's Back and Forward walk the
+  // checkout steps instead of leaving the cart, and a reload keeps the place. No ?step is the cart itself.
+  const stepParam = useSearchParams().get('step')
+  const checkoutStep = CHECKOUT_STEPS.find((s) => s.id === stepParam)?.id ?? null
+  const step: Step = checkoutStep ? 'checkout' : 'cart'
   // Furthest step reached; you can also go back to it via the tab
   const [reached, setReached] = useState(0)
+  // The form of the step on screen ("Інформація" or "Доставка"), and where a forward tab click is heading:
+  // the click goes through that form, so its fields are checked before the step is left
+  const stepForm = useRef<HTMLFormElement>(null)
+  const pendingStep = useRef<CheckoutStep | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // Current stock for the products in the cart: the snapshot taken when adding goes stale (sold out since,
+  // carts saved before it existed). Fetched again only when the set of products changes; on a network
+  // error the snapshot stays and the order API still checks the stock.
+  const productIds = [...new Set(items.map((i) => i.productId))].sort().join(',')
+  useEffect(() => {
+    if (!ready || !productIds) return
+    const controller = new AbortController()
+    fetch(`/api/stock?ids=${productIds}`, { signal: controller.signal, cache: 'no-store' })
+      .then((res) => (res.ok ? (res.json() as Promise<StockResponse>) : null))
+      .then((data) => data && applyStock(data.stock))
+      .catch(() => {})
+    return () => controller.abort()
+  }, [ready, productIds, applyStock])
+  const hasSoldOut = items.some((i) => i.maxQuantity === 0)
+  const [soldOutMessage, setSoldOutMessage] = useState(false)
+  // Guard against a second submit while the order is on its way
+  const submitting = useRef(false)
+  // Key of this checkout attempt, sent with every retry; a new one once the cart changes
+  const orderKey = useRef('')
+  useEffect(() => {
+    orderKey.current = newOrderKey()
+  }, [items])
+  // Messages under the fields. The forms check themselves (noValidate, lib/formErrors): every message at once,
+  // in the site's words and style, instead of the browser's bubble; a field's message goes once it is edited
+  const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({})
+  const clearError = (name: string) =>
+    setErrors((prev) => (prev[name as FieldName] ? { ...prev, [name]: undefined } : prev))
+  // Names are checked softly: Latin letters get a hint (Nova Poshta matches the passport), nothing is blocked
+  const [namesTouched, setNamesTouched] = useState(false)
+  const latinName = namesTouched && /[a-z]/i.test(firstName + lastName)
+  // "Ваше замовлення" on phones: collapsed to one line above the form
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  // The order went through and the "order accepted" page is opening: the cart is already empty by then,
+  // so this keeps "Кошик порожній" from flashing for a moment
+  const [redirecting, setRedirecting] = useState(false)
+  // Consent to the public offer: required before checkout
+  const [agreed, setAgreed] = useState(false)
+  // "Оформити замовлення" stays clickable; pressed without the consent it points at the checkbox
+  const [consentMissing, setConsentMissing] = useState(false)
+  const consentRef = useRef<HTMLInputElement>(null)
+  // Last removed line, until the toast closes: a stray click on the cross does not cost the purchase
+  const [removed, setRemoved] = useState<{ item: CartItem; index: number; at: number; viaKeyboard: boolean } | null>(null)
+  const closeToast = useCallback(() => setRemoved(null), [])
+  // The line just brought back by "Повернути": its cross takes the focus once (BagItem), then this is cleared.
+  // Children run their effects first, so the clearing comes after the focus.
+  const [focusLine, setFocusLine] = useState<string | null>(null)
+  useEffect(() => {
+    if (focusLine) setFocusLine(null)
+  }, [focusLine])
+
+  function remove(index: number, viaKeyboard: boolean) {
+    setRemoved({ item: items[index], index, at: Date.now(), viaKeyboard })
+    removeItem(index)
+  }
+
+  const toast = removed && (
+    <RemovedToast
+      key={removed.at}
+      takeFocus={removed.viaKeyboard}
+      onUndo={() => {
+        restoreItem(removed.item, removed.index)
+        setFocusLine(lineKey(removed.item))
+        setRemoved(null)
+      }}
+      onClose={closeToast}
+    />
+  )
   const [form, setForm] = useState<CheckoutForm>({
     customerName: '',
-    phone: '',
+    // The country code is already typed in; the mask keeps it (lib/phone formatUaPhoneInput)
+    phone: UA_PHONE_PREFIX,
     city: '',
     novaPoshtaBranch: '',
     email: '',
     comment: '',
   })
+  const phone = usePhoneMask(
+    form.phone,
+    (next) => {
+      clearError('phone')
+      setForm((prev) => ({ ...prev, phone: next }))
+    },
+    () => setErrors((prev) => ({ ...prev, phone: tPhone('foreign') })),
+  )
 
-  function goTo(next: Step) {
-    setStep(next)
+  // What is typed survives a reload of the page or a crash screen ("Спробувати ще раз" re-mounts the cart):
+  // kept for this tab only (sessionStorage) and dropped once the order is placed
+  const [restored, setRestored] = useState(false)
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(CHECKOUT_DRAFT_KEY) ?? 'null')
+      if (saved?.form) {
+        setForm((prev) => ({ ...prev, ...saved.form }))
+        setFirstName(saved.firstName ?? '')
+        setLastName(saved.lastName ?? '')
+        // The consent and the steps passed come back too, so a reload or Back/Forward does not send the
+        // shopper to tick the box again
+        setAgreed(saved.agreed === true)
+        setReached(Math.min(Math.max(Number(saved.reached) || 0, 0), CHECKOUT_STEPS.length - 1))
+      }
+    } catch {
+      // a broken draft is ignored
+    }
+    setRestored(true)
+  }, [])
+  useEffect(() => {
+    if (restored)
+      sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify({ form, firstName, lastName, agreed, reached }))
+  }, [restored, form, firstName, lastName, agreed, reached])
+
+  // A step opened by its address (a reload, Back/Forward, a pasted link) that was not reached yet, or without
+  // the offer consent, falls back to the furthest place the shopper may be
+  useEffect(() => {
+    if (!restored || !ready || !items.length || !checkoutStep) return
+    if (!agreed) router.replace('/cart', { scroll: false })
+    else if (stepIndex(checkoutStep) > reached) router.replace(`/cart?step=${CHECKOUT_STEPS[reached].id}`, { scroll: false })
+  }, [restored, ready, items.length, checkoutStep, agreed, reached, router])
+
+  /** Opens the cart (null) or a checkout step as a new history entry, from the top of the page */
+  function show(next: CheckoutStep | null) {
+    setRemoved(null)
+    router.push(next ? `/cart?step=${next}` : '/cart', { scroll: false })
     window.scrollTo({ top: 0 })
   }
 
   function goToCheckoutStep(next: CheckoutStep) {
-    const index = CHECKOUT_STEPS.indexOf(next)
-    setReached((r) => Math.max(r, index))
-    setCheckoutStep(next)
-    window.scrollTo({ top: 0 })
+    setReached((r) => Math.max(r, stepIndex(next)))
+    show(next)
   }
 
+  /** Step tab: going back is always open; going forward submits the current step's form, so it is checked */
+  function selectStep(target: CheckoutStep) {
+    if (!checkoutStep || stepIndex(target) <= stepIndex(checkoutStep)) return show(target)
+    pendingStep.current = target
+    stepForm.current?.requestSubmit()
+  }
+
+  /** A step's form passed: on to the tab that was clicked if the steps before it are filled in, else the next step */
+  function advance(next: CheckoutStep) {
+    let target = pendingStep.current ?? next
+    pendingStep.current = null
+    if (target === 'payment' && !(form.city.trim() && form.novaPoshtaBranch.trim())) target = 'shipping'
+    goToCheckoutStep(target)
+  }
+
+  /**
+   * Shows the messages of one step (undefined clears a field's message). With any message the forward tab
+   * click is dropped and the cursor goes to the first wrong field; returns whether the step is valid.
+   */
+  function check(messages: Partial<Record<FieldName, string>>) {
+    setErrors((prev) => ({ ...prev, ...messages }))
+    if (!Object.values(messages).some(Boolean)) return true
+    pendingStep.current = null
+    focusFirstInvalid(stepForm.current)
+    return false
+  }
+
+  // The phone is checked on the first step: otherwise a typo only surfaces after delivery and payment
+  const infoValid = () =>
+    check({
+      phone: normalizeUaPhone(form.phone) ? undefined : tPhone('invalid'),
+      email: !form.email?.trim() || isEmail(form.email) ? undefined : tField('email'),
+      firstName: firstName.trim() ? undefined : tField('firstName'),
+      lastName: lastName.trim() ? undefined : tField('lastName'),
+    })
+
+  const shippingValid = () =>
+    check({
+      city: form.city.trim() ? undefined : tField('city'),
+      novaPoshtaBranch: form.novaPoshtaBranch.trim() ? undefined : tField('novaPoshtaBranch'),
+    })
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    clearError(e.target.name)
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!items.length) return
+    if (!form.paymentMethod) {
+      check({ paymentMethod: tField('paymentMethod') })
+      return
+    }
+    // The disabled button is not enough on its own: a double click or Enter can land before React re-renders
+    if (!items.length || submitting.current) return
+    submitting.current = true
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const placed = await submitOrder(
+        {
           items,
           form: { ...form, customerName: `${firstName.trim()} ${lastName.trim()}`.trim() },
+          orderKey: orderKey.current,
           locale,
-        }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(res.status === 400 && data?.error ? data.error : '')
-      }
-      clear()
-      goTo('success')
-    } catch (e) {
-      setError(
-        e instanceof Error && e.message
-          ? e.message
-          : t('error'),
+        },
+        { network: tOrder('networkError'), server: tOrder('serverError') },
       )
+      // The order has its own page (/order/<signed token>, see lib/orderToken): a reload there shows the
+      // saved order again and sends nothing; replace() keeps the back button from returning to the form
+      setRedirecting(true)
+      sessionStorage.removeItem(CHECKOUT_DRAFT_KEY)
+      router.replace(placed.token ? `/order/${placed.token}` : '/')
+      clear()
+    } catch (e) {
+      // Everything typed stays in the form: the customer only presses the button again
+      setError(e instanceof Error && e.message ? e.message : tOrder('serverError'))
     } finally {
+      submitting.current = false
       setLoading(false)
     }
   }
 
-  if (step === 'success') {
-    return <Message title={t('thanks')} text={t('thanksText')} />
-  }
+  if (redirecting) return <div className="min-h-[50vh]" />
 
-  if (!items.length) return <Message title={t('empty')} />
+  // Until the cart is read from localStorage, show nothing rather than a flash of "Кошик порожній"
+  if (!ready) return <div className="min-h-[50vh]" />
+  if (!items.length)
+    return (
+      <>
+        <EmptyCart />
+        {toast}
+      </>
+    )
 
   // STEP 1: cart
   if (step === 'cart') {
     return (
-      <div className="lg:grid lg:grid-cols-[712px_306px] lg:justify-between lg:pt-[60px]">
-        <section>
-          <h1 className="border-b border-[#b6ada3] pb-4 font-serif text-base uppercase text-ink">{t('title')}</h1>
-          <div className="grid gap-x-10 gap-y-12 border-b border-[#b6ada3] py-5 sm:grid-cols-2">
-            {items.map((item, i) => (
-              <BagItem
-                key={`${item.productId}-${item.size}-${item.color}`}
-                item={item}
-                onRemove={() => removeItem(i)}
-                onQuantity={(q) => updateQuantity(i, q)}
-              />
-            ))}
-          </div>
-        </section>
+      <div className="pb-6">
+        <Breadcrumbs items={[{ name: common('home'), href: '/' }, { name: t('title') }]} />
+        <h1 className="heading-page mt-2">
+          {t('title')} <span className="text-brown/80">({totalCount})</span>
+        </h1>
 
-        <aside className="mt-10 border border-[#b6ada3] px-6 py-10 lg:mt-[31px] lg:self-start lg:px-10 lg:py-14">
-          <h2 className="mb-6 font-serif text-sm uppercase tracking-[1px] text-ink">{t('summary')}</h2>
-          <Totals total={totalPrice} large />
-          <button type="button" onClick={() => goTo('checkout')} className={cn(pill, 'mt-10')}>
-            {t('checkout')}
-          </button>
-        </aside>
+        <div className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-16">
+          <section aria-label={t('items')}>
+            <ul className="divide-y divide-brown/15 border-y border-brown/15">
+              {items.map((item, i) => (
+                <BagItem
+                  key={lineKey(item)}
+                  item={item}
+                  onRemove={(viaKeyboard) => remove(i, viaKeyboard)}
+                  onQuantity={(q) => updateQuantity(i, q)}
+                  focusRemove={focusLine === lineKey(item)}
+                />
+              ))}
+            </ul>
+            <Link
+              href="/catalog"
+              className="mt-5 inline-flex items-center gap-2 text-sm text-brown underline-offset-4 transition-colors hover:text-ink hover:underline"
+            >
+              <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+              {t('continue')}
+            </Link>
+          </section>
+
+          <aside className="mt-10 rounded-card bg-[#f4efeb] px-6 py-6 lg:sticky lg:top-8 lg:mt-0 lg:px-8 lg:py-7">
+            <h2 className="mb-5 text-lg font-medium text-ink">{t('summary')}</h2>
+            <OrderTotals total={totalPrice} />
+            <label className="mt-6 flex cursor-pointer items-start gap-2.5 text-[13px] leading-5 text-brown">
+              {/* Own box instead of the native one: its border turns brick red when the consent is missing */}
+              <span className="relative mt-px flex size-[18px] shrink-0">
+                <input
+                  ref={consentRef}
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => {
+                    setAgreed(e.target.checked)
+                    if (e.target.checked) setConsentMissing(false)
+                  }}
+                  aria-invalid={consentMissing || undefined}
+                  aria-describedby={consentMissing ? 'consent-error' : undefined}
+                  className="peer size-full cursor-pointer appearance-none rounded-[5px] border border-brown/60 bg-white transition-colors checked:border-ink checked:bg-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink aria-[invalid=true]:border-[1.5px] aria-[invalid=true]:border-destructive"
+                />
+                <Check
+                  className="pointer-events-none absolute inset-0 m-auto hidden h-3 w-3 text-white peer-checked:block"
+                  strokeWidth={3}
+                  aria-hidden
+                />
+              </span>
+              <span>
+                {t.rich('consent', {
+                  link: (chunks) => (
+                    <Link href="/oferta" target="_blank" className="underline underline-offset-2 transition-colors hover:text-ink">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </span>
+            </label>
+            {consentMissing && (
+              <p id="consent-error" role="alert" className="mt-2 text-[13px] text-destructive">
+                {t('consentMissing')}
+              </p>
+            )}
+            {/* Always clickable: a greyed-out button looks broken. Without the consent it points at the checkbox */}
+            <button
+              type="button"
+              onClick={() => {
+                if (hasSoldOut) {
+                  setSoldOutMessage(true)
+                  return
+                }
+                if (!agreed) {
+                  setConsentMissing(true)
+                  consentRef.current?.focus()
+                  return
+                }
+                goToCheckoutStep('info')
+              }}
+              className="mt-4 flex h-12 w-full items-center justify-center rounded-card bg-ink text-[15px] text-white transition-colors hover:bg-ink/90"
+            >
+              {t('checkout')}
+            </button>
+            {soldOutMessage && hasSoldOut && (
+              <p role="alert" className="mt-2 text-[13px] text-destructive">
+                {t('removeSoldOut')}
+              </p>
+            )}
+          </aside>
+        </div>
+        {toast}
       </div>
     )
   }
 
   // STEP 2: checkout
   return (
-    <div className="lg:grid lg:grid-cols-[468px_406px] lg:justify-between">
-      <section>
-        <button type="button" onClick={() => goTo('cart')} aria-label={t('backToCart')} className="transition-opacity hover:opacity-70">
-          <Image src="/brand/arrow-long.svg" alt="" width={61} height={14} className="h-[14px] w-[61px]" />
+    <div className="pb-6">
+      <button
+        type="button"
+        onClick={() => show(null)}
+        className="inline-flex items-center gap-2 text-sm text-brown underline-offset-4 transition-colors hover:text-ink hover:underline"
+      >
+        <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        {t('backToCart')}
+      </button>
+      <h1 className="heading-page mt-2">{t('checkoutTitle')}</h1>
+
+      {/* Phones: the order collapsed to one line above the form, so the total is in sight without scrolling */}
+      <div className="mt-6 rounded-card bg-[#f4efeb] lg:hidden">
+        <button
+          type="button"
+          onClick={() => setSummaryOpen((o) => !o)}
+          aria-expanded={summaryOpen}
+          aria-controls="order-summary-mobile"
+          className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left text-[15px] text-ink"
+        >
+          <span>
+            {t('yourOrder')} <span className="text-brown">({totalCount})</span>
+          </span>
+          <span className="flex items-center gap-2 font-medium tabular-nums">
+            {formatPrice(totalPrice, currency)}
+            <ChevronDown className={cn('h-4 w-4 transition-transform', summaryOpen && 'rotate-180')} strokeWidth={1.5} aria-hidden />
+          </span>
         </button>
-        <h1 className="mt-10 font-serif text-[32px] uppercase tracking-[2px] text-ink">{t('checkoutTitle')}</h1>
-
-        {/* Step tabs: completed ones can be reopened, the next ones only via the button */}
-        <nav aria-label={t('steps.label')} className="mt-8 flex gap-11 text-sm uppercase sm:text-base">
-          {CHECKOUT_STEPS.map((s, i) => {
-            const current = s === checkoutStep
-            return (
-              <button
-                key={s}
-                type="button"
-                disabled={i > reached}
-                aria-current={current ? 'step' : undefined}
-                onClick={() => setCheckoutStep(s)}
-                className={cn('transition-colors', current ? 'text-ink' : 'text-brown/50 enabled:hover:text-brown')}
-              >
-                {t(`steps.${s}`)}
-              </button>
-            )
-          })}
-        </nav>
-
-        {checkoutStep === 'info' && (
-          <form
-            className="mt-10"
-            onSubmit={(e) => {
-              e.preventDefault()
-              goToCheckoutStep('shipping')
-            }}
-          >
-            <h2 className="font-serif text-sm uppercase text-ink">{t('contacts')}</h2>
-            <div className="mt-3 space-y-4">
-              <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder={t('phonePlaceholder')} autoComplete="tel" required aria-label={t('phone')} className={field} />
-              <input name="email" type="email" value={form.email} onChange={handleChange} placeholder={t('emailPlaceholder')} autoComplete="email" aria-label="Email" className={field} />
-            </div>
-
-            <h2 className="mt-10 font-serif text-sm uppercase text-ink">{t('recipient')}</h2>
-            <div className="mt-3 grid grid-cols-2 gap-1.5">
-              <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t('firstName')} autoComplete="given-name" required aria-label={t('firstName')} className={field} />
-              <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t('lastName')} autoComplete="family-name" required aria-label={t('lastName')} className={field} />
-            </div>
-
-            <NextButton>{t('steps.shipping')}</NextButton>
-          </form>
+        {summaryOpen && (
+          <div id="order-summary-mobile" className="border-t border-brown/15 px-5 pb-5 pt-4">
+            <OrderSummary items={items} total={totalPrice} />
+            <button
+              type="button"
+              onClick={() => show(null)}
+              className="mt-4 text-sm text-brown underline underline-offset-4 transition-colors hover:text-ink"
+            >
+              {t('changeInCart')}
+            </button>
+          </div>
         )}
+      </div>
 
-        {checkoutStep === 'shipping' && (
-          <form
-            className="mt-10"
-            onSubmit={(e) => {
-              e.preventDefault()
-              goToCheckoutStep('payment')
-            }}
-          >
-            <h2 className="font-serif text-sm uppercase text-ink">{t('shippingTitle')}</h2>
-            <div className="mt-3 grid grid-cols-2 gap-1.5 gap-y-4">
-              <input name="city" value={form.city} onChange={handleChange} placeholder={t('city')} autoComplete="address-level2" required aria-label={t('city')} className={field} />
-              <input name="novaPoshtaBranch" value={form.novaPoshtaBranch} onChange={handleChange} placeholder={t('branchPlaceholder')} required aria-label={t('branch')} className={field} />
-              <textarea name="comment" value={form.comment} onChange={handleChange} placeholder={t('commentPlaceholder')} aria-label={t('comment')} rows={3} className={cn(field, 'col-span-2 h-auto py-3')} />
-            </div>
+      <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-16">
+        <section className="max-w-[560px]">
+          <CheckoutSteps current={checkoutStep ?? 'info'} reached={reached} onSelect={selectStep} />
 
-            <NextButton>{t('steps.payment')}</NextButton>
-          </form>
-        )}
-
-        {checkoutStep === 'payment' && (
-          <form onSubmit={handleSubmit} className="mt-10">
-            <h2 className="font-serif text-sm uppercase text-ink">{t('review')}</h2>
-            <dl className="mt-3 divide-y divide-[#b6ada3] border-y border-[#b6ada3] text-xs text-brown">
-              {[
-                { label: t('recipient'), value: `${firstName} ${lastName}`, step: 'info' as const },
-                { label: t('contactsShort'), value: [form.phone, form.email].filter(Boolean).join(', '), step: 'info' as const },
-                {
-                  label: t('delivery'),
-                  value: t('deliverySummary', { city: form.city, branch: form.novaPoshtaBranch }),
-                  step: 'shipping' as const,
-                },
-              ].map((row) => (
-                <div key={row.label} className="flex items-start gap-4 py-3">
-                  <dt className="w-24 shrink-0 text-brown/50">{row.label}</dt>
-                  <dd className="flex-1 text-ink">{row.value}</dd>
-                  <button type="button" onClick={() => setCheckoutStep(row.step)} className="shrink-0 underline underline-offset-2">
-                    {t('change')}
-                  </button>
-                </div>
-              ))}
-            </dl>
-            <p className="mt-4 text-xs leading-[18px] text-brown/60">
-              {t('paymentNote')}
-            </p>
-
-            {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
-
-            <NextButton disabled={loading}>{loading ? tc('sending') : t('confirm')}</NextButton>
-          </form>
-        )}
-      </section>
-
-      <aside className="relative mt-12 border border-[#b6ada3] px-5 py-8 lg:mt-[188px] lg:self-start lg:px-10 lg:py-10">
-        <span className="absolute right-4 top-2 font-script text-sm tracking-[1px] text-pink">({totalCount})</span>
-        <h2 className="font-serif text-sm uppercase tracking-[1px] text-black">{t('yourOrder')}</h2>
-        <ul className="mt-6 space-y-6 border-b border-[#b6ada3] pb-6">
-          {items.map((item) => (
-            <li key={`${item.productId}-${item.size}-${item.color}`} className="flex gap-3">
-              <div className={cn(photo, 'h-[133px] w-[113px] shrink-0')}>
-                {item.image && <Image src={item.image} alt={item.title} fill quality={90} sizes="113px" className="object-cover" />}
+          {checkoutStep === 'info' && (
+            <form
+              ref={stepForm}
+              className="mt-8"
+              noValidate
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (infoValid()) advance('shipping')
+              }}
+            >
+              <h2 className={subheading}>{t('contacts')}</h2>
+              <div className="mt-4 grid gap-5">
+                <FormField
+                  label={t('phone')}
+                  required
+                  name="phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  inputRef={phone.ref}
+                  value={form.phone}
+                  onChange={phone.onChange}
+                  onBlur={() => {
+                    // A half-typed number is pointed out on leaving the field; an untouched one only on "Доставка"
+                    if (uaPhoneDigits(form.phone) > 0 && !normalizeUaPhone(form.phone))
+                      setErrors((prev) => ({ ...prev, phone: tPhone('invalid') }))
+                  }}
+                  placeholder="+380 (__) ___ __ __"
+                  error={errors.phone}
+                  hint={t('phoneHint')}
+                />
+                <FormField
+                  label={t('email')}
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="name@example.com"
+                  error={errors.email}
+                />
               </div>
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-serif text-sm text-black">{item.title}</p>
-                  <button type="button" onClick={() => goTo('cart')} className="shrink-0 text-xs text-brown underline underline-offset-2">
-                    {t('change')}
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-brown">{[item.color, item.size].filter(Boolean).join(' / ')}</p>
-                <div className="mt-auto flex items-baseline justify-between">
-                  <span className="font-script text-sm text-pink">({item.quantity})</span>
-                  <span className="text-[13px] text-brown/50">{formatPrice(item.price * item.quantity, tc('currency'))}</span>
+
+              <h2 className={cn(subheading, 'mt-10')}>{t('recipient')}</h2>
+              <div className="mt-4 grid gap-5 sm:grid-cols-2">
+                <FormField
+                  label={t('firstName')}
+                  required
+                  autoComplete="given-name"
+                  value={firstName}
+                  onChange={(e) => {
+                    clearError('firstName')
+                    setFirstName(e.target.value)
+                  }}
+                  onBlur={() => setNamesTouched(true)}
+                  error={errors.firstName}
+                />
+                <FormField
+                  label={t('lastName')}
+                  required
+                  autoComplete="family-name"
+                  value={lastName}
+                  onChange={(e) => {
+                    clearError('lastName')
+                    setLastName(e.target.value)
+                  }}
+                  onBlur={() => setNamesTouched(true)}
+                  error={errors.lastName}
+                />
+              </div>
+              <p aria-live="polite" className={cn('mt-1.5 px-5 text-xs leading-5', latinName ? 'text-ink' : 'text-brown')}>
+                {latinName ? t('latinName') : t('nameHint')}
+              </p>
+
+              <NextButton>{t('steps.shipping')}</NextButton>
+            </form>
+          )}
+
+          {checkoutStep === 'shipping' && (
+            <form
+              ref={stepForm}
+              className="mt-8"
+              noValidate
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (shippingValid()) advance('payment')
+              }}
+            >
+              <h2 className={subheading}>{t('shippingTitle')}</h2>
+              <div className="mt-4 grid gap-5 sm:grid-cols-2">
+                <FormField
+                  label={t('city')}
+                  required
+                  name="city"
+                  autoComplete="address-level2"
+                  value={form.city}
+                  onChange={handleChange}
+                  error={errors.city}
+                />
+                <FormField
+                  label={t('branch')}
+                  required
+                  name="novaPoshtaBranch"
+                  value={form.novaPoshtaBranch}
+                  onChange={handleChange}
+                  placeholder={t('branchPlaceholder')}
+                  // Free text until the Nova Poshta API autocomplete; the hint says a parcel locker number is fine too
+                  hint={t('branchHint')}
+                  error={errors.novaPoshtaBranch}
+                />
+                <div className="sm:col-span-2">
+                  <label htmlFor="checkout-comment" className="mb-1.5 block text-sm text-brown">
+                    {t('comment')}
+                  </label>
+                  {/* Rounded border on a wrapper, so the resize grip stays inside the curve (as on "Співпраця") */}
+                  <div className="rounded-[20px] border border-brown/30 bg-white p-1.5 focus-within:border-ink">
+                    <textarea
+                      id="checkout-comment"
+                      name="comment"
+                      value={form.comment}
+                      onChange={handleChange}
+                      rows={3}
+                      placeholder={t('commentPlaceholder')}
+                      className="block w-full resize-y bg-transparent px-3.5 py-1.5 text-sm leading-6 text-ink placeholder:text-brown/50 focus:outline-none"
+                    />
+                  </div>
                 </div>
               </div>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4">
-          <Totals total={totalPrice} />
-        </div>
-      </aside>
+
+              <NextButton>{t('steps.payment')}</NextButton>
+            </form>
+          )}
+
+          {checkoutStep === 'payment' && (
+            <form ref={stepForm} noValidate onSubmit={handleSubmit} className="mt-8">
+              <h2 className={subheading}>{t('review')}</h2>
+              <dl className="mt-4 divide-y divide-brown/15 border-y border-brown/15 text-sm">
+                {[
+                  { label: t('recipient'), value: `${firstName} ${lastName}`, step: 'info' as const },
+                  { label: t('contactsShort'), value: [form.phone, form.email].filter(Boolean).join(', '), step: 'info' as const },
+                  {
+                    label: t('steps.shipping'),
+                    value: t('deliverySummary', { city: form.city, branch: form.novaPoshtaBranch }),
+                    step: 'shipping' as const,
+                  },
+                ].map((row) => (
+                  <div key={row.label} className="flex items-start gap-4 py-3">
+                    <dt className="w-24 shrink-0 text-brown">{row.label}</dt>
+                    <dd className="min-w-0 flex-1 text-ink">{row.value}</dd>
+                    <button
+                      type="button"
+                      onClick={() => show(row.step)}
+                      className="shrink-0 text-brown underline underline-offset-4 transition-colors hover:text-ink"
+                    >
+                      {t('change')}
+                    </button>
+                  </div>
+                ))}
+              </dl>
+
+              <fieldset className="mt-10">
+                <legend className={subheading}>{t('paymentMethod')}</legend>
+                <div className="mt-4 space-y-3">
+                  {PAYMENT_METHODS.map((m) => (
+                    <label
+                      key={m.value}
+                      className={cn(
+                        'flex cursor-pointer items-start gap-3 rounded-2xl border px-5 py-4 text-sm transition-colors',
+                        form.paymentMethod === m.value
+                          ? 'border-ink bg-[#f4efeb]'
+                          : errors.paymentMethod
+                            ? 'border-destructive'
+                            : 'border-brown/30 hover:border-brown',
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={m.value}
+                        checked={form.paymentMethod === m.value}
+                        onChange={() => {
+                          clearError('paymentMethod')
+                          setForm((prev) => ({ ...prev, paymentMethod: m.value }))
+                        }}
+                        required
+                        aria-invalid={errors.paymentMethod ? true : undefined}
+                        aria-describedby={errors.paymentMethod ? 'payment-method-error' : undefined}
+                        className="mt-1 accent-ink"
+                      />
+                      <span>
+                        <span className="block text-ink">{tPayment(`${m.value}.label`)}</span>
+                        <span className="mt-1 block text-brown">{tPayment(`${m.value}.hint`)}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {errors.paymentMethod && (
+                  <p id="payment-method-error" role="alert" className="mt-2 px-5 text-xs leading-5 text-destructive">
+                    {errors.paymentMethod}
+                  </p>
+                )}
+              </fieldset>
+              <p className="mt-4 text-sm leading-6 text-brown">
+                {t('paymentNote')}
+              </p>
+
+              <NextButton busy={loading} arrow={false}>
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    {t('sending')}
+                  </span>
+                ) : error ? (
+                  t('retry')
+                ) : (
+                  t('confirm')
+                )}
+              </NextButton>
+              {/* Under the button, where the eye is after pressing it; a phone number as the way out */}
+              {error && (
+                <div role="alert" className="mt-3 text-sm leading-6">
+                  <p className="text-destructive">{error}</p>
+                  <p className="mt-1 text-brown">
+                    {t('callUs')}{' '}
+                    <a href={`tel:${phoneHref(CONTACTS.phone)}`} className="whitespace-nowrap text-ink underline underline-offset-4 hover:no-underline">
+                      {CONTACTS.phone}
+                    </a>
+                  </p>
+                </div>
+              )}
+            </form>
+          )}
+        </section>
+
+        <aside className="hidden rounded-card bg-[#f4efeb] px-8 py-7 lg:sticky lg:top-8 lg:block">
+          <div className="mb-5 flex items-baseline justify-between gap-4">
+            <h2 className="text-lg font-medium text-ink">
+              {t('yourOrder')} <span className="text-brown">({totalCount})</span>
+            </h2>
+            <button
+              type="button"
+              onClick={() => show(null)}
+              className="text-sm text-brown underline underline-offset-4 transition-colors hover:text-ink"
+            >
+              {t('change')}
+            </button>
+          </div>
+          <OrderSummary items={items} total={totalPrice} />
+        </aside>
+      </div>
     </div>
   )
 }

@@ -2,96 +2,135 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import { localePath } from '@/i18n/routing'
-import { ArrowButton } from './ArrowButton'
+import { cn } from '@/lib/utils'
 
-export type HeroImage = { url: string; alt: string; href: string }
+/** One color of the hero product: its photo (if any), page and swatch. */
+export type HeroItem = { url?: string; alt: string; href: string; name?: string; hex?: string; lead?: boolean }
 
-const frame = 'relative block overflow-hidden rounded-card border border-[#d7d7d7]/60 bg-placeholder/40'
+// Product photos are shot on a flat #eaeaec backdrop (square 1600px): a panel of the same colour
+// makes photo and panel read as one wide banner. Keep lg:bg-[#eaeaec] on the section in sync
+// (Tailwind needs the class written out literally).
+const STUDIO_BACKDROP = 'bg-[#eaeaec]'
 
-/** Product photo or an empty placeholder, as in the design, if there is no photo. */
-function Photo({ image, sizes, className }: { image?: HeroImage; sizes: string; className?: string }) {
-  if (!image) return <div aria-hidden className={`${frame} ${className ?? ''}`} />
+/**
+ * Text column of the banner. The page's only H1 is the full store description in a small
+ * line (for search engines and readers alike); the eye gets a short phrase in large type instead of
+ * four lines of caps. The color swatches switch the photo, so one picture still shows the whole range.
+ */
+function HeroText({
+  items,
+  active,
+  onSelect,
+  className,
+}: {
+  items: HeroItem[]
+  active: number
+  onSelect: (i: number) => void
+  className?: string
+}) {
+  const t = useTranslations('Home')
+  const swatchCount = items.filter((i) => i.hex).length
   return (
-    <Link href={image.href} className={`${frame} ${className ?? ''}`}>
-      <Image src={image.url} alt={image.alt} fill priority quality={90} sizes={sizes} className="object-cover" />
-    </Link>
+    <div className={className}>
+      <h1 className="text-sm text-brown lg:text-base">{t('heroH1')}</h1>
+      <p className="mt-3 font-serif text-[44px] leading-[48px] text-ink-text lg:mt-4 lg:text-[72px] lg:leading-[76px]">
+        {t('heroTitle')}
+      </p>
+      <p className="mt-5 text-base leading-6 text-brown lg:mt-6">{t('heroSubtitle')}</p>
+
+      <Link
+        href="/catalog"
+        className="mt-8 flex h-11 w-[265px] items-center justify-between rounded-card bg-ink pl-7 pr-5 text-base text-white transition-colors hover:bg-ink/90 lg:mt-10"
+      >
+        {t('toCatalog')}
+        {/* The arrow file is brown; brightness-0 + invert turns it white on the dark button */}
+        <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100 brightness-0 invert" />
+      </Link>
+
+      {swatchCount > 1 && (
+        <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex gap-3" role="group" aria-label={t('colors')}>
+            {items.map((item, i) =>
+              !item.hex ? null : !item.url ? (
+                // No photo to switch to yet: the swatch opens that color's page instead
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-label={item.name ?? item.alt}
+                  className="relative h-8 w-8 rounded-full border border-brown/30 transition-transform before:absolute before:-inset-1.5 before:rounded-full before:content-[''] hover:scale-110"
+                  style={{ backgroundColor: item.hex }}
+                />
+              ) : (
+                <button
+                  key={item.href}
+                  type="button"
+                  onClick={() => onSelect(i)}
+                  aria-pressed={i === active}
+                  aria-label={item.name ?? item.alt}
+                  className={cn(
+                    // 32px swatch, 44px tap target; gap-3 keeps the targets from overlapping
+                    "relative h-8 w-8 rounded-full border border-brown/30 transition-transform before:absolute before:-inset-1.5 before:rounded-full before:content-['']",
+                    i === active ? 'ring-1 ring-ink ring-offset-2' : 'hover:scale-110',
+                  )}
+                  style={{ backgroundColor: item.hex }}
+                />
+              ),
+            )}
+          </div>
+          {/* The selected colour is named here, not in a hover tooltip that floats away from the swatch */}
+          <span className="text-sm text-brown" aria-live="polite">
+            {items[active]?.name && <span className="text-ink">{items[active].name} · </span>}
+            {t('colorCount', { count: swatchCount })}
+          </span>
+        </div>
+      )}
+    </div>
   )
 }
 
 /**
- * First screen of the home page: search, "New collection", 2 small + 2 large photos
- * and arrows that cycle through the photos.
+ * First screen: a banner. Desktop — one wide panel in the studio backdrop colour, the text on the left and
+ * the model filling the right half; phones — a regular photo on top and the text below on white.
+ * The swatches switch the photo, so one picture still shows the whole range.
  */
-export function HeroSection({ images }: { images: HeroImage[] }) {
-  const t = useTranslations('Home')
-  const locale = useLocale()
-  const [offset, setOffset] = useState(0)
-  const count = images.length
-  // Four slots of the current "frame": 0-1 small on the left, 2-3 large on the right.
-  // If there are fewer than four photos, the remaining slots stay placeholders.
-  const at = (i: number) => (i < count ? images[(offset + i) % count] : undefined)
-  const canScroll = count > 4
+export function HeroSection({ items }: { items: HeroItem[] }) {
+  // Swatches are in colour order; the photo shown on load is the lead (newest) colour
+  const [active, setActive] = useState(() => Math.max(0, items.findIndex((i) => i.lead)))
+  const current = items[active]
 
   return (
-    <section className="grid gap-8 lg:grid-cols-[397px_1fr_1fr] lg:gap-x-9">
-      <div className="flex flex-col lg:h-[606px]">
-        <form action={`${localePath(locale)}/catalog`} role="search" className="relative">
-          <Image src="/brand/search.svg" alt="" width={17} height={16} className="absolute left-5 top-1/2 -translate-y-1/2" />
-          <input
-            type="search"
-            name="q"
-            placeholder={t('search')}
-            aria-label={t('searchLabel')}
-            className="h-[50px] w-full rounded-card bg-cream/70 pl-12 pr-6 text-xs tracking-[2px] text-brown placeholder:text-right placeholder:text-brown focus:outline-none focus:ring-1 focus:ring-brown/40"
-          />
-        </form>
-
-        <h1 className="mt-12 font-serif text-[40px] uppercase leading-[40px] tracking-[2px] text-ink-text lg:mt-[80px] lg:text-5xl">
-          {t('heroTitle1')}
-          <br />
-          {t('heroTitle2')}
-        </h1>
-        <p className="mt-2 font-script text-xl leading-6 tracking-[2px] text-brown">
-          {t('heroSeason')}
-          <br />
-          2026
-        </p>
-
-        <div className="mt-auto hidden grid-cols-2 gap-9 pt-10 lg:grid">
-          <Photo image={at(0)} sizes="540px" className="h-[185px]" />
-          <Photo image={at(1)} sizes="540px" className="h-[185px]" />
-        </div>
-
-        <div className="mt-8 flex items-center justify-between lg:mt-[61px]">
-          <Link
-            href="/catalog"
-            className="flex h-10 w-[265px] items-center justify-between rounded-card bg-cream/70 pl-7 pr-5 text-base text-brown transition-colors hover:bg-cream"
-          >
-            {t('toShop')}
-            <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100" />
-          </Link>
-          {canScroll && (
-            <div className="hidden gap-3 lg:flex">
-              <ArrowButton direction="prev" onClick={() => setOffset((o) => (o - 1 + count) % count)} />
-              <ArrowButton direction="next" onClick={() => setOffset((o) => (o + 1) % count)} />
-            </div>
+    <section className="flex flex-col-reverse gap-6 lg:relative lg:block lg:overflow-hidden lg:rounded-card lg:bg-[#eaeaec]">
+      <HeroText
+        items={items}
+        active={active}
+        onSelect={setActive}
+        className="lg:relative lg:z-10 lg:max-w-[50%] lg:py-20 lg:pl-16 xl:max-w-[700px]"
+      />
+      {current?.url && (
+        <Link
+          href={current.href}
+          // Desktop: both edges fade into the panel, as some photos have a backdrop a shade off #eaeaec or a light vignette
+          className={cn(
+            'relative block aspect-[4/5] overflow-hidden rounded-card',
+            STUDIO_BACKDROP,
+            'lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-1/2 lg:rounded-none xl:w-[58%] lg:bg-transparent lg:[mask-image:linear-gradient(to_right,transparent,black_25%,black_85%,transparent)]',
           )}
-        </div>
-      </div>
-
-      {/* Desktop: two large photos */}
-      <Photo image={at(2)} sizes="800px" className="hidden h-[606px] lg:block" />
-      <Photo image={at(3)} sizes="800px" className="hidden h-[606px] lg:block" />
-
-      {/* Mobile: a horizontal strip of photos */}
-      <div className="-mx-[var(--gutter)] flex snap-x snap-mandatory gap-3 overflow-x-auto px-[var(--gutter)] pb-2 [scrollbar-width:none] lg:hidden">
-        {(count ? images : [undefined, undefined, undefined]).map((image, i) => (
-          <Photo key={i} image={image} sizes="90vw" className="aspect-[3/5] w-[45vw] shrink-0 snap-start" />
-        ))}
-      </div>
+        >
+          <Image
+            key={current.url}
+            src={current.url}
+            alt={current.alt}
+            fill
+            priority
+            quality={90}
+            sizes="(max-width: 1024px) 100vw, 720px"
+            // The model is centred in a square shot: cover + a top anchor makes her fill the panel height
+            className="object-cover object-[50%_20%] lg:object-[50%_10%]"
+          />
+        </Link>
+      )}
     </section>
   )
 }

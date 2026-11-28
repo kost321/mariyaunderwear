@@ -13,9 +13,6 @@ Payload runs inside the Next.js app, so the storefront, admin panel and API are 
 | `package.json` | Dependencies and scripts: `dev`, `build`, `start` (runs DB migrations before starting) |
 | `railway.toml` | Railway deploy config; start command `sh scripts/start.sh` |
 | `scripts/start.sh` | Start script: `payload migrate` first, then `next start` |
-| `scripts/import-tilda.mjs` | One-off import of products from a Tilda CSV |
-| `scripts/migrate-to-cloudinary.mjs` | One-off migration of local photos to Cloudinary |
-| `scripts/diagnose-delete.mjs` | Diagnostic for product deletion errors (runs in a rolled-back transaction) |
 | `tsconfig.json` | TypeScript config, alias `@/` → `src/` |
 | `.env` / `.env.example` | Environment variables (`.env` is not committed) |
 | `docker-compose.yml` | Local PostgreSQL for development |
@@ -26,7 +23,7 @@ Payload runs inside the Next.js app, so the storefront, admin panel and API are 
 ## `src/payload.config.ts`
 
 Main Payload CMS config:
-- registers all collections (Products, ProductModels, Categories, Orders, Media, Users) and the `Settings` global
+- registers all collections (Products, ProductModels, Categories, Materials, Orders, Media, Users) and the `Settings` global
 - connects the PostgreSQL adapter (`DATABASE_URI`); schema `push` is on in dev and off in production, where only migrations change the schema
 - connects Cloudinary for photo storage
 - sets the admin language to Ukrainian
@@ -43,10 +40,11 @@ Generated file with TypeScript types for all collections.
 
 A collection is a database table + access rules + admin fields.
 
-- **`Products.ts`**: store products. Key fields: `title`, `slug` (auto-generated with transliteration), `sku`, `price`, `wholesalePrice` (admin-only), `active`, `category`, `model`, `images`, `sizes[]` (`size`, `stock`), `colors`, `description`, `descriptionHtml`, `careHtml`, `sizeChartHtml`, `relatedProducts`.
+- **`Products.ts`**: store products. Key fields: `title`, `slug` (auto-generated with transliteration), `sku`, `price`, `wholesalePrice` (admin-only), `active`, `category`, `materials`, `model`, `images`, `sizes[]` (`size`, `stock`), `colors`, `description`, `descriptionHtml`, `careHtml`, `sizeChartHtml`, `relatedProducts`.
   `active: false` hides the product from the site.
 - **`ProductModels.ts`**: a model groups several color cards of one product, which powers the color switcher on the product page.
 - **`Categories.ts`**: product categories (`title`, `slug`, `image`).
+- **`Materials.ts`**: fabric reference list (`title`, `slug`, `showOnHome`, `sortOrder`, `image`, `careText`: care advice shown over the home page card on hover, under it on touch screens). Products link to it (`materials`, hasMany); powers the material line on the product page, the catalog "Матеріал" filter and the fabric block on the home page. The Torgsoft import creates missing materials from the "Матеріал" column.
 - **`Orders.ts`**: customer orders. Each line stores a snapshot of title, price, size, color and quantity. `totalPrice` is recalculated on the server. Orders can only be created by the server route `/api/order`.
 - **`Media.ts`**: image library stored in Cloudinary. The database keeps only the filename and URL.
 - **`Users.ts`**: CMS administrators with access to `/admin`. Customers do not register.
@@ -55,9 +53,10 @@ A collection is a database table + access rules + admin fields.
 
 - **`Settings.ts`**: site-wide content, currently the "Delivery and payment" text shown on product pages.
 
-## Custom admin `src/admin/torgsoft-import/`
+## Custom admin `src/admin/`
 
-A custom admin page and sidebar link for importing prices and per-size stock from a Torgsoft Excel/CSV export. The server side lives in `lib/torgsoftImport.ts` and `lib/torgsoftImportEndpoint.ts`.
+- **`torgsoft-import/`**: a custom admin page and sidebar link for importing prices, per-size stock and materials from a Torgsoft Excel/CSV export. The server side lives in `lib/torgsoftImport.ts` and `lib/torgsoftImportEndpoint.ts`.
+- **`help/`**: the «Довідка» page at `/admin/help` (sidebar: «Довідка → Як користуватися адмінкою»). It renders [docs/admin-guide.md](docs/admin-guide.md), the owner's guide to every admin feature, in Ukrainian. **Update the guide with every admin-facing change.** Login required (custom views are not protected by Payload on their own).
 
 ---
 
@@ -66,21 +65,26 @@ A custom admin page and sidebar link for importing prices and per-size stock fro
 - **URLs:** every storefront page lives under a language prefix: `/ua/…`, `/pl/…`, `/en/…`. Ukrainian uses `/ua` in the address, but the language code is `uk` everywhere (Payload, hreflang, `<html lang>`). Prefixes are defined in `src/i18n/routing.ts`; build paths with `localePath()`. `src/middleware.ts` (next-intl) redirects `/` and unprefixed paths: `NEXT_LOCALE` cookie (set by the switcher, kept for a year) → browser language → Ukrainian. `/uk/…` redirects to `/ua/…` (`next.config.mjs`). The middleware does not touch `/admin` and `/api`.
 - **UI text:** `src/messages/{uk,pl,en}.json`. In components use `useTranslations('Ns')` / `getTranslations('Ns')`; keys are typed (`src/global.d.ts`), so a wrong key is a TS error. New text → add the key to all three files.
 - **Links:** import `Link`, `useRouter`, `usePathname` from `@/i18n/navigation` (not `next/link`); they add the language prefix.
-- **Content (Payload `localization`):** localized fields are title, color, description, specs, size chart, care (Products), title (Categories), alt (Media). In the admin, the language is switched in the document header. Title is required only in Ukrainian (`src/lib/localization.ts`); an empty translation shows the Ukrainian value on the site (`fallbackLocale: 'uk'` in `lib/queries.ts`). The slug is shared by all languages.
-- **Orders** (`api/order`) are saved and emailed to the manager in Ukrainian regardless of the site language; only the errors shown to the customer use their language.
+- **Content (Payload `localization`):** localized fields are title, color, description, specs, size chart, care (Products), title (Categories), alt (Media), title and care text (Materials; the title is unique per language). In the admin, the language is switched in the document header. Title is required only in Ukrainian (`src/lib/localization.ts`); an empty translation shows the Ukrainian value on the site (`fallbackLocale: 'uk'` in `lib/queries.ts`). The slug is shared by all languages.
+- **Orders** (`api/order`) are saved, emailed to the manager and texted (SMS) in Ukrainian regardless of the site language; the colour from the cart is mapped back to its Ukrainian name. The errors shown to the customer and their confirmation email use their language (`locale` in the request body), and the manager's email names the site language when it is not Ukrainian. The same goes for the cooperation form.
+- **Colours** are ordered by `lib/colors.ts` `COLOR_ORDER`, which lists each colour with its usual PL/EN names; add the translation there when a new colour gets one in the admin.
+- **Legal texts** (`/oferta`, `/privacy`, `/delivery`) stay Ukrainian on every language (`lang="uk"` on the text, a note on /pl and /en).
 - **Language list** is defined in two places, `src/i18n/routing.ts` and `localization` in `payload.config.ts`; change them together (+ a migration for the `_locales` enum).
 
 ## Storefront `src/app/(frontend)/[locale]/`
 
-The public part of the site. `api/order/route.ts` and `globals.css` live outside `[locale]`.
+The public part of the site, one branch per language (see "Multilingual site" above). `api/*` routes, `globals.css` and the icons live outside `[locale]`.
 
 - **`layout.tsx`**: shared layout (`<html lang={locale}>`, `NextIntlClientProvider`, Header with `LanguageSwitcher`, Footer, CartProvider) and site-wide SEO metadata (hreflang via `lib/seo.ts`, og:locale).
-- **`page.tsx`**: home page: hero, new arrivals, care block. Rendered on every request.
-- **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, price and sorting are applied in memory (`lib/catalog.ts`).
-- **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams` (every language × every slug), `generateMetadata`, canonical URL + hreflang and JSON-LD `Product` markup.
+- **`page.tsx`**: home page: hero (store description as the only H1 in a small line, short phrase in large type, one photo of the newest model with color swatches that switch it), trust row (delivery, payment, returns, made in Ukraine), "Новинки" slider, fabric block (Materials with `showOnHome`, placeholders until any are marked), "Про бренд" (draft text in `Home.about1/about2` of the messages). Rendered on every request.
+- **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, material, "in stock only" (`stock=in`), price and sorting are applied in memory (`lib/catalog.ts`); orderable products always come before sold-out ones. Search: a field next to the category chips (`CatalogSearch`) filters the grid as you type (debounced `?q=` without a page reload); on /catalog the header's search icon focuses it. No matches → in-stock suggestions.
+- **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams`, `generateMetadata`, canonical URL + hreflang and JSON-LD `Product` markup; static params for every language × every slug.
 - **`cart/page.tsx`**: cart and checkout.
-- **`not-found.tsx`, `[...rest]/page.tsx`**: localized 404.
-- **`api/order/route.ts`**: order endpoint. Validates input, rate-limits by IP, re-reads prices and stock from the database, saves the order and emails the owner.
+- **`api/search/route.ts`**: `GET ?q=` live results for the header search panel (short title, price, colour, thumbnail, stock; in-stock suggestions when nothing matches). Same matching as `/catalog?q=`.
+- **`order/[token]/page.tsx`**: "order accepted" page (number, what happens next, order lines, details and totals on a warm panel). Opens only with a valid signed token, so order numbers cannot be walked through; noindex, no referrer. Delivery is read back from `comment` ("city | branch | comment") until orders get delivery fields.
+- **`api/order/route.ts`**: order endpoint. Validates input, rate-limits by IP, re-reads prices and stock from the database, saves the order and emails the owner. Repeat-safe: the checkout sends an `orderKey` with every retry and `lib/idempotency` returns the already created order instead of a second one (in memory, 30 min). Both the checkout and the quick order send through `lib/submitOrder` (timeout, error texts, order key) and mask the phone with `hooks/usePhoneMask`; the checkout keeps a draft of the form in sessionStorage so a reload or the error screen does not lose it. The checkout locks the button while sending, waits up to 30 s and on failure shows the error under the button with a retry, keeping the form. The answer carries a signed `token` (`lib/orderToken`: id + expiry + HMAC with `PAYLOAD_SECRET`, 30 days); the cart then opens `/order/<token>`, and the customer's email links to it.
+- **`contacts`, `cooperation`, `delivery`, `oferta`, `privacy`**: info pages. The offer, the privacy policy and the delivery terms are Ukrainian only (the binding edition): on /pl and /en their titles are translated and a note says the text is in Ukrainian.
+- **`not-found.tsx`, `[...rest]/page.tsx`, `error.tsx`**: localized 404 and error screens.
 - **`src/app/robots.ts`, `src/app/sitemap.ts`**: `robots.txt` and `sitemap.xml` (every page in every language with hreflang).
 
 ## Payload `src/app/(payload)/`
@@ -98,9 +102,13 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 ## Components `src/components/`
 
-- **`shop/`**: storefront components: `Header`, `LanguageSwitcher`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `CartPage`, `RichText`, `ScrollToTop`.
-- **`shop/catalog/`**: `CatalogFilters`.
-- **`shop/home/`**: `HeroSection`, `ProductSlider`, `ArrowButton`.
+- **`shop/`**: storefront components: `Header`, `LanguageSwitcher` (UA · PL · EN: in the header on desktop, in the burger menu on phones), `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `QuantityStepper` (the − 1 + capsule shared by the product page and the cart), `QuickOrderModal` ("Купити в 1 клік": bottom sheet on phones, product line as in the cart, phone mask, success state with the order number; sends through `lib/submitOrder`), `CartPage` (cart as a list of rows, summary panel, consent checked on click; empty state waits for `useCart().ready`; checkout: numbered steps, rounded labelled fields, phone mask `+380 (67) 123 45 67` from `lib/phone` `formatUaPhoneInput`, soft Cyrillic hint for names, "Ваше замовлення" panel, collapsed to one line on phones), `FormField` (label above a rounded input, hint or error under it; also used by `CooperationForm`), `ScrollToTop`.
+- **`shop/LegalPage.tsx`** + **`shop/LegalToc.tsx`**: layout of the offer and privacy pages: breadcrumbs, title, «Редакція від …», text column of ~70 letters, numbered sections; the contents are sticky on the right on desktop and highlight the section being read.
+- **`shop/Breadcrumbs.tsx`**: «Головна / …» trail above page titles (catalog, contacts, cooperation, legal pages).
+- **`shop/HeaderSearch.tsx`**: search panel dropped over the page from the header icon (not on /catalog): live results from `/api/search`, "Усі результати" to the catalog; Esc, a click outside or navigation close it.
+- **`shop/JsonLd.tsx`**: structured data for Google: `JsonLd` (escaped script tag), `storeLd` (store + site search, home page), `breadcrumbsLd` (category and product pages).
+- **`shop/catalog/`**: `CatalogFilters` (sticky sidebar on desktop: size and colour as round buttons, an "in stock only" switch, the price range hidden while every product costs the same).
+- **`shop/home/`**: `HeroSection` (first screen in three layouts: a — text + one photo, default; b — two photos; c — banner on the studio backdrop colour; search moved to the header's search icon), `HeroVariantSwitch` (client demo only: `/?hero=a|b|c` shows a floating switch; remove with the unused layouts once one is chosen), `TrustStrip` (store promises under the hero; keep in sync with `/delivery` and the checkout), `ProductSlider`, `ArrowButton`.
 - **`ui/button.tsx`**: base button with style variants (CVA).
 
 ## Hooks `src/hooks/`
@@ -111,8 +119,10 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 | File | Purpose |
 |------|---------|
-| `queries.ts` | All database queries through the Payload Local API (products, categories, color variants, settings) |
-| `catalog.ts` | In-memory catalog filters and facets |
+| `queries.ts` | All database queries through the Payload Local API (products, categories, color variants, settings). `getNonEmptyCategories` feeds the menu, catalog chips and sitemap, so empty categories stay hidden |
+| `productText.ts` | Tidies product HTML from the admin on the server: description subheadings (short paragraphs without a full stop) become `<h2>`, hyphens become dashes, the characteristics table loses inline styles and multi-paragraph cells become one line; `specValue`/`paragraphs` feed the composition and care in the block under the buy button |
+| `colors.ts` | `COLOR_ORDER`: the one colour order for hero swatches, the catalog colour filter and the product page switch; add new colours here |
+| `catalog.ts` | In-memory catalog filters and facets; `availableFirst` puts orderable products ahead of sold-out ones (catalog and home) |
 | `media.ts` | `getMediaUrl`: builds a Cloudinary URL from a Media object |
 | `payload.ts` | Payload initialization for server code (Local API) |
 | `cloudinaryAdapter.ts` | Custom Payload storage adapter that uploads files to Cloudinary |

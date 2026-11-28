@@ -70,6 +70,7 @@ export interface Config {
     products: Product;
     'product-models': ProductModel;
     categories: Category;
+    materials: Material;
     orders: Order;
     media: Media;
     users: User;
@@ -83,6 +84,7 @@ export interface Config {
     products: ProductsSelect<false> | ProductsSelect<true>;
     'product-models': ProductModelsSelect<false> | ProductModelsSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    materials: MaterialsSelect<false> | MaterialsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -144,6 +146,10 @@ export interface Product {
    */
   slug?: string | null;
   active?: boolean | null;
+  /**
+   * Показувати в розділі «Бестселери» (пункт меню в шапці). Поки жоден товар не відмічено, пункт меню прихований.
+   */
+  bestseller?: boolean | null;
   price: number;
   /**
    * Може повторюватися — напр. у різних кольорів однієї моделі однаковий артикул.
@@ -154,6 +160,10 @@ export interface Product {
    */
   wholesalePrice?: number | null;
   category: number | Category;
+  /**
+   * Тканина товару; можна кілька (напр. мікромасло + мереживо). Показується на сторінці товару та у фільтрі каталогу. Імпорт із Торгсофт заповнює це поле з колонки «Матеріал». Довідник — «Каталог → Матеріали».
+   */
+  materials?: (number | Material)[] | null;
   /**
    * Оберіть модель, щоб зв'язати цей колір з іншими кольорами того самого товару. Порожньо — товар без варіантів кольору. Моделі створюються у розділі «Каталог → Моделі».
    */
@@ -251,6 +261,36 @@ export interface Media {
   focalY?: number | null;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "materials".
+ */
+export interface Material {
+  id: number;
+  /**
+   * Напр. "Шовк", "Бавовна". Показується на сторінці товару та у фільтрі каталогу. Обовʼязково українською; PL/EN — за бажанням.
+   */
+  title?: string | null;
+  /**
+   * Залиште порожнім — згенерується з назви.
+   */
+  slug?: string | null;
+  showOnHome?: boolean | null;
+  /**
+   * Менше число — вище у фільтрі та раніше на головній.
+   */
+  sortOrder?: number | null;
+  /**
+   * Для картки на головній сторінці. Краще без тексту на фото — назва виводиться окремо.
+   */
+  image?: (number | null) | Media;
+  /**
+   * Коротко, 2–3 речення, напр. "Ручне прання до 30°. Не віджимати. Прасувати з виворіту." На головній з'являється поверх фото при наведенні мишкою, на телефоні — під назвою тканини.
+   */
+  careText?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Модель об'єднує кольори одного товару. Спочатку створіть модель, потім у кожній картці кольору оберіть її в полі «Модель».
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -277,6 +317,18 @@ export interface Order {
   id: number;
   orderNumber?: string | null;
   status: 'new' | 'processing' | 'completed' | 'cancelled';
+  /**
+   * Обирає покупець на сайті; менеджер уточнює під час дзвінка.
+   */
+  paymentMethod?: ('prepaid' | 'cod') | null;
+  /**
+   * Передоплата надійшла на рахунок або післяплату отримано від Нової пошти.
+   */
+  paymentReceived?: boolean | null;
+  /**
+   * Після збереження покупцю піде SMS з цим номером.
+   */
+  ttn?: string | null;
   customerName: string;
   phone: string;
   email?: string | null;
@@ -363,6 +415,10 @@ export interface PayloadLockedDocument {
         value: number | Category;
       } | null)
     | ({
+        relationTo: 'materials';
+        value: number | Material;
+      } | null)
+    | ({
         relationTo: 'orders';
         value: number | Order;
       } | null)
@@ -424,10 +480,12 @@ export interface ProductsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   active?: T;
+  bestseller?: T;
   price?: T;
   sku?: T;
   wholesalePrice?: T;
   category?: T;
+  materials?: T;
   model?: T;
   colorName?: T;
   colorHex?: T;
@@ -482,11 +540,28 @@ export interface CategoriesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "materials_select".
+ */
+export interface MaterialsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  showOnHome?: T;
+  sortOrder?: T;
+  image?: T;
+  careText?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "orders_select".
  */
 export interface OrdersSelect<T extends boolean = true> {
   orderNumber?: T;
   status?: T;
+  paymentMethod?: T;
+  paymentReceived?: T;
+  ttn?: T;
   customerName?: T;
   phone?: T;
   email?: T;

@@ -1,45 +1,225 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
+import { ChevronDown } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
-import { formatPrice, cn } from '@/lib/utils'
+import { cn, colorLabel, formatPrice, scrollBehavior, shortProductTitle } from '@/lib/utils'
+import { sortByColor } from '@/lib/colors'
+import { QuantityStepper } from '@/components/shop/QuantityStepper'
 import { SizeChart } from '@/components/shop/SizeChart'
 import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
 import { useCart } from '@/hooks/useCart'
 import { isProductInStock, isSizeAvailable } from '@/lib/stock'
+import { productMaterials } from '@/lib/catalog'
 import type { CartItem } from '@/types/shop'
 
-const photoFrame = 'relative overflow-hidden rounded-card border border-[#d9d9d9] bg-placeholder/40'
+const photoFrame = 'relative overflow-hidden rounded-card bg-placeholder/40'
 
 /**
  * Interactive part of the product card (Figma design "Product"):
- *  - gallery: large photo + a column of thumbnails (a strip under the photo on mobile);
- *  - framed card: title, price, color, size, "Add to cart";
+ *  - gallery: on desktop (~58% of the width) a large photo with a column of thumbnails on its left;
+ *    on phones a swipeable carousel with dots (MobileGallery);
+ *  - product panel: title, price, color, size, "Add to cart";
  *  - quick order. The description sits under the gallery (ProductDescription in page.tsx).
  *
  * Data arrives as props from the server page.tsx, so this
  * client component does not fetch anything itself.
  */
+/**
+ * Phone gallery: one photo per screen width, swiped with CSS scroll-snap; the dots show the position and
+ * jump to a photo. Tapping a photo opens the full-screen viewer at that photo.
+ */
+function MobileGallery({
+  photos,
+  active,
+  onChange,
+  onOpen,
+}: {
+  photos: { url: string; alt: string }[]
+  active: number
+  onChange: (i: number) => void
+  onOpen: () => void
+}) {
+  const t = useTranslations('Product')
+  const track = useRef<HTMLDivElement>(null)
+
+  // The swipe position decides which dot is active (and which photo the viewer opens on)
+  const onScroll = () => {
+    const el = track.current
+    if (!el) return
+    const i = Math.round(el.scrollLeft / el.clientWidth)
+    if (i !== active) onChange(i)
+  }
+  const goTo = (i: number) => track.current?.scrollTo({ left: i * track.current.clientWidth, behavior: scrollBehavior() })
+
+  // Same placeholder as on the catalog card
+  if (!photos.length)
+    return (
+      <div className="flex aspect-[3/4] items-center justify-center rounded-card bg-placeholder/40 text-sm text-brown lg:hidden">
+        {t('noPhoto')}
+      </div>
+    )
+
+  return (
+    <div className="lg:hidden">
+      <div
+        ref={track}
+        onScroll={onScroll}
+        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-card [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {photos.map((photo, i) => (
+          <button
+            key={photo.url + i}
+            type="button"
+            onClick={onOpen}
+            className="relative aspect-[3/4] w-full shrink-0 snap-center bg-placeholder/40"
+            aria-label={t('photoOfZoom', { n: i + 1, total: photos.length })}
+          >
+            {/*
+              The carousel is in the HTML on desktop too, only hidden (lg:hidden). "1px" from lg up: the preloaded
+              first photo then takes the smallest file there instead of a full-width one, and Next stops warning
+            */}
+            <Image src={photo.url} alt={photo.alt} fill priority={i === 0} quality={85} sizes="(min-width: 1024px) 1px, 100vw" className="object-cover" />
+          </button>
+        ))}
+      </div>
+      {photos.length > 1 && (
+        <div className="mt-3 flex justify-center gap-1.5">
+          {photos.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => goTo(i)}
+              aria-label={t('photo', { n: i + 1 })}
+              aria-current={i === active}
+              // A 24px tap target around a small dot
+              className="flex h-6 w-6 items-center justify-center"
+            >
+              <span className={cn('h-1.5 rounded-full transition-all', i === active ? 'w-4 bg-ink' : 'w-1.5 bg-brown/30')} />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Composition and care for the block under the buy button (lib/productText, computed on the server) */
+export type ProductFacts = { composition: string | null; care: string[] }
+
+const infoLink = 'text-ink underline underline-offset-2 hover:no-underline'
+
+/**
+ * Short answers right under the buy button, the questions that stop a purchase: how to wash it, how it is delivered and paid for, how to return it. One or two lines each, with a link to
+ * the full terms. Opening one item closes the others, so the sticky panel stays within the screen. Delivery and returns wording follows
+ * the trust strip on the home page and the /delivery page.
+ */
+function BuyInfo({ facts }: { facts?: ProductFacts }) {
+  const t = useTranslations('Product.info')
+  const care = facts?.care ?? []
+  const items: { id: string; title: string; body: React.ReactNode }[] = [
+    // The composition is shown in the panel itself (under the SKU), so this item holds the care text only
+    ...(care.length
+      ? [
+          {
+            id: 'care',
+            title: t('care'),
+            body: (
+              <>
+                {care.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </>
+            ),
+          },
+        ]
+      : []),
+    {
+      id: 'delivery',
+      title: t('delivery'),
+      body: (
+        <p>
+          {t('deliveryText')}{' '}
+          <Link href="/delivery" className={infoLink}>
+            {t('more')}
+          </Link>
+        </p>
+      ),
+    },
+    {
+      id: 'returns',
+      title: t('returns'),
+      body: (
+        <p>
+          {t('returnsText')}{' '}
+          <Link href="/delivery#returns" className={infoLink}>
+            {t('howToReturn')}
+          </Link>
+        </p>
+      ),
+    },
+  ]
+  // Closed at first, one item open at a time: an open item made the sticky panel taller than the screen.
+  // The composition itself is always visible in the panel (under the SKU).
+  const [open, setOpen] = useState<string | null>(null)
+
+  return (
+    <div className="mt-6 border-t border-brown/15">
+      {items.map((item) => {
+        const isOpen = open === item.id
+        const id = `buy-info-${item.id}`
+        return (
+          <div key={item.id} className="border-b border-brown/15">
+            <button
+              type="button"
+              onClick={() => setOpen(isOpen ? null : item.id)}
+              aria-expanded={isOpen}
+              aria-controls={id}
+              className="flex w-full items-center justify-between py-4 text-left text-sm text-ink"
+            >
+              {item.title}
+              <ChevronDown className={cn('h-4 w-4 text-brown transition-transform', isOpen && 'rotate-180')} strokeWidth={1.5} aria-hidden />
+            </button>
+            {isOpen && (
+              <div id={id} className="-mt-1 space-y-1 pb-4 text-sm leading-6 text-brown">
+                {item.body}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function ProductDetails({
   product,
   colorVariants = [],
+  facts,
+  description,
 }: {
   product: Product
   /** Other color cards of the same model (linked by the model field). */
   colorVariants?: Product[]
+  /** One-line composition and care for the block under the buy button (lib/productText, computed on the server) */
+  facts?: ProductFacts
+  /** Description, characteristics: under the gallery on desktop (beside the sticky panel), after the panel on phones */
+  description?: React.ReactNode
 }) {
   const t = useTranslations('Product')
-  const tc = useTranslations('Common')
-  const { addItem } = useCart()
+  const currency = useTranslations('Common')('currency')
+  const { items: cartItems, addItem } = useCart()
+  const title = product.title ?? ''
 
   const images = product.images ?? []
   const sizes = product.sizes ?? []
-  const colors = product.colors ?? []
+  const colors = sortByColor(product.colors ?? [], (c) => c.name)
+  const materials = productMaterials(product)
 
   // Show the switcher links only if the model has at least 2 color cards.
   const showVariantSwitch = colorVariants.length > 1
@@ -48,9 +228,13 @@ export function ProductDetails({
   // A size without a positive stock (0 or empty) is sold out and crossed out (lib/stock).
   const soldOut = (s: { stock?: number | null }) => !isSizeAvailable(s)
   const allSoldOut = !isProductInStock(sizes)
-  const [size, setSize] = useState<string | undefined>(
-    (sizes.find((s) => !soldOut(s)) ?? sizes[0])?.value,
-  )
+  // A size is picked for the shopper only when a single one can be ordered: picking the first available one
+  // silently put whatever size that was into the cart
+  const availableSizes = sizes.filter((s) => !soldOut(s))
+  const [size, setSize] = useState<string | undefined>(availableSizes.length === 1 ? availableSizes[0].value : undefined)
+  // "Оберіть розмір": set when buying without a size, cleared when one is picked
+  const [sizeMissing, setSizeMissing] = useState(false)
+  const sizesBlock = useRef<HTMLDivElement>(null)
   const [color, setColor] = useState<string | undefined>(colors[0]?.name)
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
@@ -62,18 +246,18 @@ export function ProductDetails({
 
   const mainImage = images[activeImage]?.image
   const mainUrl = getMediaUrl(mainImage)
-  const mainAlt = getMediaAlt(mainImage, product.title ?? '')
+  const mainAlt = getMediaAlt(mainImage, title)
 
   // Photos for the full-screen viewer (skip entries without a file).
   const lightboxPhotos = images.flatMap((item) => {
     const url = getMediaUrl(item.image)
-    return url ? [{ url, alt: getMediaAlt(item.image, product.title ?? '') }] : []
+    return url ? [{ url, alt: getMediaAlt(item.image, title) }] : []
   })
 
   // Cart / quick-order line built from the current selection on the page.
   const selectedItem: CartItem = {
     productId: String(product.id),
-    title: product.title ?? '',
+    title,
     price: product.price,
     slug: product.slug ?? '',
     image: getMediaUrl(images[0]?.image),
@@ -82,107 +266,175 @@ export function ProductDetails({
     // otherwise from the legacy colors array (selection within the page).
     color: showVariantSwitch ? (product.colorName ?? undefined) : color,
     quantity,
+    maxQuantity: typeof selectedStock === 'number' && selectedStock > 0 ? selectedStock : undefined,
   }
+
+  // The same line already in the cart: the cart never holds more than the size's stock (useCart clamps),
+  // so say it here instead of a silent "Додано ✓" that adds nothing
+  const inCart = size
+    ? (cartItems.find(
+        (i) => i.productId === selectedItem.productId && i.size === size && i.color === selectedItem.color,
+      )?.quantity ?? 0)
+    : 0
+  const canAdd = Math.max(0, maxQuantity - inCart)
+  const cartHasAll = inCart > 0 && canAdd === 0
 
   function handleSelectSize(value: string, stock?: number | null) {
     setSize(value)
+    setSizeMissing(false)
     if (typeof stock === 'number' && stock > 0) setQuantity((q) => Math.min(q, stock))
   }
 
+  /** No size picked yet: bring the sizes into view and ask for one instead of adding a product without a size. */
+  function needsSize() {
+    if (sizes.length === 0 || size) return false
+    setSizeMissing(true)
+    sizesBlock.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'center' })
+    return true
+  }
+
   function handleAddToCart() {
-    if (allSoldOut) return
+    if (allSoldOut || needsSize() || cartHasAll) return
     addItem(selectedItem)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }
 
-  const swatchClass = (active: boolean) =>
+  // A sold-out colour keeps its full colour (dimmed, navy read as light blue) and is only crossed by a diagonal,
+  // dark with a white edge so it shows on any colour
+  const swatchClass = (active: boolean, unavailable = false) =>
     cn(
-      'block h-9 w-9 rounded-full border transition-transform',
+      // 36px swatch, 44px tap target (before: — after: draws the sold-out diagonal)
+      "relative block h-9 w-9 rounded-full border transition-transform before:absolute before:-inset-1 before:rounded-full before:content-['']",
       active ? 'border-ink ring-1 ring-ink ring-offset-2' : 'border-brown/30 hover:scale-105',
+      unavailable &&
+        "after:absolute after:left-1/2 after:top-[-3px] after:h-[calc(100%+6px)] after:w-[1.5px] after:-translate-x-1/2 after:rotate-45 after:bg-ink after:shadow-[0_0_0_1px_white] after:content-['']",
     )
 
-  const label = 'text-xs tracking-[2px] text-ink'
+  // Other colours of the model that can be ordered now: offered when this one is sold out
+  const inStockColors = colorVariants.filter((v) => v.id !== product.id && isProductInStock(v.sizes))
+
+  const label = 'text-xs text-ink'
 
   const addButton = (className?: string) => (
     <button
       type="button"
       onClick={handleAddToCart}
-      disabled={allSoldOut}
+      disabled={allSoldOut || (cartHasAll && !added)}
       className={cn(
-        'h-10 w-full rounded-card bg-cream/70 text-xs uppercase tracking-[1px] text-brown transition-colors hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-cream/70',
+        'h-10 w-full rounded-card bg-ink text-sm text-white transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ink',
         className,
       )}
     >
-      {allSoldOut ? t('outOfStock') : added ? t('added') : t('addToCart')}
+      {allSoldOut ? t('outOfStock') : added ? t('added') : cartHasAll ? t('alreadyInCart') : t('addToCart')}
     </button>
   )
 
   return (
-    <div className="lg:flex lg:items-start lg:justify-center lg:gap-[100px]">
-      {/* GALLERY: full-width photo on mobile, thumbnails as a strip under it */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:gap-10 lg:pt-[30px]">
-        <div className="relative -mx-[var(--gutter)] aspect-[3/4] overflow-hidden rounded-b-card border-b border-[#d9d9d9] bg-placeholder/40 lg:mx-0 lg:w-[367px] lg:rounded-card lg:border">
+    // Desktop: the gallery takes ~58% of the width (for clothes the photo is the main argument), thumbnails in a
+    // column on its left, the description under it. The product panel spans both rows and is sticky, so the
+    // colour and the buy button stay at hand while reading. Phones: gallery, panel, description.
+    <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] lg:gap-x-12 xl:gap-x-16">
+      {/* MOBILE GALLERY: the photos as a swipeable carousel with dots (no thumbnail strip) */}
+      <MobileGallery
+        photos={lightboxPhotos}
+        active={activeImage}
+        onChange={setActiveImage}
+        onOpen={() => setLightboxOpen(true)}
+      />
 
-          {mainUrl && (
+      {/* DESKTOP GALLERY: large photo, thumbnails in a column on its left */}
+      <div className="hidden lg:col-start-1 lg:row-start-1 lg:grid lg:grid-cols-[80px_minmax(0,1fr)] lg:gap-4">
+        {/* col-start-2: with one photo or none there is no thumbnail column, and the photo would drop into the 80px cell */}
+        <div className="relative aspect-[3/4] overflow-hidden rounded-card bg-placeholder/40 lg:order-2 lg:col-start-2">
+          {mainUrl ? (
             <button
               type="button"
               onClick={() => setLightboxOpen(true)}
               className="absolute inset-0 cursor-zoom-in"
               aria-label={t('zoom')}
             >
-              <Image src={mainUrl} alt={mainAlt} fill priority quality={90} sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" />
+              <Image src={mainUrl} alt={mainAlt} fill priority quality={90} sizes="(max-width: 1024px) 100vw, 720px" className="object-cover" />
             </button>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-brown">{t('noPhoto')}</div>
           )}
         </div>
 
         {images.length > 1 && (
-          <div className="-mx-[var(--gutter)] flex gap-3 overflow-x-auto px-[var(--gutter)] [scrollbar-width:none] lg:mx-0 lg:max-h-[438px] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-0">
-            {images.map((item, i) => {
-              const thumb = getMediaUrl(item.image)
-              return (
-                <button
-                  key={item.id ?? i}
-                  type="button"
-                  onClick={() => setActiveImage(i)}
-                  className={cn(
-                    photoFrame,
-                    'h-[78px] w-16 shrink-0 transition-opacity',
-                    i === activeImage ? 'opacity-100' : 'opacity-50 hover:opacity-80',
-                  )}
-                  aria-label={t('image', { n: i + 1 })}
-                  aria-current={i === activeImage}
-                >
-                  {thumb && <Image src={thumb} alt="" fill quality={85} sizes="64px" className="object-cover" />}
-                </button>
-              )
-            })}
+          // Desktop: the column is as tall as the photo (absolute inside the stretched grid cell) and scrolls if longer
+          <div className="lg:relative lg:order-1">
+            <div className="absolute inset-0 flex flex-col gap-3 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {images.map((item, i) => {
+                const thumb = getMediaUrl(item.image)
+                return (
+                  <button
+                    key={item.id ?? i}
+                    type="button"
+                    onClick={() => setActiveImage(i)}
+                    className={cn(
+                      photoFrame,
+                      'aspect-[3/4] w-full shrink-0 transition-opacity',
+                      i === activeImage ? 'opacity-100' : 'opacity-50 hover:opacity-80',
+                    )}
+                    aria-label={t('photo', { n: i + 1 })}
+                    aria-current={i === activeImage}
+                  >
+                    {thumb && <Image src={thumb} alt="" fill quality={85} sizes="80px" className="object-cover" />}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
 
-      {/* PRODUCT CARD: framed on desktop, as in the design */}
-      <div className="mt-8 lg:mt-0 lg:w-[340px] lg:border lg:border-brown lg:px-10 lg:pb-3 lg:pt-14">
-        <h1 className="font-serif text-sm uppercase leading-[17px] tracking-[1px] text-ink">{product.title}</h1>
-        <p className="mt-3 text-sm tracking-[1px] text-brown">{formatPrice(product.price, tc('currency'))}</p>
-        {product.sku && <p className="mt-6 text-xs tracking-[1px] text-brown/50">{t('sku', { sku: product.sku })}</p>}
+      {/* PRODUCT PANEL: a plain column, no frame; sticky on desktop (scrolls inside itself on short screens) */}
+      <div className="mt-8 lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:-mx-2 lg:mt-0 lg:max-h-[calc(100vh-4rem)] lg:self-start lg:overflow-y-auto lg:px-2 lg:pb-2 lg:[scrollbar-width:thin]">
+        {/* The model name in the page-title style; the colour is picked with the swatches below.
+            The full title stays in <title> and the structured data. */}
+        <h1 className="font-serif text-[30px] leading-[36px] text-ink-text lg:text-[40px] lg:leading-[46px]">
+          {shortProductTitle(title)}
+        </h1>
+        <p className="mt-3 text-2xl text-ink lg:mt-4">{formatPrice(product.price, currency)}</p>
+        {product.sku && <p className="mt-4 text-xs text-brown">{t('sku', { sku: product.sku })}</p>}
+        {/* The composition right by the price: the name says «шовк Армані», shoppers want to know what it is */}
+        {facts?.composition && (
+          <p className={cn('text-xs text-brown', product.sku ? 'mt-1' : 'mt-4')}>{t('composition', { value: facts.composition })}</p>
+        )}
+        {materials.length > 0 && (
+          <p className={cn('text-xs text-brown', product.sku || facts?.composition ? 'mt-1' : 'mt-4')}>
+            {t('material')}{' '}
+            {materials.map((m, i) => (
+              <span key={m.id}>
+                {i > 0 && ', '}
+                <Link href={`/catalog?material=${m.slug}`} className="underline-offset-2 hover:text-brown hover:underline">
+                  {(m.title ?? '').toLowerCase()}
+                </Link>
+              </span>
+            ))}
+          </p>
+        )}
 
         {/* Colors: variant cards (navigate on click) */}
         {showVariantSwitch && (
-          <div className="mt-10">
+          <div className="mt-8">
             <p className={label}>
-              {t('color')}{product.colorName ? `: ${product.colorName}` : ''}
+              {t('color')}
+              {product.colorName ? `: ${colorLabel(product.colorName)}` : ''}
             </p>
-            <div className="mt-3 flex flex-wrap gap-1">
+            <div className="mt-3 flex flex-wrap gap-2">
               {colorVariants.map((v) => {
                 const isCurrent = v.id === product.id
-                const name = v.colorName ?? v.title ?? ''
+                const name = v.colorName ? colorLabel(v.colorName) : (v.title ?? '')
                 const style = { backgroundColor: v.colorHex ?? '#ddd' }
+                const unavailable = !isProductInStock(v.sizes)
+                const hint = unavailable ? t('colorSoldOut', { name }) : name
                 return isCurrent ? (
-                  <span key={v.id} title={name} aria-label={t('selected', { label: name })} aria-current="true" className={swatchClass(true)} style={style} />
+                  <span key={v.id} role="img" title={hint} aria-label={t('selected', { label: hint })} aria-current="true" className={swatchClass(true, unavailable)} style={style} />
                 ) : (
-                  <Link key={v.id} href={`/product/${v.slug}`} title={name} aria-label={name}>
-                    <span className={swatchClass(false)} style={style} />
+                  <Link key={v.id} href={`/product/${v.slug}`} title={hint} aria-label={hint}>
+                    <span className={swatchClass(false, unavailable)} style={style} />
                   </Link>
                 )
               })}
@@ -192,16 +444,19 @@ export function ProductDetails({
 
         {/* Colors: selection inside a single card (model not split into variants) */}
         {!showVariantSwitch && colors.length > 0 && (
-          <div className="mt-10">
-            <p className={label}>{t('color')}{color ? `: ${color}` : ''}</p>
-            <div className="mt-3 flex flex-wrap gap-1">
+          <div className="mt-8">
+            <p className={label}>
+              {t('color')}
+              {color ? `: ${colorLabel(color)}` : ''}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
               {colors.map((c) => (
                 <button
                   key={c.id ?? c.name}
                   type="button"
                   onClick={() => setColor(c.name)}
-                  title={c.name}
-                  aria-label={c.name}
+                  title={colorLabel(c.name)}
+                  aria-label={colorLabel(c.name)}
                   aria-pressed={color === c.name}
                   className={swatchClass(color === c.name)}
                   style={{ backgroundColor: c.hex ?? '#ddd' }}
@@ -213,9 +468,22 @@ export function ProductDetails({
 
         {/* Sizes */}
         {sizes.length > 0 && (
-          <div className="mt-5">
-            <p className={label}>{t('size')}</p>
-            <div className="mt-2 flex flex-wrap gap-1">
+          <div
+            ref={sizesBlock}
+            className={cn(
+              'mt-5 scroll-mt-24 rounded-card transition-colors duration-300',
+              sizeMissing && '-mx-3 bg-[#f4efeb] px-3 py-3',
+            )}
+          >
+            <p className={label}>
+              {t('size')}
+              {sizeMissing && (
+                <span role="alert" className="ml-2 font-medium text-[#a0463c]">
+                  {t('chooseSize')}
+                </span>
+              )}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
               {sizes.map((s) => (
                 <button
                   key={s.id ?? s.value}
@@ -225,7 +493,8 @@ export function ProductDetails({
                   aria-pressed={size === s.value}
                   title={soldOut(s) ? t('outOfStock') : undefined}
                   className={cn(
-                    'flex h-9 min-w-[35px] items-center justify-center border px-1.5 text-[10px] transition-colors',
+                    // 36px capsule, 44px tap target: the gap-2 between sizes leaves room for the 4px around each
+                    "relative flex h-9 min-w-9 items-center justify-center rounded-full border px-2.5 text-xs transition-colors before:absolute before:-inset-1 before:content-['']",
                     soldOut(s)
                       ? 'cursor-not-allowed border-[#d4d4d4] text-brown/40 line-through'
                       : size === s.value
@@ -240,53 +509,77 @@ export function ProductDetails({
           </div>
         )}
 
-        <div className="mt-3 text-center">
-          <SizeChart html={product.sizeChartHtml} />
+        <div className="mt-3">
+          <SizeChart html={product.sizeChartHtml} selected={size} />
         </div>
 
-        {/* Quantity */}
-        <div className="mt-5 flex items-center justify-between">
-          <p className={label}>{t('quantity')}</p>
-          <div className="flex items-center border border-[#a3a3a3] text-sm text-ink">
-            <button
-              type="button"
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              disabled={quantity <= 1}
-              className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
-              aria-label={t('decrease')}
-            >
-              −
-            </button>
-            <span className="min-w-6 text-center tabular-nums" aria-live="polite">
-              {quantity}
-            </span>
-            <button
-              type="button"
-              onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
-              disabled={quantity >= maxQuantity}
-              className="flex h-8 w-8 items-center justify-center disabled:opacity-40"
-              aria-label={t('increase')}
-            >
-              +
-            </button>
+        {/* Quantity only when something can be ordered (quick order: see below) */}
+        {!allSoldOut && (
+          <div className="mt-5 flex items-center justify-between">
+            <p className={label}>{t('quantity')}</p>
+            <QuantityStepper value={quantity} onChange={setQuantity} max={maxQuantity} />
           </div>
-        </div>
+        )}
+        {!allSoldOut && inCart > 0 && (
+          <p className="mt-2 text-right text-[13px] text-brown">
+            {cartHasAll
+              ? t('inCartAll', { count: inCart })
+              : inCart + quantity > maxQuantity
+                ? t('inCartMore', { count: inCart, more: canAdd })
+                : t('inCart', { count: inCart })}
+          </p>
+        )}
 
-        {/* On desktop the button is inside the card; on mobile it is pinned to the bottom of the screen */}
-        {addButton('mt-5 hidden lg:block')}
-        <button
-          type="button"
-          onClick={() => setQuickOpen(true)}
-          disabled={allSoldOut}
-          className="mt-2 h-10 w-full rounded-card border border-brown/40 text-xs uppercase tracking-[1px] text-brown transition-colors hover:border-brown disabled:cursor-not-allowed disabled:opacity-50"
+        {allSoldOut ? (
+          <>
+            {/* Sold out: the disabled button stays in the panel on every screen (no sticky bar), with a way out */}
+            {addButton('mt-6')}
+            {inStockColors.length > 0 && (
+              <p className="mt-3 text-sm leading-6 text-brown">
+                {t('colorEnded')}{' '}
+                {inStockColors.map((v, i) => (
+                  <span key={v.id}>
+                    {i > 0 && ', '}
+                    <Link href={`/product/${v.slug}`} className="text-ink underline underline-offset-2 hover:no-underline">
+                      {v.colorName ? colorLabel(v.colorName).toLowerCase() : v.title}
+                    </Link>
+                  </span>
+                ))}
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            {/* On desktop the button is in the panel; on mobile it is pinned to the bottom of the screen */}
+            {addButton('mt-5 hidden lg:block')}
+            <button
+              type="button"
+              onClick={() => !needsSize() && setQuickOpen(true)}
+              className="mt-2 h-11 w-full rounded-card border border-brown/40 text-sm lg:h-10 text-brown transition-colors hover:border-brown"
+            >
+              {t('oneClick')}
+            </button>
+          </>
+        )}
+        {/* "Додано ✓" is only a change of the button's text, which screen readers keep quiet about: said here */}
+        <p role="status" className="sr-only">
+          {added ? t('addedStatus') : ''}
+        </p>
+
+        <BuyInfo facts={facts} />
+      </div>
+
+      {description && <div className="mt-12 lg:col-start-1 lg:row-start-2 lg:mt-20">{description}</div>}
+
+      {/* data-sticky-buy: the layout adds bottom padding to <body> so the bar does not cover the footer */}
+      {!allSoldOut && (
+        <div
+          data-sticky-buy
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-brown/10 bg-white/95 px-[var(--gutter)] pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden"
         >
-          {t('oneClick')}
-        </button>
-      </div>
-
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-white/95 p-2 backdrop-blur lg:hidden">
-        {addButton('h-[57px] rounded-none')}
-      </div>
+          {addButton('h-12 text-base')}
+        </div>
+      )}
 
       {lightboxOpen && (
         <PhotoLightbox

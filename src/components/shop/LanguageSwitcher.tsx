@@ -24,7 +24,10 @@ export function LanguageSwitcher() {
 
 function LocaleLinksWithQuery() {
   const searchParams = useSearchParams()
-  return <LocaleLinks query={Object.fromEntries(searchParams.entries())} />
+  // The catalog colour filter holds the colour name in the current language (?color=Молочний):
+  // it would match nothing in another language, so it is dropped on switching.
+  const query = Object.fromEntries([...searchParams.entries()].filter(([key]) => key !== 'color'))
+  return <LocaleLinks query={query} />
 }
 
 function LocaleLinks({ query }: { query?: Record<string, string> }) {

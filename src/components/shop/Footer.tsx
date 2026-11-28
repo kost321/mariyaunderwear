@@ -1,59 +1,97 @@
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { ScrollToTop } from './ScrollToTop'
+import { SocialLinks } from './SocialLinks'
+import { CONTACTS, phoneHref } from '@/lib/contacts'
+
+type FooterLink = { label: string; href?: string }
 
 // Items without `href` have no page yet: they are shown as plain text until the pages exist.
-// `key` is the label key in the Footer dictionary.
+// Labels: the Footer namespace of src/messages.
 const INFO_LINKS = [
-  { href: '/catalog', key: 'catalog' },
-  { href: '/catalog?sort=new', key: 'newArrivals' },
-  { href: '/cart', key: 'cart' },
-  { key: 'contacts' },
-  { key: 'cooperation' },
+  { href: '/contacts', key: 'contacts' },
+  { href: '/cooperation', key: 'cooperation' },
   { href: '/#care', key: 'care' },
-  { key: 'social' },
-  { key: 'offer' },
-  { key: 'privacy' },
-  { key: 'faq' },
-] as const satisfies { key: string; href?: string }[]
+  { href: '/oferta', key: 'offer' },
+  { href: '/privacy', key: 'privacy' },
+  { href: '/delivery', key: 'delivery' },
+] as const
 
-/** List of links separated by "/", as in the design. */
-function SlashList({ items }: { items: { label: string; href?: string }[] }) {
+/** Column of links. */
+function LinkList({ items }: { items: FooterLink[] }) {
   return (
-    <ul className="flex flex-col gap-2 text-xs font-medium uppercase tracking-[-0.24px] text-sand">
-      {items.map((item, i) => (
-        <li key={item.label} className="flex gap-2">
-          {item.href ? (
-            <Link href={item.href} className="opacity-60 transition-opacity hover:opacity-100">
+    <ul className="flex flex-col gap-2 text-sm leading-5 text-sand">
+      {items.map((item) => (
+        <li key={item.label}>
+          {!item.href ? (
+            <span>{item.label}</span>
+          ) : (
+            <Link
+              href={item.href}
+              // The strip above and below fills the gap between the lines: the whole row is the tap target
+              className="relative transition-colors before:absolute before:inset-x-0 before:-inset-y-1 before:content-[''] hover:text-white"
+            >
               {item.label}
             </Link>
-          ) : (
-            <span className="opacity-60">{item.label}</span>
           )}
-          {i < items.length - 1 && <span className="font-light opacity-20">/</span>}
         </li>
       ))}
     </ul>
   )
 }
 
+const contactLabel = 'text-sm leading-5'
+const contactValue = 'mt-0.5 block text-sm leading-5 text-sand/80'
+
+function ContactsBlock() {
+  const t = useTranslations('Footer')
+  const store = useTranslations('Store')
+  return (
+    <div className="flex flex-col text-sand">
+      <div className="flex flex-col gap-3">
+        {CONTACTS.phone && (
+          <div>
+            <p className={contactLabel}>{t('customerCare')}</p>
+            <a href={`tel:${phoneHref(CONTACTS.phone)}`} className={`${contactValue} relative before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] hover:underline`}>
+              {CONTACTS.phone}
+            </a>
+          </div>
+        )}
+        {CONTACTS.address && (
+          <div>
+            <p className={contactLabel}>{t('address')}</p>
+            <p className={contactValue}>{store('address')}</p>
+          </div>
+        )}
+      </div>
+
+      <SocialLinks items={['instagram', 'email', 'tiktok']} size={22} gap={4} tone="light" className="mt-3" />
+    </div>
+  )
+}
+
+function Column({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-5">
+      <p className="text-sm font-medium leading-5 text-sand/80">{title}</p>
+      {children}
+    </section>
+  )
+}
+
 export function Footer() {
   const t = useTranslations('Footer')
-  const year = new Date().getFullYear()
-
+  const infoLinks: FooterLink[] = INFO_LINKS.map((link) => ({ href: link.href, label: t(link.key) }))
   return (
-    <footer className="relative mt-20 bg-ink text-sand lg:mt-32">
-      <div className="container flex min-h-[420px] flex-col lg:min-h-[628px]">
-        <div className="flex flex-col gap-12 pt-16 lg:pl-[117px] lg:pt-[126px]">
-          <section className="flex flex-col gap-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.4px] text-pink opacity-40">{t('info')}</p>
-            <SlashList items={INFO_LINKS.map((item) => ({ ...item, label: t(item.key) }))} />
-          </section>
-        </div>
-
-        <div className="mt-auto flex flex-col gap-2 pb-6 pt-16 text-[10px] font-medium lowercase text-sand/40 sm:flex-row sm:justify-center sm:gap-24">
-          <p>© {year} — Mariya Underwear</p>
-          <p>{t('rights')}</p>
+    <footer className="surface-dark relative mt-12 bg-ink text-sand lg:mt-16">
+      <div className="container flex min-h-[190px] flex-col">
+        <div className="grid grid-cols-1 gap-y-8 pb-10 pt-10 sm:grid-cols-2 sm:gap-x-10 lg:pb-[35px] lg:pt-[35px]">
+          <Column title={t('info')}>
+            <LinkList items={infoLinks} />
+          </Column>
+          <Column title={t('contactsAndSocial')}>
+            <ContactsBlock />
+          </Column>
         </div>
       </div>
 

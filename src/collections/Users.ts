@@ -9,7 +9,14 @@ import type { CollectionConfig } from 'payload'
  */
 export const Users: CollectionConfig = {
   slug: 'users',
-  auth: true,
+  auth: {
+    // Payload's default is 5 attempts and then a 10-minute lock, which kept locking
+    // the owner out over typos. Fully disabling the lock would leave the admin open
+    // to password guessing (login has no other rate limit), so it is softened:
+    // 10 attempts, then a 1-minute pause.
+    maxLoginAttempts: 10,
+    lockTime: 60 * 1000,
+  },
   admin: {
     useAsTitle: 'email',
     group: 'Налаштування',

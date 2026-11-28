@@ -1,12 +1,19 @@
 import type { Review } from '@/payload-types'
 import { colorLabel, modelName } from '@/lib/utils'
 
-/** Labels of the "how did the size fit" choice; the same words in the form, the list and the summary. */
-export const FIT_LABELS: Record<NonNullable<Review['fit']>, string> = {
+export type Fit = NonNullable<Review['fit']>
+
+/**
+ * Ukrainian labels of the "how did the size fit" choice, for the admin and the owner's email.
+ * The site shows the shopper's language: Reviews.fit.<key> in src/messages.
+ */
+export const FIT_LABELS: Record<Fit, string> = {
   small: 'Маломірить',
   fits: 'В розмір',
   large: 'Великомірить',
 }
+
+export const FITS = Object.keys(FIT_LABELS) as Fit[]
 
 export type ReviewSummary = {
   /** Reviews with a rating */
@@ -14,7 +21,7 @@ export type ReviewSummary = {
   /** Average rating, one decimal; null without rated reviews */
   average: number | null
   /** The fit answer most reviewers gave (more than half) and how many gave it; null without a majority */
-  fit: { label: string; count: number; of: number } | null
+  fit: { fit: Fit; count: number; of: number } | null
 }
 
 export function summarizeReviews(reviews: Pick<Review, 'rating' | 'fit'>[]): ReviewSummary {
@@ -28,23 +35,18 @@ export function summarizeReviews(reviews: Pick<Review, 'rating' | 'fit'>[]): Rev
     for (const f of fits) counts.set(f, (counts.get(f) ?? 0) + 1)
     const [top, count] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]
     // Only a clear majority: with "fits" and "large" at 1:1 either word would mislead
-    if (count * 2 > fits.length) fit = { label: FIT_LABELS[top], count, of: fits.length }
+    if (count * 2 > fits.length) fit = { fit: top, count, of: fits.length }
   }
   return { rated: ratings.length, average, fit }
 }
 
-/** "1 відгук", "3 відгуки", "5 відгуків" */
-export function reviewsCountLabel(n: number): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  const word = mod10 === 1 && mod100 !== 11 ? 'відгук' : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'відгуки' : 'відгуків'
-  return `${n} ${word}`
-}
-
-/** "15 листопада 2026" (without the trailing "р." the browser adds) */
-export function formatReviewDate(iso: string): string {
+/**
+ * "15 листопада 2026" / "15 listopada 2026" / "November 15, 2026" (without the trailing "р." Ukrainian adds).
+ * Called on the server only (toReviewView), so Node's ICU alone renders it: no hydration mismatch.
+ */
+export function formatReviewDate(iso: string, locale: string): string {
   return new Date(iso)
-    .toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Kyiv' })
+    .toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Kyiv' })
     .replace(/\s*р\.$/, '')
 }
 
@@ -55,7 +57,8 @@ export type ReviewView = {
   rating: number | null
   text: string | null
   size: string | null
-  fit: string | null
+  /** Translated on the card: Reviews.fit.<key> */
+  fit: Fit | null
   date: string
   reply: string | null
   screenshot: { url: string; alt: string } | null
@@ -65,7 +68,15 @@ export type ReviewView = {
   product: { name: string; color: string | null; href: string; image: string | null } | null
 }
 
-export function toReviewView(review: Review, mediaUrl: (m: Review['screenshot']) => string | undefined): ReviewView {
+/**
+ * `locale` formats the date; `screenshotAlt` is the translated alt text of a review screenshot
+ * (Reviews.screenshotAlt). The product title and colour come in the page language (queries fetch with locale).
+ */
+export function toReviewView(
+  review: Review,
+  mediaUrl: (m: Review['screenshot']) => string | undefined,
+  { locale, screenshotAlt }: { locale: string; screenshotAlt: (author: string) => string },
+): ReviewView {
   const product = typeof review.product === 'object' && review.product?.slug && review.product.active ? review.product : null
   const shot = mediaUrl(review.screenshot)
   return {
@@ -74,16 +85,16 @@ export function toReviewView(review: Review, mediaUrl: (m: Review['screenshot'])
     rating: typeof review.rating === 'number' ? review.rating : null,
     text: review.text?.trim() || null,
     size: review.size?.trim() || null,
-    fit: review.fit ? FIT_LABELS[review.fit] : null,
-    date: formatReviewDate(review.createdAt),
+    fit: review.fit ?? null,
+    date: formatReviewDate(review.createdAt, locale),
     reply: review.reply?.trim() || null,
-    screenshot: shot ? { url: shot, alt: `Відгук від ${review.authorName}` } : null,
+    screenshot: shot ? { url: shot, alt: screenshotAlt(review.authorName) } : null,
     // Only real links to Instagram: the field is typed by hand
     link: review.link && /^https:\/\/(www\.)?instagram\.com\//.test(review.link.trim()) ? review.link.trim() : null,
     fromInstagram: review.source === 'instagram',
     product: product
       ? {
-          name: modelName(product.title),
+          name: modelName(product.title ?? ''),
           color: product.colorName ? colorLabel(product.colorName) : null,
           href: `/product/${product.slug}`,
           image: mediaUrl(product.images?.[0]?.image) ?? null,

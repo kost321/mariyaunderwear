@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslations } from 'next-intl'
 import { X } from 'lucide-react'
 import { parseSizeChart, sameSize } from '@/lib/productText'
 import { cn } from '@/lib/utils'
@@ -18,6 +19,7 @@ import { useModalFocus } from '@/hooks/useModalFocus'
  * Esc, the backdrop and the close button close it; the page under it does not scroll while it is open.
  */
 export function SizeChart({ html, selected }: { html?: string | null; selected?: string }) {
+  const t = useTranslations('SizeChart')
   const [open, setOpen] = useState(false)
   const chart = useMemo(() => parseSizeChart(html), [html])
   // Keyboard focus moves into the window and stays there until it closes
@@ -48,7 +50,7 @@ export function SizeChart({ html, selected }: { html?: string | null; selected?:
         // 16px line of text, 44px tap target from the strip above and below
         className="relative text-xs text-brown underline underline-offset-2 transition-colors before:absolute before:-inset-x-1 before:-inset-y-3.5 before:content-[''] hover:text-ink"
       >
-        Розмірна таблиця
+        {t('title')}
       </button>
 
       {open &&
@@ -72,13 +74,13 @@ export function SizeChart({ html, selected }: { html?: string | null; selected?:
                 type="button"
                 onClick={() => setOpen(false)}
                 className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full text-brown transition-colors hover:bg-cream hover:text-ink sm:right-3 sm:top-3"
-                aria-label="Закрити"
+                aria-label={t('close')}
               >
                 <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
               </button>
 
               <h2 id="size-chart-title" className="pr-10 font-serif text-2xl text-ink-text">
-                Розмірна таблиця
+                {t('title')}
               </h2>
 
               {chart ? (
@@ -114,7 +116,7 @@ export function SizeChart({ html, selected }: { html?: string | null; selected?:
                               i === 0 ? (
                                 <th key={i} scope="row" className="py-3 pl-2 text-left font-medium text-ink">
                                   {cell}
-                                  {isSelected && <span className="ml-2 text-xs font-normal text-brown">обрано</span>}
+                                  {isSelected && <span className="ml-2 text-xs font-normal text-brown">{t('selected')}</span>}
                                 </th>
                               ) : (
                                 <td key={i} className="py-3 pr-2 text-right tabular-nums text-ink">

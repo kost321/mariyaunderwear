@@ -1,0 +1,255 @@
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { routing, ogLocales, localePath, type Locale } from '@/i18n/routing'
+import { alternates } from '@/lib/seo'
+import {
+  getProductBySlug,
+  getAllProductSlugs,
+  getColorVariants,
+  getProductReviews,
+} from '@/lib/queries'
+import { getMediaUrl } from '@/lib/media'
+import { ProductDetails, type ProductFacts } from '@/components/shop/ProductDetails'
+import { ProductDescription } from '@/components/shop/ProductDescription'
+import { ProductCard } from '@/components/shop/ProductCard'
+import type { Product } from '@/payload-types'
+import { isProductInStock } from '@/lib/stock'
+import { productMaterials } from '@/lib/catalog'
+import { JsonLd, SITE_URL, breadcrumbsLd } from '@/components/shop/JsonLd'
+import { Breadcrumbs } from '@/components/shop/Breadcrumbs'
+import { modelName } from '@/lib/utils'
+import { formatDescriptionHtml, formatSpecsHtml, paragraphs, specValue } from '@/lib/productText'
+import { summarizeReviews, toReviewView } from '@/lib/reviews'
+import { ProductReviews } from '@/components/shop/reviews/ProductReviews'
+
+type Params = { params: Promise<{ locale: Locale; slug: string }> }
+
+/**
+ * ISR: the page is static, but at least once every 60 seconds Next rebuilds
+ * it with fresh data from the DB. Admin edits (price, colors, model
+ * variants) are picked up without a manual redeploy.
+ */
+export const revalidate = 60
+
+/**
+ * SSG: pre-generate pages for all active products in every language.
+ * Makes the pages static and as SEO-friendly as possible.
+ * The slug is shared by all languages: /ua/product/x, /pl/product/x, /en/product/x.
+ */
+export async function generateStaticParams() {
+  try {
+    const slugs = await getAllProductSlugs()
+    return routing.locales.flatMap((locale) => slugs.map((slug) => ({ locale, slug })))
+  } catch {
+    // DB is unavailable during the build (for example on Railway without a connected database)
+    return []
+  }
+}
+
+/** HTML description → plain text (for meta description and JSON-LD). */
+function toPlainText(html?: string | null): string {
+  return (html ?? '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Google shows about 60 characters of a title: the " — Mariya Underwear" suffix is added only when it still fits
+const TITLE_SUFFIX = ' — Mariya Underwear'
+const TITLE_MAX = 60
+
+function truncate(text: string, max: number): string {
+  if (text.length <= max) return text
+  return `${text.slice(0, max).replace(/\s+\S*$/, '')}…`
+}
+
+/** Dynamic SEO metadata based on the product. */
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { locale, slug } = await params
+  const t = await getTranslations({ locale, namespace: 'ProductPage' })
+  const product = await getProductBySlug(slug, locale)
+  if (!product) return { title: t('notFound') }
+
+  const ogImage = getMediaUrl(product.images?.[0]?.image)
+  const title = product.title ?? ''
+
+  const plain = toPlainText(product.description)
+  const description = plain ? truncate(plain, 155) : t('metaDescription', { title })
+
+  return {
+    title: title.length + TITLE_SUFFIX.length <= TITLE_MAX ? title : { absolute: title },
+    description,
+    alternates: alternates(locale, `/product/${slug}`),
+    openGraph: {
+      title,
+      description,
+      locale: ogLocales[locale],
+      url: `${localePath(locale)}/product/${slug}`,
+      // A page-level openGraph replaces the layout's one, so without a photo fall back to the site image
+      images: [ogImage ? { url: ogImage } : { url: '/brand/og-image.png', width: 1200, height: 630 }],
+    },
+  }
+}
+
+export default async function ProductPage({ params }: Params) {
+  const { locale, slug } = await params
+  setRequestLocale(locale)
+  const t = await getTranslations({ locale, namespace: 'ProductPage' })
+  const common = await getTranslations({ locale, namespace: 'Common' })
+  const tReviews = await getTranslations({ locale, namespace: 'Reviews' })
+  const product = await getProductBySlug(slug, locale)
+
+  // If the product does not exist or is inactive, return 404.
+  if (!product) notFound()
+
+  // Other color variants of the same model (each one is a separate card).
+  // product.model arrives as an object (depth: 2) or a number; take the id.
+  const modelId =
+    typeof product.model === 'object' && product.model !== null
+      ? product.model.id
+      : product.model
+  const colorVariants = modelId ? await getColorVariants(modelId, locale) : []
+  // Reviews are shared by every colour of the model: fit and fabric are the same
+  const reviews = await getProductReviews(locale, [product.id, ...colorVariants.map((v) => v.id).filter((id) => id !== product.id)])
+  const reviewSummary = summarizeReviews(reviews)
+  // Google expects ratings collected on the site itself, so Instagram and hand-added ones stay out of the markup
+  const siteRatings = reviews.filter((r) => r.source === 'site' && typeof r.rating === 'number')
+
+  // relatedProducts: products hand-picked in the admin (relationship, hasMany).
+  // With depth: 2 Payload returns them as full objects, not just ids.
+  const relatedProducts = (product.relatedProducts ?? []).filter(
+    (item): item is Product => typeof item === 'object' && item !== null,
+  )
+
+  // Breadcrumbs for search results: Головна › category › product
+  const category = typeof product.category === 'object' && product.category !== null ? product.category : null
+  const title = product.title ?? ''
+  const breadcrumbs = [
+    { name: common('home'), url: '/' },
+    ...(category?.slug
+      ? [{ name: category.title ?? '', url: `/catalog?category=${encodeURIComponent(category.slug)}` }]
+      : [{ name: t('catalog'), url: '/catalog' }]),
+    { name: title, url: `/product/${slug}` },
+  ]
+
+  // For the block under the buy button: composition from the characteristics table, the care text.
+  // The table is translated in the admin, so its row label is looked up in every language.
+  const facts: ProductFacts = {
+    composition:
+      specValue(product.descriptionHtml, 'Матеріал', 'Склад', 'Materiał', 'Skład', 'Material', 'Composition', 'Fabric')?.toLowerCase() ??
+      null,
+    care: paragraphs(product.careHtml),
+  }
+
+  // Structured data for Google (price, availability, photos in search results).
+  // Same rule as the page and the order API (lib/stock): empty stock = not in stock.
+  const outOfStock = !isProductInStock(product.sizes)
+  const imageUrls = (product.images ?? [])
+    .map((item) => getMediaUrl(item.image))
+    .filter((url): url is string => Boolean(url))
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: title,
+    ...(imageUrls.length > 0 && { image: imageUrls }),
+    ...(product.sku && { sku: product.sku }),
+    ...(productMaterials(product).length > 0 && {
+      material: productMaterials(product).map((m) => m.title).join(', '),
+    }),
+    ...(toPlainText(product.description) && {
+      description: truncate(toPlainText(product.description), 500),
+    }),
+    brand: { '@type': 'Brand', name: 'Mariya Underwear' },
+    ...(siteRatings.length > 0 && {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: summarizeReviews(siteRatings).average,
+        reviewCount: siteRatings.length,
+        bestRating: 5,
+        worstRating: 1,
+      },
+      review: siteRatings.slice(0, 5).map((r) => ({
+        '@type': 'Review',
+        author: { '@type': 'Person', name: r.authorName },
+        datePublished: r.createdAt.slice(0, 10),
+        reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+        ...(r.text && { reviewBody: r.text }),
+      })),
+    }),
+    offers: {
+      '@type': 'Offer',
+      url: `${SITE_URL}${localePath(locale)}/product/${slug}`,
+      priceCurrency: 'UAH',
+      price: product.price,
+      availability: outOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+    },
+  }
+
+  return (
+    <article>
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbsLd(breadcrumbs, locale)} />
+      <Breadcrumbs
+        items={[
+          { name: common('home'), href: '/' },
+          { name: t('catalog'), href: '/catalog' },
+          { name: modelName(title) },
+        ]}
+      />
+      <div className="mt-4 lg:mt-6">
+        <ProductDetails
+          product={product}
+          colorVariants={colorVariants}
+          facts={facts}
+          rating={reviewSummary.average ? { average: reviewSummary.average, count: reviews.length } : undefined}
+          description={
+            // Care lives in the "Склад і догляд" block next to the buy button, so it is not repeated here
+            <ProductDescription
+              sections={[
+                { html: formatDescriptionHtml(product.description) },
+                // Some admin texts already start with "Характеристики:"; the heading is added only where it is missing
+                {
+                  title: /Характеристик|Charakterystyk|Specyfikacj|Characteristic|Specification/i.test(
+                    product.descriptionHtml ?? '',
+                  )
+                    ? undefined
+                    : t('specs'),
+                  html: formatSpecsHtml(product.descriptionHtml),
+                },
+              ]}
+            />
+          }
+        />
+      </div>
+
+      <ProductReviews
+        reviews={reviews.map((r) =>
+          toReviewView(r, getMediaUrl, { locale, screenshotAlt: (author) => tReviews('screenshotAlt', { author }) }),
+        )}
+        summary={reviewSummary}
+        productId={product.id}
+      />
+
+      {/* "Frequently bought together": products hand-picked in the admin */}
+      {relatedProducts.length > 0 && (
+        <section className="mt-16 lg:mt-[100px]">
+          <h2 className="border-b border-brown/15 pb-5 font-serif text-[28px] leading-9 text-ink-text">
+            {t('related')}
+          </h2>
+          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-3 lg:gap-x-[41px] lg:gap-y-12">
+            {relatedProducts.map((related) => (
+              <ProductCard key={related.id} product={related} />
+            ))}
+          </div>
+        </section>
+      )}
+    </article>
+  )
+}

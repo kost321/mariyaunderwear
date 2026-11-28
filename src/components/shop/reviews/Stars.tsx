@@ -1,11 +1,15 @@
+import { useLocale, useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 const STAR = 'M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9z'
 
 /** Five stars filled to the rating (fractions too: 4.6 fills 60% of the fifth). */
 export function Stars({ value, size = 16, className }: { value: number; size?: number; className?: string }) {
+  const t = useTranslations('Reviews')
+  const locale = useLocale()
+  const shown = locale === 'en' ? String(value) : String(value).replace('.', ',')
   return (
-    <span role="img" aria-label={`Оцінка ${String(value).replace('.', ',')} з 5`} className={cn('inline-flex gap-0.5', className)}>
+    <span role="img" aria-label={t('starsLabel', { value: shown })} className={cn('inline-flex gap-0.5', className)}>
       {[0, 1, 2, 3, 4].map((i) => {
         const fill = Math.max(0, Math.min(1, value - i))
         return (

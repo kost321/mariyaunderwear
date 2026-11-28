@@ -9,7 +9,7 @@ Payload runs inside the Next.js app, so the storefront, admin panel and API are 
 
 | File | Purpose |
 |------|---------|
-| `next.config.mjs` | Next.js config: allowed image domains (Cloudinary), `withPayload` wrapper |
+| `next.config.mjs` | Next.js config: allowed image domains (Cloudinary), `/uk` → `/ua` redirects, `withNextIntl` + `withPayload` wrappers |
 | `package.json` | Dependencies and scripts: `dev`, `build`, `start` (runs DB migrations before starting) |
 | `railway.toml` | Railway deploy config; start command `sh scripts/start.sh` |
 | `scripts/start.sh` | Start script: `payload migrate` first, then `next start` |
@@ -61,20 +61,33 @@ A collection is a database table + access rules + admin fields.
 
 ---
 
-## Storefront `src/app/(frontend)/`
+## Multilingual site (uk / pl / en)
 
-The public part of the site.
+- **URLs:** every storefront page lives under a language prefix: `/ua/…`, `/pl/…`, `/en/…`. Ukrainian uses `/ua` in the address, but the language code is `uk` everywhere (Payload, hreflang, `<html lang>`). Prefixes are defined in `src/i18n/routing.ts`; build paths with `localePath()`. `src/middleware.ts` (next-intl) redirects `/` and unprefixed paths: `NEXT_LOCALE` cookie (set by the switcher, kept for a year) → browser language → Ukrainian. `/uk/…` redirects to `/ua/…` (`next.config.mjs`). The middleware does not touch `/admin` and `/api`.
+- **UI text:** `src/messages/{uk,pl,en}.json`. In components use `useTranslations('Ns')` / `getTranslations('Ns')`; keys are typed (`src/global.d.ts`), so a wrong key is a TS error. New text → add the key to all three files.
+- **Links:** import `Link`, `useRouter`, `usePathname` from `@/i18n/navigation` (not `next/link`); they add the language prefix.
+- **Content (Payload `localization`):** localized fields are title, color, description, specs, size chart, care (Products), title (Categories), alt (Media), title and care text (Materials; the title is unique per language). In the admin, the language is switched in the document header. Title is required only in Ukrainian (`src/lib/localization.ts`); an empty translation shows the Ukrainian value on the site (`fallbackLocale: 'uk'` in `lib/queries.ts`). The slug is shared by all languages.
+- **Orders** (`api/order`) are saved, emailed to the manager and texted (SMS) in Ukrainian regardless of the site language; the colour from the cart is mapped back to its Ukrainian name. The errors shown to the customer and their confirmation email use their language (`locale` in the request body), and the manager's email names the site language when it is not Ukrainian. The same goes for the cooperation form.
+- **Colours** are ordered by `lib/colors.ts` `COLOR_ORDER`, which lists each colour with its usual PL/EN names; add the translation there when a new colour gets one in the admin.
+- **Legal texts** (`/oferta`, `/privacy`, `/delivery`) stay Ukrainian on every language (`lang="uk"` on the text, a note on /pl and /en).
+- **Language list** is defined in two places, `src/i18n/routing.ts` and `localization` in `payload.config.ts`; change them together (+ a migration for the `_locales` enum).
 
-- **`layout.tsx`**: shared layout (Header, Footer, CartProvider) and site-wide SEO metadata.
-- **`page.tsx`**: home page: hero (store description as the only H1 in a small line, short phrase in large type, one photo of the newest model with color swatches that switch it), trust row (delivery, payment, returns, made in Ukraine), "Новинки" slider, "Відгуки" (`HomeReviews`, right after the products; only reviews ticked `showOnHome`), fabric block (Materials with `showOnHome`, placeholders until any are marked), "Про бренд" (draft text in `ABOUT_TEXT`). Rendered on every request.
+## Storefront `src/app/(frontend)/[locale]/`
+
+The public part of the site, one branch per language (see "Multilingual site" above). `api/*` routes, `globals.css` and the icons live outside `[locale]`.
+
+- **`layout.tsx`**: shared layout (`<html lang={locale}>`, `NextIntlClientProvider`, Header with `LanguageSwitcher`, Footer, CartProvider) and site-wide SEO metadata (hreflang via `lib/seo.ts`, og:locale).
+- **`page.tsx`**: home page: hero (store description as the only H1 in a small line, short phrase in large type, one photo of the newest model with color swatches that switch it), trust row (delivery, payment, returns, made in Ukraine), "Новинки" slider, "Відгуки" (`HomeReviews`, right after the products; only reviews ticked `showOnHome`), fabric block (Materials with `showOnHome`, placeholders until any are marked), "Про бренд" (draft text in `Home.about1/about2` of the messages). Rendered on every request.
 - **`catalog/page.tsx`**: catalog. `category` and `q` are filtered in Payload; size, color, material, "in stock only" (`stock=in`), price and sorting are applied in memory (`lib/catalog.ts`); orderable products always come before sold-out ones. Search: a field next to the category chips (`CatalogSearch`) filters the grid as you type (debounced `?q=` without a page reload); on /catalog the header's search icon focuses it. No matches → in-stock suggestions.
-- **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams`, `generateMetadata`, canonical URL and JSON-LD `Product` markup.
+- **`product/[slug]/page.tsx`**: product page. Uses ISR (`revalidate = 60`), `generateStaticParams`, `generateMetadata`, canonical URL + hreflang and JSON-LD `Product` markup; static params for every language × every slug.
 - **`cart/page.tsx`**: cart and checkout.
 - **`api/search/route.ts`**: `GET ?q=` live results for the header search panel (short title, price, colour, thumbnail, stock; in-stock suggestions when nothing matches). Same matching as `/catalog?q=`.
 - **`order/[token]/page.tsx`**: "order accepted" page (number, what happens next, order lines, details and totals on a warm panel). Opens only with a valid signed token, so order numbers cannot be walked through; noindex, no referrer. Delivery is read back from `comment` ("city | branch | comment") until orders get delivery fields.
 - **`api/order/route.ts`**: order endpoint. Validates input, rate-limits by IP, re-reads prices and stock from the database, saves the order and emails the owner. Repeat-safe: the checkout sends an `orderKey` with every retry and `lib/idempotency` returns the already created order instead of a second one (in memory, 30 min). Both the checkout and the quick order send through `lib/submitOrder` (timeout, error texts, order key) and mask the phone with `hooks/usePhoneMask`; the checkout keeps a draft of the form in sessionStorage so a reload or the error screen does not lose it. The checkout locks the button while sending, waits up to 30 s and on failure shows the error under the button with a retry, keeping the form. The answer carries a signed `token` (`lib/orderToken`: id + expiry + HMAC with `PAYLOAD_SECRET`, 30 days); the cart then opens `/order/<token>`, and the customer's email links to it.
-- **`api/review/route.ts`**: review endpoint for the product page form: validates, rate-limits by IP, drops bots through a hidden `website` field, saves the review as `pending` and emails the owner a link to it in the admin.
-- **`src/app/robots.ts`, `src/app/sitemap.ts`**: `robots.txt` and `sitemap.xml`.
+- **`api/review/route.ts`**: review endpoint for the product page form: validates, rate-limits by IP, drops bots through a hidden `website` field, saves the review as `pending` and emails the owner a link to it in the admin (in Ukrainian; errors in the visitor's language). Reviews are stored as written, not translated; the fit answer is a key (`small`/`fits`/`large`) shown as `Reviews.fit.*`.
+- **`contacts`, `cooperation`, `delivery`, `oferta`, `privacy`**: info pages. The offer, the privacy policy and the delivery terms are Ukrainian only (the binding edition): on /pl and /en their titles are translated and a note says the text is in Ukrainian.
+- **`not-found.tsx`, `[...rest]/page.tsx`, `error.tsx`**: localized 404 and error screens.
+- **`src/app/robots.ts`, `src/app/sitemap.ts`**: `robots.txt` and `sitemap.xml` (every page in every language with hreflang).
 
 ## Payload `src/app/(payload)/`
 
@@ -91,7 +104,7 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 
 ## Components `src/components/`
 
-- **`shop/`**: storefront components: `Header`, `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `QuantityStepper` (the − 1 + capsule shared by the product page and the cart), `QuickOrderModal` ("Купити в 1 клік": bottom sheet on phones, product line as in the cart, phone mask, success state with the order number; sends through `lib/submitOrder`), `CartPage` (cart as a list of rows, summary panel, consent checked on click; empty state waits for `useCart().ready`; checkout: numbered steps, rounded labelled fields, phone mask `+380 (67) 123 45 67` from `lib/phone` `formatUaPhoneInput`, soft Cyrillic hint for names, "Ваше замовлення" panel, collapsed to one line on phones), `FormField` (label above a rounded input, hint or error under it; also used by `CooperationForm`), `ScrollToTop`.
+- **`shop/`**: storefront components: `Header`, `LanguageSwitcher` (UA · PL · EN: in the header on desktop, in the burger menu on phones), `MobileMenu`, `Footer`, `ProductCard`, `ProductDetails` (gallery, size/color selection, add to cart), `ProductDescription`, `SizeChart`, `QuickOrderModal`, `QuantityStepper` (the − 1 + capsule shared by the product page and the cart), `QuickOrderModal` ("Купити в 1 клік": bottom sheet on phones, product line as in the cart, phone mask, success state with the order number; sends through `lib/submitOrder`), `CartPage` (cart as a list of rows, summary panel, consent checked on click; empty state waits for `useCart().ready`; checkout: numbered steps, rounded labelled fields, phone mask `+380 (67) 123 45 67` from `lib/phone` `formatUaPhoneInput`, soft Cyrillic hint for names, "Ваше замовлення" panel, collapsed to one line on phones), `FormField` (label above a rounded input, hint or error under it; also used by `CooperationForm`), `ScrollToTop`.
 - **`shop/LegalPage.tsx`** + **`shop/LegalToc.tsx`**: layout of the offer and privacy pages: breadcrumbs, title, «Редакція від …», text column of ~70 letters, numbered sections; the contents are sticky on the right on desktop and highlight the section being read.
 - **`shop/Breadcrumbs.tsx`**: «Головна / …» trail above page titles (catalog, contacts, cooperation, legal pages).
 - **`shop/HeaderSearch.tsx`**: search panel dropped over the page from the header icon (not on /catalog): live results from `/api/search`, "Усі результати" to the catalog; Esc, a click outside or navigation close it.
@@ -119,8 +132,9 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 | `slug.ts` | Slug generation with Cyrillic transliteration |
 | `torgsoftImport.ts` | Parses and applies a Torgsoft export |
 | `torgsoftImportEndpoint.ts` | `POST /api/torgsoft-import` (admins only) |
-| `reviews.ts` | Review helpers shared by server and client: `FIT_LABELS`, `summarizeReviews` (average, fit majority), `toReviewView` (plain data for client cards), Ukrainian plural `reviewsCountLabel` |
-| `utils.ts` | `formatPrice` (hryvnias), `cn` (class merging) |
+| `reviews.ts` | Review helpers shared by server and client: `FIT_LABELS` (Ukrainian, for the admin and email), `FITS`, `summarizeReviews` (average, fit majority), `toReviewView` (plain data for client cards; date in the page language) |
+| `seo.ts` | `alternates()`: canonical + hreflang for a page that exists in every language |
+| `utils.ts` | `formatPrice(value, currency)` (hryvnias; currency label from `t('Common.currency')`), `cn` (class merging) |
 
 ## Migrations `src/migrations/`
 
@@ -135,11 +149,11 @@ SQL migrations run by `payload migrate` when the server starts on Railway. In pr
 ## Data flow
 
 ```
-Customer opens /catalog
+Customer opens /ua/catalog
         ↓
 catalog/page.tsx (Server Component)
         ↓
-queries.ts → getProducts()
+queries.ts → getProducts({ locale })
         ↓
 Payload Local API → PostgreSQL
         ↓

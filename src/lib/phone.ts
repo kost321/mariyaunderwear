@@ -24,11 +24,8 @@ export function normalizeUaPhone(input: string): string | null {
   return `+380${national}`
 }
 
-/** Shown by the order API and by the forms before sending, so the wording is the same everywhere. */
-export const PHONE_ERROR = 'Вкажіть український номер телефону, наприклад +380 67 123 45 67'
-
-/** Shown when a foreign number ("+48 …") is pasted or typed into the masked field. */
-export const FOREIGN_PHONE_ERROR = 'Потрібен український номер: +380 і 9 цифр'
+// Error texts: Phone.invalid (shown by the order API and by the forms before sending, so the wording
+// is the same everywhere) and Phone.foreign (a "+48 …" number pasted into the masked field), src/messages.
 
 /**
  * A foreign international number pasted or typed into the masked field ("+48 512 345 678", also after the

@@ -3,6 +3,8 @@
  * choice is only information for the manager: the final method is agreed on the phone,
  * and the manager sends the FOP details for prepayment personally.
  * Shared by the checkout, the order API (validation, emails) and the Orders collection.
+ * `label` is the Ukrainian name for the admin and the manager's email; the site shows
+ * the shopper's language from the `Payment` namespace of src/messages/*.json.
  */
 export const PAYMENT_METHODS = [
   {

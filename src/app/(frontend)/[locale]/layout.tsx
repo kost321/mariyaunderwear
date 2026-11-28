@@ -1,0 +1,95 @@
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { hasLocale, NextIntlClientProvider } from 'next-intl'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { Inter, Podkova } from 'next/font/google'
+import { CartProvider } from '@/hooks/useCart'
+import { Header } from '@/components/shop/Header'
+import { Footer } from '@/components/shop/Footer'
+import { getNonEmptyCategories, hasBestsellers } from '@/lib/queries'
+import { routing, ogLocales } from '@/i18n/routing'
+import { alternates } from '@/lib/seo'
+import '../globals.css'
+
+// Two typefaces: Inter for text (the design's Almarai has no Cyrillic) and Podkova for headings,
+// product names and prices (`font-serif`). The script font stays only in the logo image.
+// latin-ext: Polish letters (ą, ę, ł, ś…).
+const sans = Inter({ subsets: ['latin', 'latin-ext', 'cyrillic'], variable: '--font-sans' })
+const serif = Podkova({ subsets: ['latin', 'latin-ext', 'cyrillic'], variable: '--font-serif' })
+
+const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
+
+type Props = {
+  children: React.ReactNode
+  params: Promise<{ locale: string }>
+}
+
+// Every language is its own static branch.
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }))
+}
+
+// Base SEO metadata for the whole site (SEO-friendly requirement from the spec).
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params
+  if (!hasLocale(routing.locales, locale)) return {}
+  const t = await getTranslations({ locale, namespace: 'Meta' })
+
+  return {
+    metadataBase: new URL(serverUrl),
+    title: {
+      default: t('siteTitle'),
+      template: '%s — Mariya Underwear',
+    },
+    description: t('siteDescription'),
+    alternates: alternates(locale, ''),
+    openGraph: {
+      type: 'website',
+      locale: ogLocales[locale],
+      siteName: 'Mariya Underwear',
+      // Link preview (Telegram, Viber, Instagram). Icons come from icon.png / apple-icon.png / app/favicon.ico.
+      images: [{ url: '/brand/og-image.png', width: 1200, height: 630, alt: 'Mariya Underwear' }],
+    },
+  }
+}
+
+export default async function FrontendLayout({ children, params }: Props) {
+  const { locale } = await params
+  if (!hasLocale(routing.locales, locale)) notFound()
+
+  // Allows static rendering of pages that use next-intl.
+  setRequestLocale(locale)
+  const t = await getTranslations({ locale, namespace: 'Common' })
+
+  // Categories with products for the side menu; if the DB is unavailable the menu renders without them and the site does not crash
+  const [allCategories, showBestsellers] = await Promise.all([
+    getNonEmptyCategories(locale).catch(() => []),
+    hasBestsellers().catch(() => false),
+  ])
+  const categories = allCategories.flatMap((c) => (c.slug ? [{ slug: c.slug, title: c.title ?? '' }] : []))
+
+  return (
+    <html lang={locale} className={`${sans.variable} ${serif.variable}`}>
+      {/* Room under the footer for the fixed mobile "Add to cart" bar (73px) on product pages */}
+      <body className="flex min-h-screen flex-col bg-background font-sans has-[[data-sticky-buy]]:pb-[73px] lg:has-[[data-sticky-buy]]:pb-0">
+        {/* First stop of the Tab key: past the header straight to the page. Hidden until focused */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-white focus:px-5 focus:py-3 focus:text-sm focus:text-ink focus:shadow-lg"
+        >
+          {t('skipToContent')}
+        </a>
+        <NextIntlClientProvider>
+          <CartProvider>
+            <Header categories={categories} showBestsellers={showBestsellers} />
+            {/* tabIndex -1: the skip link moves the keyboard focus here, not only the scroll; no ring around the whole page */}
+            <main id="main" tabIndex={-1} className="container flex-1 py-8 outline-none">
+              {children}
+            </main>
+            <Footer />
+          </CartProvider>
+        </NextIntlClientProvider>
+      </body>
+    </html>
+  )
+}

@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
-import { cn, plural } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
+import { cn } from '@/lib/utils'
 
 /** One color of the hero product: its photo (if any), page and swatch. */
 export type HeroItem = { url?: string; alt: string; href: string; name?: string; hex?: string; lead?: boolean }
@@ -29,27 +30,28 @@ function HeroText({
   onSelect: (i: number) => void
   className?: string
 }) {
+  const t = useTranslations('Home')
   const swatchCount = items.filter((i) => i.hex).length
   return (
     <div className={className}>
-      <h1 className="text-sm text-brown lg:text-base">Жіночі нічні сорочки та домашній одяг</h1>
+      <h1 className="text-sm text-brown lg:text-base">{t('heroH1')}</h1>
       <p className="mt-3 font-serif text-[44px] leading-[48px] text-ink-text lg:mt-4 lg:text-[72px] lg:leading-[76px]">
-        Ніжність щодня
+        {t('heroTitle')}
       </p>
-      <p className="mt-5 text-base leading-6 text-brown lg:mt-6">Виготовлено в Україні. Розміри S–2XL</p>
+      <p className="mt-5 text-base leading-6 text-brown lg:mt-6">{t('heroSubtitle')}</p>
 
       <Link
         href="/catalog"
         className="mt-8 flex h-11 w-[265px] items-center justify-between rounded-card bg-ink pl-7 pr-5 text-base text-white transition-colors hover:bg-ink/90 lg:mt-10"
       >
-        До каталогу
+        {t('toCatalog')}
         {/* The arrow file is brown; brightness-0 + invert turns it white on the dark button */}
         <Image src="/brand/arrow-long.svg" alt="" width={49} height={14} className="-scale-x-100 brightness-0 invert" />
       </Link>
 
       {swatchCount > 1 && (
         <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex gap-3" role="group" aria-label="Кольори">
+          <div className="flex gap-3" role="group" aria-label={t('colors')}>
             {items.map((item, i) =>
               !item.hex ? null : !item.url ? (
                 // No photo to switch to yet: the swatch opens that color's page instead
@@ -80,7 +82,7 @@ function HeroText({
           {/* The selected colour is named here, not in a hover tooltip that floats away from the swatch */}
           <span className="text-sm text-brown" aria-live="polite">
             {items[active]?.name && <span className="text-ink">{items[active].name} · </span>}
-            {swatchCount} {plural(swatchCount, ['колір', 'кольори', 'кольорів'])}
+            {t('colorCount', { count: swatchCount })}
           </span>
         </div>
       )}

@@ -2,11 +2,15 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { ChevronRight, Search, SlidersHorizontal, X } from 'lucide-react'
 import type { CatalogFacets, CatalogParams } from '@/lib/catalog'
 import { cn, colorLabel, isLightColor } from '@/lib/utils'
 
-/** Updates the catalog query params without scrolling the page. */
+/**
+ * Updates the catalog query params without scrolling the page. next/navigation (not @/i18n/navigation):
+ * the pathname already carries the language prefix (/pl/catalog), so it is reused as is.
+ */
 function useUpdateParams() {
   const router = useRouter()
   const pathname = usePathname()
@@ -63,6 +67,7 @@ const blockTitle = 'text-sm text-brown'
  * on desktop it stays in view while the grid scrolls (sticky).
  */
 export function FilterPanel({ params, facets }: { params: CatalogParams; facets: CatalogFacets }) {
+  const t = useTranslations('Filters')
   const { update, pending } = useUpdateParams()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [min, setMin] = useState(params.min?.toString() ?? '')
@@ -88,17 +93,19 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
         )}
       >
         <SlidersHorizontal className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-        Фільтри{activeCount > 0 && ` (${activeCount})`}
+        {t('title')}
+        {activeCount > 0 && ` (${activeCount})`}
       </button>
       {/* Desktop: the panel is always open, so this is just its heading, in the sans like the rest of the sidebar */}
       <p className="hidden text-base text-ink lg:block">
-        Фільтри{activeCount > 0 && <span className="text-brown"> ({activeCount})</span>}
+        {t('title')}
+        {activeCount > 0 && <span className="text-brown"> ({activeCount})</span>}
       </p>
 
       <div id="catalog-filters" className={cn('mt-1 lg:block', mobileOpen ? 'block' : 'hidden')}>
         {facets.sizes.length > 0 && (
           <div className={blockClass}>
-            <p className={blockTitle}>Розмір</p>
+            <p className={blockTitle}>{t('size')}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {facets.sizes.map((size) => {
                 const on = params.sizes.includes(size)
@@ -125,7 +132,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
         {facets.colors.length > 0 && (
           <div className={blockClass}>
             <p className={blockTitle}>
-              Колір
+              {t('color')}
               {selectedColors.length > 0 && (
                 <span className="text-ink">: {selectedColors.map((c) => colorLabel(c.name).toLowerCase()).join(', ')}</span>
               )}
@@ -167,7 +174,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
             className="-my-2.5 flex w-full items-center justify-between gap-3 py-2.5 text-left text-sm text-brown"
           >
             <span>
-              Тільки в наявності <span className="text-brown">({facets.inStock})</span>
+              {t('inStockOnly')} <span className="text-brown">({facets.inStock})</span>
             </span>
             <span
               aria-hidden
@@ -187,7 +194,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
         </div>
 
         {facets.materials.length > 0 && (
-          <Section title="Матеріал" defaultOpen={params.materials.length > 0}>
+          <Section title={t('material')} defaultOpen={params.materials.length > 0}>
             <ul className="flex flex-col gap-3">
               {facets.materials.map((material) => (
                 <li key={material.slug}>
@@ -209,7 +216,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
         )}
 
         {showPrice && (
-          <Section title="Ціна" defaultOpen={Boolean(params.min || params.max)}>
+          <Section title={t('price')} defaultOpen={Boolean(params.min || params.max)}>
             <form
               className="flex items-center gap-2"
               onSubmit={(e) => {
@@ -218,8 +225,8 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
               }}
             >
               {[
-                { value: min, set: setMin, placeholder: `від ${facets.priceMin}`, label: 'Ціна від' },
-                { value: max, set: setMax, placeholder: `до ${facets.priceMax}`, label: 'Ціна до' },
+                { value: min, set: setMin, placeholder: t('fromValue', { value: facets.priceMin }), label: t('priceFrom') },
+                { value: max, set: setMax, placeholder: t('toValue', { value: facets.priceMax }), label: t('priceTo') },
               ].map((f) => (
                 <input
                   key={f.label}
@@ -234,7 +241,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
                 />
               ))}
               <button type="submit" className="h-10 shrink-0 rounded-full bg-ink px-4 text-xs text-white transition-colors hover:bg-ink/90">
-                OK
+                {t('apply')}
               </button>
             </form>
           </Section>
@@ -250,7 +257,7 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
             }}
             className="mt-4 text-xs text-brown underline-offset-4 hover:underline"
           >
-            Скинути фільтри
+            {t('reset')}
           </button>
         )}
       </div>
@@ -258,28 +265,25 @@ export function FilterPanel({ params, facets }: { params: CatalogParams; facets:
   )
 }
 
-const SORT_OPTIONS: { value: CatalogParams['sort']; label: string }[] = [
-  { value: 'new', label: 'Спочатку нові' },
-  { value: 'price-asc', label: 'Від дешевих' },
-  { value: 'price-desc', label: 'Від дорогих' },
-]
+const SORT_OPTIONS: CatalogParams['sort'][] = ['new', 'price-asc', 'price-desc']
 
 /** Sorting in the design's style: "Sort(-)" and the options under it. */
 export function SortSelect({ value }: { value: CatalogParams['sort'] }) {
+  const t = useTranslations('Filters')
   const { update } = useUpdateParams()
   return (
     <label className="flex items-center gap-2 text-sm text-ink">
-      <span className="hidden sm:inline">Сортування</span>
+      <span className="hidden sm:inline">{t('sort')}</span>
       {/* The visible "Сортування" is hidden on phones, so the select carries its own name for screen readers */}
       <select
         value={value}
-        aria-label="Сортування"
+        aria-label={t('sort')}
         onChange={(e) => update({ sort: e.target.value === 'new' ? undefined : e.target.value })}
         className="-my-3 cursor-pointer rounded-md bg-transparent py-3 text-sm text-brown"
       >
         {SORT_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
+          <option key={o} value={o}>
+            {t(`sortOptions.${o}`)}
           </option>
         ))}
       </select>
@@ -293,6 +297,7 @@ export function SortSelect({ value }: { value: CatalogParams['sort'] }) {
  * filters, sorting and links keep working with it. The header's search icon focuses this field on /catalog.
  */
 export function CatalogSearch({ value }: { value?: string }) {
+  const t = useTranslations('Filters')
   const { update, pending } = useUpdateParams()
   const [q, setQ] = useState(value ?? '')
   const field = useRef<HTMLInputElement>(null)
@@ -338,8 +343,8 @@ export function CatalogSearch({ value }: { value?: string }) {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Пошук"
-        aria-label="Пошук товарів"
+        placeholder={t('search')}
+        aria-label={t('searchLabel')}
         autoComplete="off"
         className="h-11 w-full rounded-full border border-brown/30 bg-white pl-10 lg:h-10 pr-10 text-sm text-ink placeholder:text-brown/70 focus:border-ink focus:outline-none [&::-webkit-search-cancel-button]:hidden"
       />
@@ -350,7 +355,7 @@ export function CatalogSearch({ value }: { value?: string }) {
             setQ('')
             field.current?.focus()
           }}
-          aria-label="Очистити пошук"
+          aria-label={t('clearSearch')}
           className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-brown before:absolute before:-inset-2 before:content-[''] hover:bg-cream"
         >
           <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />

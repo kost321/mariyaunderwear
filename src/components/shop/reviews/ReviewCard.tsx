@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import type { ReviewView } from '@/lib/reviews'
 import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { Stars } from './Stars'
@@ -22,6 +23,7 @@ export function ReviewCard({
   showProduct?: boolean
   className?: string
 }) {
+  const t = useTranslations('Reviews')
   const [open, setOpen] = useState(false)
   const product = showProduct ? review.product : null
 
@@ -33,14 +35,14 @@ export function ReviewCard({
       </div>
       <p className="mt-1 text-xs text-brown">
         {review.date}
-        {review.fromInstagram && ' · з Instagram'}
+        {review.fromInstagram && ` · ${t('fromInstagram')}`}
       </p>
 
       {(review.fit || review.size) && (
         <div className="mt-4 flex flex-wrap gap-1.5">
-          {review.fit && <span className="rounded-full bg-white px-3 py-1 text-xs text-ink">{review.fit}</span>}
+          {review.fit && <span className="rounded-full bg-white px-3 py-1 text-xs text-ink">{t(`fit.${review.fit}`)}</span>}
           {review.size && (
-            <span className="rounded-full bg-white px-3 py-1 text-xs text-ink">Розмір {review.size}</span>
+            <span className="rounded-full bg-white px-3 py-1 text-xs text-ink">{t('size', { size: review.size })}</span>
           )}
         </div>
       )}
@@ -49,7 +51,7 @@ export function ReviewCard({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Відкрити скриншот відгуку"
+          aria-label={t('openScreenshot')}
           className="relative mt-4 aspect-[3/4] w-full overflow-hidden rounded-[18px] bg-white"
         >
           <Image
@@ -66,7 +68,7 @@ export function ReviewCard({
 
       {review.reply && (
         <div className="mt-4 border-l-2 border-brown/30 pl-4">
-          <p className="text-xs text-brown">Відповідь Mariya Underwear</p>
+          <p className="text-xs text-brown">{t('reply')}</p>
           <p className="mt-1 whitespace-pre-line text-sm leading-6 text-ink">{review.reply}</p>
         </div>
       )}
@@ -78,7 +80,7 @@ export function ReviewCard({
           rel="noopener noreferrer"
           className="mt-4 text-xs text-brown underline underline-offset-2 hover:text-ink"
         >
-          Дивитись в Instagram
+          {t('viewOnInstagram')}
         </a>
       )}
 

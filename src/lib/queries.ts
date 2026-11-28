@@ -4,15 +4,22 @@ import type { Where } from 'payload'
 import { getPayload } from './payload'
 import type { Product, Category, Material, Review } from '@/payload-types'
 import { sortByColor } from '@/lib/colors'
+import type { Locale } from '@/i18n/routing'
 
 /**
  * Data access layer. All product/category queries go through these
  * functions, so the frontend does not know Payload details and the filtering rules
  * (for example, only active) live in one place.
+ *
+ * Language: localized fields (title, color, descriptions, alt, material names) are returned
+ * in `locale`; if a translation is empty, Ukrainian is used (fallbackLocale).
  */
 
+const FALLBACK_LOCALE = 'uk' satisfies Locale
+
 /** Get the list of active products (for the catalog). */
-export async function getProducts(options?: {
+export async function getProducts(options: {
+  locale: Locale
   categorySlug?: string
   /** Search by title (case-insensitive). */
   q?: string
@@ -28,23 +35,42 @@ export async function getProducts(options?: {
   }
 
   // Optional filtering by category via its slug.
-  if (options?.categorySlug) {
+  if (options.categorySlug) {
     where['category.slug'] = { equals: options.categorySlug }
   }
 
-  if (options?.q?.trim()) {
-    where.title = { like: options.q.trim() }
+  const q = options.q?.trim()
+  if (q) {
+    // The title is searched in the site language and in Ukrainian: a filter on a localized field
+    // looks only at that language's column (no fallback), so an untranslated product would be
+    // missed on /pl and /en, and a shopper may type the Ukrainian name anyway.
+    if (options.locale === FALLBACK_LOCALE) {
+      where.title = { like: q }
+    } else {
+      const ukMatches = await payload.find({
+        collection: 'products',
+        where: { active: { equals: true }, title: { like: q } },
+        locale: FALLBACK_LOCALE,
+        select: {},
+        limit: 1000,
+        depth: 0,
+        pagination: false,
+      })
+      where.or = [{ title: { like: q } }, { id: { in: ukMatches.docs.map((d) => d.id) } }]
+    }
   }
 
-  if (options?.bestseller) {
+  if (options.bestseller) {
     where.bestseller = { equals: true }
   }
 
   const result = await payload.find({
     collection: 'products',
     where,
-    limit: options?.limit ?? 100,
+    limit: options.limit ?? 100,
     sort: '-createdAt',
+    locale: options.locale,
+    fallbackLocale: FALLBACK_LOCALE,
     // depth: 2 pulls related media and category in as objects,
     // not just their ids.
     depth: 2,
@@ -70,7 +96,7 @@ export async function hasBestsellers(): Promise<boolean> {
 }
 
 /** Get one product by slug (for the product page). */
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export async function getProductBySlug(slug: string, locale: Locale): Promise<Product | null> {
   const payload = await getPayload()
 
   const result = await payload.find({
@@ -81,6 +107,8 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     },
     limit: 1,
     depth: 2,
+    locale,
+    fallbackLocale: FALLBACK_LOCALE,
   })
 
   return result.docs[0] ?? null
@@ -94,6 +122,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
  */
 export async function getColorVariants(
   modelId: number | string,
+  locale: Locale,
 ): Promise<Product[]> {
   if (!modelId) return []
 
@@ -108,13 +137,15 @@ export async function getColorVariants(
     limit: 20,
     sort: 'createdAt',
     depth: 1,
+    locale,
+    fallbackLocale: FALLBACK_LOCALE,
   })
 
   return sortByColor(result.docs, (p) => p.colorName)
 }
 
 /** Get all categories (for the menu/filter). */
-export async function getCategories(): Promise<Category[]> {
+export async function getCategories(locale: Locale): Promise<Category[]> {
   const payload = await getPayload()
 
   const result = await payload.find({
@@ -122,6 +153,8 @@ export async function getCategories(): Promise<Category[]> {
     limit: 100,
     sort: 'title',
     depth: 1,
+    locale,
+    fallbackLocale: FALLBACK_LOCALE,
   })
 
   return result.docs
@@ -132,10 +165,10 @@ export async function getCategories(): Promise<Category[]> {
  * an empty category leads to a "0 товарів" page. A category appears by itself once
  * an active product is added to it.
  */
-export async function getNonEmptyCategories(): Promise<Category[]> {
+export async function getNonEmptyCategories(locale: Locale): Promise<Category[]> {
   const payload = await getPayload()
   const [categories, products] = await Promise.all([
-    getCategories(),
+    getCategories(locale),
     payload.find({
       collection: 'products',
       where: { active: { equals: true } },
@@ -152,7 +185,7 @@ export async function getNonEmptyCategories(): Promise<Category[]> {
 }
 
 /** Materials marked "show on home" (fabric block on the home page). */
-export async function getHomeMaterials(): Promise<Material[]> {
+export async function getHomeMaterials(locale: Locale): Promise<Material[]> {
   try {
     const payload = await getPayload()
     const result = await payload.find({
@@ -161,6 +194,8 @@ export async function getHomeMaterials(): Promise<Material[]> {
       sort: 'sortOrder',
       limit: 20,
       depth: 1,
+      locale,
+      fallbackLocale: FALLBACK_LOCALE,
     })
     return result.docs
   } catch {
@@ -198,7 +233,7 @@ export async function getAllProductSlugs(): Promise<string[]> {
 /**
  * Published reviews of a product and all its colour cards (one model = one set of reviews), newest first.
  */
-export async function getProductReviews(productIds: (number | string)[]): Promise<Review[]> {
+export async function getProductReviews(locale: Locale, productIds: (number | string)[]): Promise<Review[]> {
   if (productIds.length === 0) return []
   try {
     const payload = await getPayload()
@@ -208,6 +243,8 @@ export async function getProductReviews(productIds: (number | string)[]): Promis
       sort: '-createdAt',
       limit: 200,
       depth: 1,
+      locale,
+      fallbackLocale: FALLBACK_LOCALE,
       // As a visitor: only published reviews, whatever the caller passes
       overrideAccess: false,
     })
@@ -222,7 +259,7 @@ export async function getProductReviews(productIds: (number | string)[]): Promis
  * Reviews for the home page block: only published ones ticked «Показувати на головній». No fallback to
  * the latest: the owner expects an unticked review to stay off the home page.
  */
-export async function getHomeReviews(): Promise<Review[]> {
+export async function getHomeReviews(locale: Locale): Promise<Review[]> {
   try {
     const payload = await getPayload()
     const result = await payload.find({
@@ -232,6 +269,9 @@ export async function getHomeReviews(): Promise<Review[]> {
       limit: 12,
       // depth 2: the card footer shows the product's first photo
       depth: 2,
+      // The product title and colour on the card, in the page language
+      locale,
+      fallbackLocale: FALLBACK_LOCALE,
       overrideAccess: false,
     })
     return result.docs

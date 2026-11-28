@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 
 // The same pair of buttons as in "Про бренд" on the home page
 const button = 'flex h-11 w-full max-w-[240px] items-center justify-center rounded-card text-sm transition-colors'
@@ -49,9 +50,10 @@ export function StatusScreen({
 }
 
 export function HomeLink() {
+  const t = useTranslations('Common')
   return (
     <Link href="/" className={secondaryButton}>
-      На головну
+      {t('toHome')}
     </Link>
   )
 }

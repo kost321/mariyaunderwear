@@ -146,7 +146,7 @@ async function resolveMaterials(
 ): Promise<Map<string, number>> {
   const existing = await payload.find({ collection: 'materials', limit: 1000, depth: 0, pagination: false })
   const byKey = new Map<string, number>()
-  for (const m of existing.docs) byKey.set(materialKey(m.title), m.id as number)
+  for (const m of existing.docs) byKey.set(materialKey(m.title ?? ''), m.id as number)
 
   for (const name of names) {
     const key = materialKey(name)

@@ -2,8 +2,9 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { ChevronDown } from 'lucide-react'
+import { Link } from '@/i18n/navigation'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { cn, colorLabel, formatPrice, scrollBehavior, shortProductTitle } from '@/lib/utils'
@@ -13,7 +14,6 @@ import { SizeChart } from '@/components/shop/SizeChart'
 import { PhotoLightbox } from '@/components/shop/PhotoLightbox'
 import { QuickOrderModal } from '@/components/shop/QuickOrderModal'
 import { Stars } from '@/components/shop/reviews/Stars'
-import { reviewsCountLabel } from '@/lib/reviews'
 import { useCart } from '@/hooks/useCart'
 import { isProductInStock, isSizeAvailable } from '@/lib/stock'
 import { productMaterials } from '@/lib/catalog'
@@ -46,6 +46,7 @@ function MobileGallery({
   onChange: (i: number) => void
   onOpen: () => void
 }) {
+  const t = useTranslations('Product')
   const track = useRef<HTMLDivElement>(null)
 
   // The swipe position decides which dot is active (and which photo the viewer opens on)
@@ -61,7 +62,7 @@ function MobileGallery({
   if (!photos.length)
     return (
       <div className="flex aspect-[3/4] items-center justify-center rounded-card bg-placeholder/40 text-sm text-brown lg:hidden">
-        немає фото
+        {t('noPhoto')}
       </div>
     )
 
@@ -78,7 +79,7 @@ function MobileGallery({
             type="button"
             onClick={onOpen}
             className="relative aspect-[3/4] w-full shrink-0 snap-center bg-placeholder/40"
-            aria-label={`Фото ${i + 1} з ${photos.length}, збільшити`}
+            aria-label={t('photoOfZoom', { n: i + 1, total: photos.length })}
           >
             {/*
               The carousel is in the HTML on desktop too, only hidden (lg:hidden). "1px" from lg up: the preloaded
@@ -95,7 +96,7 @@ function MobileGallery({
               key={i}
               type="button"
               onClick={() => goTo(i)}
-              aria-label={`Фото ${i + 1}`}
+              aria-label={t('photo', { n: i + 1 })}
               aria-current={i === active}
               // A 24px tap target around a small dot
               className="flex h-6 w-6 items-center justify-center"
@@ -120,13 +121,15 @@ const infoLink = 'text-ink underline underline-offset-2 hover:no-underline'
  * the trust strip on the home page and the /delivery page.
  */
 function BuyInfo({ facts }: { facts?: ProductFacts }) {
+  const t = useTranslations('Product.info')
   const care = facts?.care ?? []
-  const items: { title: string; body: React.ReactNode }[] = [
+  const items: { id: string; title: string; body: React.ReactNode }[] = [
     // The composition is shown in the panel itself (under the SKU), so this item holds the care text only
     ...(care.length
       ? [
           {
-            title: 'Догляд',
+            id: 'care',
+            title: t('care'),
             body: (
               <>
                 {care.map((line) => (
@@ -138,23 +141,25 @@ function BuyInfo({ facts }: { facts?: ProductFacts }) {
         ]
       : []),
     {
-      title: 'Доставка й оплата',
+      id: 'delivery',
+      title: t('delivery'),
       body: (
         <p>
-          Новою поштою по всій Україні, за тарифами перевізника. Оплата при отриманні або передоплата на рахунок ФОП.{' '}
+          {t('deliveryText')}{' '}
           <Link href="/delivery" className={infoLink}>
-            Детальніше
+            {t('more')}
           </Link>
         </p>
       ),
     },
     {
-      title: 'Обмін і повернення',
+      id: 'returns',
+      title: t('returns'),
       body: (
         <p>
-          Протягом 14 днів, якщо річ не була у використанні.{' '}
+          {t('returnsText')}{' '}
           <Link href="/delivery#returns" className={infoLink}>
-            Як повернути
+            {t('howToReturn')}
           </Link>
         </p>
       ),
@@ -167,13 +172,13 @@ function BuyInfo({ facts }: { facts?: ProductFacts }) {
   return (
     <div className="mt-6 border-t border-brown/15">
       {items.map((item) => {
-        const isOpen = open === item.title
-        const id = `buy-info-${item.title.replace(/\s+/g, '-')}`
+        const isOpen = open === item.id
+        const id = `buy-info-${item.id}`
         return (
-          <div key={item.title} className="border-b border-brown/15">
+          <div key={item.id} className="border-b border-brown/15">
             <button
               type="button"
-              onClick={() => setOpen(isOpen ? null : item.title)}
+              onClick={() => setOpen(isOpen ? null : item.id)}
               aria-expanded={isOpen}
               aria-controls={id}
               className="flex w-full items-center justify-between py-4 text-left text-sm text-ink"
@@ -210,7 +215,10 @@ export function ProductDetails({
   /** Average rating and review count: stars under the title, a link down to the reviews */
   rating?: { average: number; count: number }
 }) {
+  const t = useTranslations('Product')
+  const currency = useTranslations('Common')('currency')
   const { items: cartItems, addItem } = useCart()
+  const title = product.title ?? ''
 
   const images = product.images ?? []
   const sizes = product.sizes ?? []
@@ -242,18 +250,18 @@ export function ProductDetails({
 
   const mainImage = images[activeImage]?.image
   const mainUrl = getMediaUrl(mainImage)
-  const mainAlt = getMediaAlt(mainImage, product.title)
+  const mainAlt = getMediaAlt(mainImage, title)
 
   // Photos for the full-screen viewer (skip entries without a file).
   const lightboxPhotos = images.flatMap((item) => {
     const url = getMediaUrl(item.image)
-    return url ? [{ url, alt: getMediaAlt(item.image, product.title) }] : []
+    return url ? [{ url, alt: getMediaAlt(item.image, title) }] : []
   })
 
   // Cart / quick-order line built from the current selection on the page.
   const selectedItem: CartItem = {
     productId: String(product.id),
-    title: product.title,
+    title,
     price: product.price,
     slug: product.slug ?? '',
     image: getMediaUrl(images[0]?.image),
@@ -322,7 +330,7 @@ export function ProductDetails({
         className,
       )}
     >
-      {allSoldOut ? 'Немає в наявності' : added ? 'Додано ✓' : cartHasAll ? 'Уже в кошику' : 'Додати в кошик'}
+      {allSoldOut ? t('outOfStock') : added ? t('added') : cartHasAll ? t('alreadyInCart') : t('addToCart')}
     </button>
   )
 
@@ -348,12 +356,12 @@ export function ProductDetails({
               type="button"
               onClick={() => setLightboxOpen(true)}
               className="absolute inset-0 cursor-zoom-in"
-              aria-label="Збільшити фото"
+              aria-label={t('zoom')}
             >
               <Image src={mainUrl} alt={mainAlt} fill priority quality={90} sizes="(max-width: 1024px) 100vw, 720px" className="object-cover" />
             </button>
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-brown">немає фото</div>
+            <div className="flex h-full items-center justify-center text-sm text-brown">{t('noPhoto')}</div>
           )}
         </div>
 
@@ -373,7 +381,7 @@ export function ProductDetails({
                       'aspect-[3/4] w-full shrink-0 transition-opacity',
                       i === activeImage ? 'opacity-100' : 'opacity-50 hover:opacity-80',
                     )}
-                    aria-label={`Фото ${i + 1}`}
+                    aria-label={t('photo', { n: i + 1 })}
                     aria-current={i === activeImage}
                   >
                     {thumb && <Image src={thumb} alt="" fill quality={85} sizes="80px" className="object-cover" />}
@@ -390,28 +398,28 @@ export function ProductDetails({
         {/* The model name in the page-title style; the colour is picked with the swatches below.
             The full title stays in <title> and the structured data. */}
         <h1 className="font-serif text-[30px] leading-[36px] text-ink-text lg:text-[40px] lg:leading-[46px]">
-          {shortProductTitle(product.title)}
+          {shortProductTitle(title)}
         </h1>
         {rating && (
           <a href="#reviews" className="mt-2 inline-flex items-center gap-2 text-sm text-brown hover:text-ink">
             <Stars value={rating.average} size={14} />
-            <span className="underline-offset-2 hover:underline">{reviewsCountLabel(rating.count)}</span>
+            <span className="underline-offset-2 hover:underline">{t('reviewsCount', { count: rating.count })}</span>
           </a>
         )}
-        <p className="mt-3 text-2xl text-ink lg:mt-4">{formatPrice(product.price)}</p>
-        {product.sku && <p className="mt-4 text-xs text-brown">Артикул: {product.sku}</p>}
+        <p className="mt-3 text-2xl text-ink lg:mt-4">{formatPrice(product.price, currency)}</p>
+        {product.sku && <p className="mt-4 text-xs text-brown">{t('sku', { sku: product.sku })}</p>}
         {/* The composition right by the price: the name says «шовк Армані», shoppers want to know what it is */}
         {facts?.composition && (
-          <p className={cn('text-xs text-brown', product.sku ? 'mt-1' : 'mt-4')}>Склад: {facts.composition}</p>
+          <p className={cn('text-xs text-brown', product.sku ? 'mt-1' : 'mt-4')}>{t('composition', { value: facts.composition })}</p>
         )}
         {materials.length > 0 && (
           <p className={cn('text-xs text-brown', product.sku || facts?.composition ? 'mt-1' : 'mt-4')}>
-            Матеріал:{' '}
+            {t('material')}{' '}
             {materials.map((m, i) => (
               <span key={m.id}>
                 {i > 0 && ', '}
                 <Link href={`/catalog?material=${m.slug}`} className="underline-offset-2 hover:text-brown hover:underline">
-                  {m.title.toLowerCase()}
+                  {(m.title ?? '').toLowerCase()}
                 </Link>
               </span>
             ))}
@@ -422,17 +430,18 @@ export function ProductDetails({
         {showVariantSwitch && (
           <div className="mt-8">
             <p className={label}>
-              Колір{product.colorName ? `: ${colorLabel(product.colorName)}` : ''}
+              {t('color')}
+              {product.colorName ? `: ${colorLabel(product.colorName)}` : ''}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {colorVariants.map((v) => {
                 const isCurrent = v.id === product.id
-                const name = v.colorName ? colorLabel(v.colorName) : v.title
+                const name = v.colorName ? colorLabel(v.colorName) : (v.title ?? '')
                 const style = { backgroundColor: v.colorHex ?? '#ddd' }
                 const unavailable = !isProductInStock(v.sizes)
-                const hint = unavailable ? `${name}, немає в наявності` : name
+                const hint = unavailable ? t('colorSoldOut', { name }) : name
                 return isCurrent ? (
-                  <span key={v.id} role="img" title={hint} aria-label={`${hint} (обраний)`} aria-current="true" className={swatchClass(true, unavailable)} style={style} />
+                  <span key={v.id} role="img" title={hint} aria-label={t('selected', { label: hint })} aria-current="true" className={swatchClass(true, unavailable)} style={style} />
                 ) : (
                   <Link key={v.id} href={`/product/${v.slug}`} title={hint} aria-label={hint}>
                     <span className={swatchClass(false, unavailable)} style={style} />
@@ -446,7 +455,10 @@ export function ProductDetails({
         {/* Colors: selection inside a single card (model not split into variants) */}
         {!showVariantSwitch && colors.length > 0 && (
           <div className="mt-8">
-            <p className={label}>Колір{color ? `: ${colorLabel(color)}` : ''}</p>
+            <p className={label}>
+              {t('color')}
+              {color ? `: ${colorLabel(color)}` : ''}
+            </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {colors.map((c) => (
                 <button
@@ -474,10 +486,10 @@ export function ProductDetails({
             )}
           >
             <p className={label}>
-              Розмір
+              {t('size')}
               {sizeMissing && (
                 <span role="alert" className="ml-2 font-medium text-[#a0463c]">
-                  Оберіть розмір
+                  {t('chooseSize')}
                 </span>
               )}
             </p>
@@ -489,7 +501,7 @@ export function ProductDetails({
                   onClick={() => handleSelectSize(s.value, s.stock)}
                   disabled={soldOut(s)}
                   aria-pressed={size === s.value}
-                  title={soldOut(s) ? 'Немає в наявності' : undefined}
+                  title={soldOut(s) ? t('outOfStock') : undefined}
                   className={cn(
                     // 36px capsule, 44px tap target: the gap-2 between sizes leaves room for the 4px around each
                     "relative flex h-9 min-w-9 items-center justify-center rounded-full border px-2.5 text-xs transition-colors before:absolute before:-inset-1 before:content-['']",
@@ -514,14 +526,17 @@ export function ProductDetails({
         {/* Quantity only when something can be ordered (quick order: see below) */}
         {!allSoldOut && (
           <div className="mt-5 flex items-center justify-between">
-            <p className={label}>Кількість</p>
+            <p className={label}>{t('quantity')}</p>
             <QuantityStepper value={quantity} onChange={setQuantity} max={maxQuantity} />
           </div>
         )}
         {!allSoldOut && inCart > 0 && (
           <p className="mt-2 text-right text-[13px] text-brown">
-            У кошику вже {inCart} шт.
-            {cartHasAll ? ' — це весь залишок' : inCart + quantity > maxQuantity ? `, можна додати ще ${canAdd}` : ''}
+            {cartHasAll
+              ? t('inCartAll', { count: inCart })
+              : inCart + quantity > maxQuantity
+                ? t('inCartMore', { count: inCart, more: canAdd })
+                : t('inCart', { count: inCart })}
           </p>
         )}
 
@@ -531,7 +546,7 @@ export function ProductDetails({
             {addButton('mt-6')}
             {inStockColors.length > 0 && (
               <p className="mt-3 text-sm leading-6 text-brown">
-                Цей колір закінчився. Є в наявності:{' '}
+                {t('colorEnded')}{' '}
                 {inStockColors.map((v, i) => (
                   <span key={v.id}>
                     {i > 0 && ', '}
@@ -552,13 +567,13 @@ export function ProductDetails({
               onClick={() => !needsSize() && setQuickOpen(true)}
               className="mt-2 h-11 w-full rounded-card border border-brown/40 text-sm lg:h-10 text-brown transition-colors hover:border-brown"
             >
-              Купити в 1 клік
+              {t('oneClick')}
             </button>
           </>
         )}
         {/* "Додано ✓" is only a change of the button's text, which screen readers keep quiet about: said here */}
         <p role="status" className="sr-only">
-          {added ? 'Товар додано в кошик' : ''}
+          {added ? t('addedStatus') : ''}
         </p>
 
         <BuyInfo facts={facts} />

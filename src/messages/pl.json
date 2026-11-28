@@ -1,0 +1,478 @@
+{
+  "Meta": {
+    "siteTitle": "Damskie koszule nocne i odzież domowa — Mariya Underwear",
+    "siteDescription": "Sklep internetowy Mariya Underwear: damskie koszule nocne, piżamy, szlafroki i komplety. Wyprodukowano na Ukrainie, dostawa Nową Pocztą.",
+    "cartTitle": "Koszyk"
+  },
+  "Common": {
+    "currency": "UAH",
+    "close": "Zamknij",
+    "toHome": "Strona główna",
+    "breadcrumbs": "Ścieżka nawigacji",
+    "home": "Strona główna",
+    "quantity": "Ilość",
+    "decrease": "Zmniejsz ilość",
+    "increase": "Zwiększ ilość",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "noPhoto": "Zdjęcie wkrótce",
+    "prev": "Wstecz",
+    "next": "Dalej",
+    "skipToContent": "Przejdź do treści",
+    "perItem": "{price} za szt."
+  },
+  "Totals": {
+    "subtotal": "Suma",
+    "delivery": "Dostawa",
+    "deliveryCost": "według taryf Nowej Poczty",
+    "total": "Razem"
+  },
+  "Fields": {
+    "firstName": "Podaj imię",
+    "lastName": "Podaj nazwisko",
+    "emailRequired": "Podaj adres e-mail",
+    "email": "Sprawdź adres e-mail, na przykład name@example.com",
+    "city": "Podaj miasto",
+    "novaPoshtaBranch": "Podaj numer oddziału lub paczkomatu",
+    "paymentMethod": "Wybierz sposób płatności"
+  },
+  "Payment": {
+    "prepaid": {
+      "label": "Przedpłata na konto sprzedawcy",
+      "hint": "Dane do przelewu wyśle menedżer po potwierdzeniu dostępności"
+    },
+    "cod": {
+      "label": "Płatność przy odbiorze",
+      "hint": "Za pobraniem w oddziale Nowej Poczty"
+    }
+  },
+  "Order": {
+    "networkError": "Nie udało się połączyć z serwerem. Sprawdź internet i spróbuj ponownie: wpisane dane zostały zapisane.",
+    "serverError": "Nie udało się złożyć zamówienia z powodu błędu serwera. Spróbuj ponownie za minutę: wpisane dane zostały zapisane."
+  },
+  "Footer": {
+    "toTop": "Do góry",
+    "contacts": "Kontakt",
+    "cooperation": "Współpraca",
+    "care": "Pielęgnacja",
+    "offer": "Umowa oferty publicznej",
+    "privacy": "Polityka prywatności",
+    "delivery": "Płatność, dostawa, zwroty",
+    "customerCare": "Obsługa klienta",
+    "address": "Adres",
+    "info": "Informacje",
+    "contactsAndSocial": "Kontakt i media społecznościowe"
+  },
+  "Header": {
+    "home": "Strona główna",
+    "bestsellers": "Bestsellery",
+    "newArrivals": "Nowości",
+    "catalog": "Katalog",
+    "openMenu": "Otwórz menu",
+    "closeMenu": "Zamknij menu",
+    "menu": "Menu",
+    "categories": "Kategorie",
+    "toHome": "Mariya Underwear, strona główna",
+    "search": "Szukaj",
+    "closeSearch": "Zamknij wyszukiwanie",
+    "cart": "Koszyk",
+    "cartCount": "Koszyk, produktów: {count}",
+    "instagram": "Jesteśmy na Instagramie",
+    "language": "Język"
+  },
+  "Search": {
+    "placeholder": "Szukaj produktów",
+    "clear": "Wyczyść",
+    "outOfStock": "Brak w magazynie",
+    "allResults": "Wszystkie wyniki ({count, plural, one {# produkt} few {# produkty} many {# produktów} other {# produktu}})",
+    "nothingFound": "Nic nie znaleziono dla zapytania „{query}”",
+    "inStock": "Dostępne od ręki:"
+  },
+  "Store": {
+    "address": "ul. Mazepy 12, Szeptycki, obwód lwowski, Ukraina, 80100",
+    "workHours": "Pn–Pt 09:00–18:00 (czasu kijowskiego)",
+    "weekend": "Sb–Nd nieczynne",
+    "wholesaleContact": "Maria"
+  },
+  "Lightbox": {
+    "viewer": "Podgląd zdjęć",
+    "close": "Zamknij",
+    "prev": "Poprzednie zdjęcie",
+    "next": "Następne zdjęcie"
+  },
+  "Home": {
+    "heroH1": "Damskie koszule nocne i odzież domowa",
+    "heroTitle": "Czułość na co dzień",
+    "heroSubtitle": "Wyprodukowano na Ukrainie. Rozmiary S–2XL",
+    "toCatalog": "Do katalogu",
+    "colors": "Kolory",
+    "colorCount": "{count, plural, one {# kolor} few {# kolory} many {# kolorów} other {# koloru}}",
+    "newArrivals": "Nowości",
+    "seeAll": "Zobacz wszystkie",
+    "careTitle": "Pielęgnacja odzieży",
+    "careText": "Właściwa pielęgnacja zachowuje miękkość tkaniny i fason. Delikatne pranie w 30°, bez wybielaczy, suszenie na płasko — a Twoje rzeczy długo będą jak nowe.",
+    "aboutTitle": "O marce",
+    "about1": "Mariya Underwear to ukraińska marka damskiej odzieży domowej i bielizny do spania.",
+    "about2": "Wybieramy tkaniny przyjemne dla skóry i dbamy o krój, aby w naszych rzeczach było przytulnie na co dzień — w domu, we śnie i w chwilach odpoczynku.",
+    "instagram": "Jesteśmy na Instagramie →",
+    "fabrics": {
+      "silk": "Jedwab",
+      "cotton": "Bawełna",
+      "micromodal": "Mikromodal",
+      "viscose": "Wiskoza"
+    }
+  },
+  "Trust": {
+    "label": "Dostawa, płatność i zwroty",
+    "delivery": {
+      "title": "Dostawa Nową Pocztą",
+      "text": "na terenie całej Ukrainy, według taryf przewoźnika"
+    },
+    "payment": {
+      "title": "Płatność przy odbiorze",
+      "text": "za pobraniem lub przedpłata na konto sprzedawcy"
+    },
+    "returns": {
+      "title": "Wymiana i zwrot",
+      "text": "w ciągu 14 dni dla rzeczy bez śladów użytkowania"
+    },
+    "madeIn": {
+      "title": "Wyprodukowano na Ukrainie",
+      "text": "Mariya Underwear to ukraińska marka odzieży domowej"
+    }
+  },
+  "Product": {
+    "noPhoto": "brak zdjęcia",
+    "outOfStock": "Brak w magazynie",
+    "photoOfZoom": "Zdjęcie {n} z {total}, powiększ",
+    "photo": "Zdjęcie {n}",
+    "added": "Dodano ✓",
+    "alreadyInCart": "Już w koszyku",
+    "addToCart": "Dodaj do koszyka",
+    "zoom": "Powiększ zdjęcie",
+    "sku": "Kod produktu: {sku}",
+    "composition": "Skład: {value}",
+    "material": "Materiał:",
+    "color": "Kolor",
+    "colorSoldOut": "{name}, brak w magazynie",
+    "selected": "{label} (wybrany)",
+    "size": "Rozmiar",
+    "chooseSize": "Wybierz rozmiar",
+    "quantity": "Ilość",
+    "inCart": "W koszyku już {count} szt.",
+    "inCartAll": "W koszyku już {count} szt. — to cały zapas",
+    "inCartMore": "W koszyku już {count} szt., można dodać jeszcze {more}",
+    "colorEnded": "Ten kolor się skończył. Dostępne:",
+    "oneClick": "Kup w 1 kliknięciu",
+    "addedStatus": "Produkt dodano do koszyka",
+    "info": {
+      "care": "Pielęgnacja",
+      "delivery": "Dostawa i płatność",
+      "deliveryText": "Nową Pocztą na terenie całej Ukrainy, według taryf przewoźnika. Płatność przy odbiorze lub przedpłata na konto sprzedawcy.",
+      "more": "Więcej",
+      "returns": "Wymiana i zwrot",
+      "returnsText": "W ciągu 14 dni, jeśli rzecz nie była używana.",
+      "howToReturn": "Jak zwrócić"
+    },
+    "reviewsCount": "{count, plural, one {# opinia} few {# opinie} many {# opinii} other {# opinii}}"
+  },
+  "Legal": {
+    "edition": "Wersja z dnia {date}",
+    "toc": "Spis treści",
+    "ukrainianOnly": "Dokument jest dostępny wyłącznie w języku ukraińskim: to jego wiążąca wersja zgodnie z prawem Ukrainy. W razie pytań prosimy o kontakt — chętnie wyjaśnimy.",
+    "offerTitle": "Umowa oferty publicznej",
+    "offerDescription": "Warunki sprzedaży produktów w sklepie internetowym Mariya Underwear.",
+    "privacyTitle": "Polityka prywatności",
+    "privacyDescription": "Jak sklep internetowy Mariya Underwear zbiera, wykorzystuje i chroni dane osobowe."
+  },
+  "Phone": {
+    "invalid": "Podaj ukraiński numer telefonu, na przykład +380 67 123 45 67",
+    "foreign": "Potrzebny jest ukraiński numer: +380 i 9 cyfr"
+  },
+  "Contacts": {
+    "title": "Kontakt",
+    "description": "Telefon, e-mail, media społecznościowe i adres Mariya Underwear.",
+    "customerCare": "Obsługa klienta",
+    "wholesale": "Współpraca hurtowa",
+    "email": "E-mail",
+    "hours": "Godziny pracy",
+    "address": "Adres",
+    "social": "Media społecznościowe"
+  },
+  "Cooperation": {
+    "title": "Współpraca",
+    "description": "PR, kolaboracje i współpraca B2B z Mariya Underwear: dystrybucja, targi, sprzedaż hurtowa.",
+    "prText": "W sprawie kolaboracji, wywiadów i partnerstw:",
+    "b2bText": "Jeśli interesuje Cię współpraca z Mariya Underwear w zakresie dystrybucji, targów lub hurtowej sprzedaży naszych wyrobów, chętnie się poznamy. Wypełnij formularz kontaktowy lub skontaktuj się z nami bezpośrednio.",
+    "emailLabel": "Adres e-mail:",
+    "phoneLabel": "Telefon:",
+    "catalogText": "Udostępnimy aktualny katalog i opowiemy o warunkach współpracy."
+  },
+  "CooperationForm": {
+    "error": "Nie udało się wysłać formularza. Spróbuj ponownie lub napisz do nas e-mail.",
+    "thanks": "Dziękujemy!",
+    "thanksText": "Otrzymaliśmy Twoje zgłoszenie i wkrótce się z Tobą skontaktujemy.",
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "email": "E-mail",
+    "company": "Organizacja / firma / sklep",
+    "phone": "Telefon",
+    "message": "Co Cię interesuje?",
+    "messagePlaceholder": "Na przykład: zamówienie hurtowe dla sklepu, kolaboracja, udział w targach",
+    "sending": "Wysyłanie…",
+    "submit": "Wyślij formularz",
+    "consent": "pola obowiązkowe. Wysyłając formularz, akceptujesz <link>politykę prywatności</link>."
+  },
+  "Api": {
+    "invalid": "Nieprawidłowe dane",
+    "tooMany": "Zbyt wiele prób. Spróbuj później."
+  },
+  "Delivery": {
+    "title": "Płatność, dostawa, zwroty",
+    "description": "Dostawa Nową Pocztą, płatność i warunki zwrotu towaru w Mariya Underwear.",
+    "sections": {
+      "delivery": "Dostawa zamówienia",
+      "payment": "Płatność za towar",
+      "returns": "Zwrot towaru i pieniędzy"
+    }
+  },
+  "NotFound": {
+    "title": "Nie znaleziono strony",
+    "text1": "Być może link jest nieaktualny lub adres został wpisany z błędem.",
+    "text2": "Wróć na stronę główną lub przejrzyj katalog.",
+    "toCatalog": "Do katalogu"
+  },
+  "ErrorPage": {
+    "title": "Coś poszło nie tak",
+    "text": "Na serwerze wystąpił błąd. Spróbuj odświeżyć stronę lub wróć trochę później.",
+    "contact": "Jeśli błąd się powtarza, napisz do nas na <instagram>Instagramie</instagram> lub zadzwoń: <phone></phone>",
+    "retry": "Spróbuj ponownie"
+  },
+  "OrderPage": {
+    "metaTitle": "Zamówienie przyjęte",
+    "deliveryLine": "Nowa Poczta, {city}, oddział {branch}",
+    "recipient": "Odbiorca",
+    "phone": "Telefon",
+    "email": "E-mail",
+    "delivery": "Dostawa",
+    "payment": "Płatność",
+    "paymentLater": "ustalimy podczas rozmowy telefonicznej",
+    "comment": "Komentarz",
+    "title": "Dziękujemy za zamówienie",
+    "accepted": "Zamówienie nr {id} zostało przyjęte",
+    "managerCall": "Menedżer wkrótce zadzwoni, aby potwierdzić zamówienie.",
+    "managerCallPayment": "Menedżer wkrótce zadzwoni, aby potwierdzić zamówienie i sposób płatności.",
+    "prepaidNote": "Dane do przelewu wyślemy po potwierdzeniu. Prosimy nie wpłacać pieniędzy wcześniej.",
+    "emailNote": "Potwierdzenie ze szczegółami zamówienia przyjdzie na adres {email}.",
+    "continue": "Kontynuuj zakupy",
+    "instagram": "Jesteśmy na Instagramie",
+    "items": "Zawartość zamówienia",
+    "pcs": "{count} szt.",
+    "details": "Szczegóły"
+  },
+  "Catalog": {
+    "title": "Katalog",
+    "description": "Katalog Mariya Underwear: damskie koszule nocne, piżamy, szlafroki i komplety do domu i do spania. Dostawa Nową Pocztą.",
+    "bestsellers": "Bestsellery",
+    "bestsellersDescription": "Bestsellery Mariya Underwear: koszule nocne, piżamy i odzież domowa wybierane najczęściej. Dostawa Nową Pocztą.",
+    "categoryDescription": "{title} od Mariya Underwear — damska odzież domowa i bielizna do spania. Dostawa Nową Pocztą na terenie Ukrainy.",
+    "categories": "Kategorie",
+    "all": "Wszystkie produkty",
+    "count": "{count, plural, one {# produkt} few {# produkty} many {# produktów} other {# produktu}}",
+    "empty": {
+      "bestsellersSoon": "Bestsellery wkrótce się pojawią",
+      "bestsellersSoonHint": "Na razie zajrzyj do całego katalogu.",
+      "noFilters": "Brak produktów z takimi filtrami",
+      "noFiltersHint": "Spróbuj usunąć część filtrów lub przejrzyj cały katalog.",
+      "queryFilters": "Dla zapytania „{q}” z takimi filtrami nic nie ma",
+      "queryFiltersHint": "Spróbuj zresetować filtry — być może produkt jest w innym rozmiarze lub kolorze.",
+      "inSection": "W dziale „{section}” nic nie znaleziono dla zapytania „{q}”",
+      "inSectionHint": "We wszystkich produktach to zapytanie daje {count, plural, one {# produkt} few {# produkty} many {# produktów} other {# produktu}}.",
+      "query": "Nic nie znaleziono dla zapytania „{q}”",
+      "queryHint": "Sprawdź pisownię lub spróbuj krótszego słowa, na przykład „koszula”.",
+      "resetFilters": "Resetuj filtry",
+      "searchAll": "Szukaj we wszystkich produktach",
+      "allProducts": "Wszystkie produkty",
+      "inStock": "Dostępne od ręki"
+    }
+  },
+  "Filters": {
+    "title": "Filtry",
+    "size": "Rozmiar",
+    "color": "Kolor",
+    "inStockOnly": "Tylko dostępne",
+    "material": "Materiał",
+    "price": "Cena",
+    "fromValue": "od {value}",
+    "toValue": "do {value}",
+    "priceFrom": "Cena od",
+    "priceTo": "Cena do",
+    "apply": "OK",
+    "reset": "Resetuj filtry",
+    "sort": "Sortowanie",
+    "sortOptions": {
+      "new": "Najpierw nowe",
+      "price-asc": "Od najtańszych",
+      "price-desc": "Od najdroższych"
+    },
+    "search": "Szukaj",
+    "searchLabel": "Szukaj produktów",
+    "clearSearch": "Wyczyść wyszukiwanie"
+  },
+  "ProductPage": {
+    "notFound": "Nie znaleziono produktu",
+    "metaDescription": "{title} — kup w sklepie Mariya Underwear.",
+    "catalog": "Katalog",
+    "specs": "Charakterystyka",
+    "related": "Często kupowane razem"
+  },
+  "SizeChart": {
+    "title": "Tabela rozmiarów",
+    "close": "Zamknij",
+    "selected": "wybrany"
+  },
+  "QuickOrder": {
+    "pcs": "{count} szt.",
+    "close": "Zamknij",
+    "thanks": "Dziękujemy!",
+    "accepted": "Zamówienie nr {id} zostało przyjęte",
+    "thanksText": "Menedżer wkrótce zadzwoni, aby ustalić dostawę i płatność.",
+    "continue": "Kontynuuj zakupy",
+    "title": "Szybkie zamówienie",
+    "subtitle": "Menedżer zadzwoni, aby ustalić dostawę i płatność.",
+    "name": "Imię",
+    "phone": "Telefon",
+    "sending": "Składamy zamówienie…",
+    "retry": "Spróbuj ponownie",
+    "submit": "Zamów",
+    "callUs": "Jeśli się nie udaje, zadzwoń do nas:"
+  },
+  "Cart": {
+    "empty": "Koszyk jest pusty",
+    "emptyText": "Przejrzyj katalog i dodaj to, co Ci się podoba: produkty zostaną tu zapisane do złożenia zamówienia.",
+    "toCatalog": "Do katalogu",
+    "steps": {
+      "label": "Etapy zamówienia",
+      "done": "ukończono",
+      "info": "Dane",
+      "shipping": "Dostawa",
+      "payment": "Płatność"
+    },
+    "pcs": "{count} szt.",
+    "outOfStock": "Brak w magazynie",
+    "noMore": "Więcej nie ma w magazynie",
+    "remove": "Usuń z koszyka: {title}",
+    "quantityOf": "Ilość: {title}",
+    "removed": "Produkt usunięty",
+    "undo": "Przywróć",
+    "title": "Koszyk",
+    "items": "Produkty w koszyku",
+    "continue": "Kontynuuj zakupy",
+    "summary": "Podsumowanie",
+    "consent": "Akceptuję <link>warunki umowy oferty publicznej</link>",
+    "consentMissing": "Zaznacz pole, aby kontynuować",
+    "checkout": "Złóż zamówienie",
+    "removeSoldOut": "Usuń z koszyka produkty, których nie ma w magazynie",
+    "backToCart": "Wróć do koszyka",
+    "checkoutTitle": "Zamówienie",
+    "yourOrder": "Twoje zamówienie",
+    "changeInCart": "Zmień w koszyku",
+    "contacts": "Dane kontaktowe",
+    "phone": "Telefon",
+    "phoneHint": "Menedżer zadzwoni, aby potwierdzić zamówienie",
+    "email": "E-mail",
+    "recipient": "Odbiorca",
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "latinName": "Wygląda na to, że imię jest zapisane alfabetem łacińskim. Dla Nowej Poczty lepiej po ukraińsku, jak w paszporcie",
+    "nameHint": "Jak w paszporcie",
+    "shippingTitle": "Dostawa Nową Pocztą",
+    "city": "Miasto",
+    "branch": "Nr oddziału",
+    "branchPlaceholder": "Na przykład 12",
+    "branchHint": "Numer oddziału lub paczkomatu",
+    "comment": "Komentarz do zamówienia",
+    "commentPlaceholder": "Na przykład dogodna pora na telefon",
+    "review": "Sprawdź dane",
+    "contactsShort": "Kontakt",
+    "deliverySummary": "Nowa Poczta, {city}, oddział {branch}",
+    "change": "Zmień",
+    "paymentMethod": "Sposób płatności",
+    "paymentNote": "Menedżer zadzwoni, aby potwierdzić zamówienie i sposób płatności. Na stronie nie ma płatności online.",
+    "sending": "Składamy zamówienie…",
+    "retry": "Spróbuj ponownie",
+    "confirm": "Potwierdź zamówienie",
+    "callUs": "Jeśli się nie udaje, zadzwoń do nas:"
+  },
+  "OrderApi": {
+    "unavailable": "Produkt jest niedostępny lub ilość jest nieprawidłowa",
+    "outOfStock": "Brak w magazynie: {title}",
+    "outOfStockSize": "Brak w magazynie: {title}, rozmiar {size}",
+    "notEnough": "Niewystarczająca ilość: {title}, rozmiar {size} (zostało {stock} szt.)",
+    "colorUnavailable": "Kolor niedostępny: {title}, {color}"
+  },
+  "OrderEmail": {
+    "subject": "Twoje zamówienie nr {id} — Mariya Underwear",
+    "thanks": "Dziękujemy za zamówienie nr {id}!",
+    "prepaidText": "Wkrótce skontaktujemy się z Tobą, aby potwierdzić zamówienie. Dane do przelewu wyślemy po potwierdzeniu — prosimy nie wpłacać pieniędzy wcześniej.",
+    "confirmText": "Wkrótce skontaktujemy się z Tobą, aby potwierdzić zamówienie i sposób płatności.",
+    "viewOnSite": "Zobacz zamówienie na stronie",
+    "product": "Produkt",
+    "size": "Rozmiar",
+    "color": "Kolor",
+    "quantity": "Ilość",
+    "sum": "Kwota",
+    "total": "Razem:",
+    "amount": "{value} UAH",
+    "name": "Imię i nazwisko:",
+    "phone": "Telefon:",
+    "email": "E-mail:",
+    "city": "Miasto:",
+    "branch": "Oddział Nowej Poczty:",
+    "payment": "Płatność:",
+    "paymentLater": "ustalimy podczas rozmowy",
+    "comment": "Komentarz:"
+  },
+  "Reviews": {
+    "title": "Opinie",
+    "fitSummary": "Rozmiar: {fit} ({count} z {of})",
+    "write": "Dodaj opinię",
+    "empty": "Na razie nie ma opinii. Kupowałaś tę rzecz? Opowiedz, jak się sprawdza.",
+    "showMore": "Pokaż jeszcze {count, plural, one {# opinię} few {# opinie} many {# opinii} other {# opinii}}",
+    "moreOnInstagram": "Więcej opinii na Instagramie →",
+    "homeEmpty": "Co nasze klientki mówią o tkaninach, kroju i dostawie — w przypiętych relacjach.",
+    "fromInstagram": "z Instagrama",
+    "size": "Rozmiar {size}",
+    "openScreenshot": "Otwórz zrzut ekranu opinii",
+    "reply": "Odpowiedź Mariya Underwear",
+    "viewOnInstagram": "Zobacz na Instagramie",
+    "screenshotAlt": "Opinia od {author}",
+    "starsLabel": "Ocena {value} na 5",
+    "fit": {
+      "small": "Zaniżona rozmiarówka",
+      "fits": "Zgodny z tabelą",
+      "large": "Zawyżona rozmiarówka"
+    }
+  },
+  "ReviewForm": {
+    "ratingError": "Wystaw ocenę od 1 do 5",
+    "textError": "Napisz kilka słów o tej rzeczy",
+    "error": "Nie udało się wysłać opinii. Spróbuj ponownie.",
+    "thanks": "Dziękujemy za opinię!",
+    "thanksText": "Pojawi się na stronie, gdy tylko ją przejrzymy.",
+    "rating": "Twoja ocena",
+    "ratingLabel": "{n} na 5 — {word}",
+    "rating1": "Źle",
+    "rating2": "Tak sobie",
+    "rating3": "W porządku",
+    "rating4": "Dobrze",
+    "rating5": "Świetnie",
+    "name": "Imię",
+    "text": "Opinia",
+    "textPlaceholder": "Tkanina, krój, jak się nosi",
+    "fit": "Jak pasuje rozmiar?",
+    "sending": "Wysyłanie…",
+    "submit": "Wyślij opinię",
+    "consent": "Opinia pojawi się po sprawdzeniu. Wysyłając ją, akceptujesz <link>politykę prywatności</link>."
+  }
+}

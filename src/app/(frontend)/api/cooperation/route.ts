@@ -3,25 +3,34 @@ import { Resend } from 'resend'
 import { esc, notifyRecipients, str } from '@/lib/mail'
 import { createRateLimiter } from '@/lib/rateLimit'
 import { reportFailure } from '@/lib/sentry'
+import { hasLocale } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
+import { routing } from '@/i18n/routing'
 
 // Limit on cooperation requests per IP address
 const isRateLimited = createRateLimiter(3, 10 * 60 * 1000)
 
-const BAD_REQUEST = () => NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
-
-/** Request from the "Співпраця" page form: sent to the owner by email, not stored in the DB. */
+/**
+ * Request from the "Співпраця" page form: sent to the owner by email, not stored in the DB.
+ * Errors are in the visitor's language (body.locale); the email to the owner is Ukrainian.
+ */
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (isRateLimited(ip)) {
-    return NextResponse.json({ error: 'Забагато спроб. Спробуйте пізніше.' }, { status: 429 })
-  }
-
-  let body: Record<string, unknown>
+  let body: Record<string, unknown> = {}
+  let parsed = true
   try {
     body = await req.json()
   } catch {
-    return BAD_REQUEST()
+    parsed = false
   }
+  const locale = hasLocale(routing.locales, body?.locale) ? body.locale : routing.defaultLocale
+  const t = await getTranslations({ locale, namespace: 'Api' })
+  const BAD_REQUEST = () => NextResponse.json({ error: t('invalid') }, { status: 400 })
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: t('tooMany') }, { status: 429 })
+  }
+  if (!parsed) return BAD_REQUEST()
 
   const firstName = str(body?.firstName, 100)
   const lastName = str(body?.lastName, 100)
@@ -52,6 +61,7 @@ export async function POST(req: NextRequest) {
         <p><b>Email:</b> ${esc(email)}</p>
         ${phone ? `<p><b>Телефон:</b> ${esc(phone)}</p>` : ''}
         ${company ? `<p><b>Організація:</b> ${esc(company)}</p>` : ''}
+        ${locale !== 'uk' ? `<p><b>Мова сайту:</b> ${locale.toUpperCase()}</p>` : ''}
         ${message ? `<p><b>Що цікавить:</b></p><p style="white-space:pre-wrap">${esc(message)}</p>` : ''}
       `,
     })

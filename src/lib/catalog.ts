@@ -160,9 +160,9 @@ export function getFacets(products: Product[]): CatalogFacets {
     materials: [...materials.values()]
       .sort(
         (a, b) =>
-          (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || a.title.localeCompare(b.title, 'uk'),
+          (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || (a.title ?? '').localeCompare(b.title ?? '', 'uk'),
       )
-      .map((m) => ({ slug: m.slug!, title: m.title })),
+      .map((m) => ({ slug: m.slug!, title: m.title ?? '' })),
     inStock: inStockCount,
     priceMin: prices.length ? Math.min(...prices) : 0,
     priceMax: prices.length ? Math.max(...prices) : 0,

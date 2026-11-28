@@ -1,33 +1,32 @@
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { Heart, RefreshCw, Truck, Wallet, type LucideIcon } from 'lucide-react'
+import { Link } from '@/i18n/navigation'
 
-type TrustPoint = { icon: LucideIcon; title: string; text: string; href?: string }
+type TrustPoint = { icon: LucideIcon; key: 'delivery' | 'payment' | 'returns' | 'madeIn'; href?: string }
 
 /**
  * Store promises under the home page hero. The wording follows the "Оплата, доставка, повернення"
- * page and the checkout; update them together when the terms change.
+ * page and the checkout; update them together when the terms change. Texts: Trust.* in src/messages.
  */
 const TRUST_POINTS: TrustPoint[] = [
-  { icon: Truck, title: 'Доставка Новою поштою', text: 'по всій Україні, за тарифами перевізника' },
-  { icon: Wallet, title: 'Оплата при отриманні', text: 'накладений платіж або передоплата на рахунок ФОП' },
-  {
-    icon: RefreshCw,
-    title: 'Обмін і повернення',
-    text: 'протягом 14 днів для речей без слідів використання',
-    // Straight to the returns section of the delivery page
-    href: '/delivery#returns',
-  },
-  { icon: Heart, title: 'Виготовлено в Україні', text: 'Mariya Underwear — український бренд домашнього одягу' },
+  { icon: Truck, key: 'delivery' },
+  { icon: Wallet, key: 'payment' },
+  // Straight to the returns section of the delivery page
+  { icon: RefreshCw, key: 'returns', href: '/delivery#returns' },
+  { icon: Heart, key: 'madeIn' },
 ]
 
 /** Row of four points with icons: two columns on mobile, four on desktop. */
 export function TrustStrip() {
+  const t = useTranslations('Trust')
   return (
     <section
-      aria-label="Доставка, оплата та повернення"
+      aria-label={t('label')}
       className="grid grid-cols-2 gap-x-4 gap-y-8 border-y border-[#d7d7d7] py-8 lg:grid-cols-4 lg:gap-x-9 lg:py-10"
     >
-      {TRUST_POINTS.map(({ icon: Icon, title, text, href }) => {
+      {TRUST_POINTS.map(({ icon: Icon, key, href }) => {
+        const title = t(`${key}.title`)
+        const text = t(`${key}.text`)
         const body = (
           <>
             <Icon className="h-6 w-6 text-brown" strokeWidth={1.25} aria-hidden />

@@ -5,32 +5,39 @@ import { esc, notifyRecipients, str } from '@/lib/mail'
 import { createRateLimiter } from '@/lib/rateLimit'
 import { reportFailure } from '@/lib/sentry'
 import { FIT_LABELS } from '@/lib/reviews'
+import { hasLocale } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
+import { routing } from '@/i18n/routing'
 import { SITE_URL } from '@/components/shop/JsonLd'
 
 // Reviews per IP address: a customer rarely writes more than one or two at once
 const isRateLimited = createRateLimiter(3, 10 * 60 * 1000)
-
-const BAD_REQUEST = () => NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
 
 type Fit = keyof typeof FIT_LABELS
 const isFit = (value: unknown): value is Fit => typeof value === 'string' && value in FIT_LABELS
 
 /**
  * Review from the product page form. Saved as "pending" (not on the site until the owner publishes it
- * in the admin) and the owner gets an email with a link to it.
+ * in the admin) and the owner gets an email with a link to it. Errors are in the visitor's language
+ * (body.locale); the review is stored as written and the owner's email is Ukrainian.
  */
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (isRateLimited(ip)) {
-    return NextResponse.json({ error: 'Забагато спроб. Спробуйте пізніше.' }, { status: 429 })
-  }
-
-  let body: Record<string, unknown>
+  let body: Record<string, unknown> = {}
+  let parsed = true
   try {
     body = await req.json()
   } catch {
-    return BAD_REQUEST()
+    parsed = false
   }
+  const locale = hasLocale(routing.locales, body?.locale) ? body.locale : routing.defaultLocale
+  const t = await getTranslations({ locale, namespace: 'Api' })
+  const BAD_REQUEST = () => NextResponse.json({ error: t('invalid') }, { status: 400 })
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: t('tooMany') }, { status: 429 })
+  }
+  if (!parsed) return BAD_REQUEST()
 
   // Hidden field: people never see it, bots fill every input. Pretend it worked.
   if (typeof body?.website === 'string' && body.website.trim()) {
@@ -90,12 +97,13 @@ export async function POST(req: NextRequest) {
     const { error } = await resend.emails.send({
       from: 'Mariya Underwear <orders@mariyaunderwear.com>',
       to: notifyRecipients(),
-      subject: `Новий відгук ${'★'.repeat(rating)} — ${product.title.replace(/[\r\n]+/g, ' ')}`,
+      subject: `Новий відгук ${'★'.repeat(rating)} — ${(product.title ?? '').replace(/[\r\n]+/g, ' ')}`,
       html: `
         <h2>Новий відгук чекає на перевірку</h2>
-        <p><b>Товар:</b> <a href="${SITE_URL}/product/${esc(product.slug)}">${esc(product.title)}</a></p>
+        <p><b>Товар:</b> <a href="${SITE_URL}/ua/product/${esc(product.slug)}">${esc(product.title)}</a></p>
         <p><b>Оцінка:</b> ${rating} з 5</p>
         <p><b>Імʼя:</b> ${esc(name)}</p>
+        ${locale !== 'uk' ? `<p><b>Мова сайту:</b> ${locale.toUpperCase()}</p>` : ''}
         ${fit ? `<p><b>Як сів:</b> ${esc(FIT_LABELS[fit])}</p>` : ''}
         <p style="white-space:pre-wrap">${esc(text)}</p>
         <p><a href="${SITE_URL}/admin/collections/reviews/${reviewId}">Відкрити в адмінці й опублікувати</a></p>

@@ -6,6 +6,8 @@ import { getMediaUrl } from '@/lib/media'
 import { isProductInStock } from '@/lib/stock'
 import { colorLabel, shortProductTitle } from '@/lib/utils'
 import { createRateLimiter } from '@/lib/rateLimit'
+import { hasLocale } from 'next-intl'
+import { routing } from '@/i18n/routing'
 
 // Live search fires as the shopper types (debounced), so the limit is generous
 const isRateLimited = createRateLimiter(120, 60 * 1000)
@@ -36,7 +38,7 @@ function toItem(p: Product): SearchItem {
   const color = p.colorName ?? p.colors?.[0]?.name ?? null
   return {
     href: `/product/${p.slug}`,
-    title: shortProductTitle(p.title),
+    title: shortProductTitle(p.title ?? ''),
     price: p.price,
     color: color ? colorLabel(color).toLowerCase() : null,
     hex: (p.colorName ? p.colorHex : p.colors?.[0]?.hex) ?? null,
@@ -46,7 +48,8 @@ function toItem(p: Product): SearchItem {
 }
 
 /**
- * GET /api/search?q=… — live results for the header search panel.
+ * GET /api/search?q=…&locale=pl — live results for the header search panel, in the site language
+ * (the title is matched in that language too, Ukrainian when there is no translation).
  * Same matching as the catalog (/catalog?q=…), so "Усі результати" shows the same products.
  */
 export async function GET(req: NextRequest) {
@@ -60,10 +63,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json<SearchResponse>({ results: [], total: 0, suggestions: [] })
   }
 
-  const found = availableFirst(await getProducts({ q, limit: 200 }))
+  const rawLocale = req.nextUrl.searchParams.get('locale')
+  const locale = hasLocale(routing.locales, rawLocale) ? rawLocale : routing.defaultLocale
+
+  const found = availableFirst(await getProducts({ locale, q, limit: 200 }))
   const suggestions = found.length
     ? []
-    : (await getProducts({ limit: 30 })).filter((p) => isProductInStock(p.sizes)).slice(0, SUGGESTIONS)
+    : (await getProducts({ locale, limit: 30 })).filter((p) => isProductInStock(p.sizes)).slice(0, SUGGESTIONS)
 
   return NextResponse.json<SearchResponse>({
     results: found.slice(0, RESULTS).map(toItem),

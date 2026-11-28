@@ -11,16 +11,17 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Price in hryvnias: "1 799 грн".
- * Formatted manually (thousands separated by a non-breaking space, suffix "грн"):
+ * Price in hryvnias: "1 799 грн" / "1 799 UAH".
+ * Formatted manually (thousands separated by a non-breaking space + currency suffix):
  * Intl.NumberFormat with style: 'currency' gives different results depending on the
  * ICU locale of the environment (Node vs browser) and breaks hydration.
+ * `currency` is the currency label of the current language: t('Common.currency').
  */
-export function formatPrice(value: number): string {
+export function formatPrice(value: number, currency: string): string {
   const digits = Math.round(value)
     .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-  return `${digits} грн`
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0')
+  return `${digits}\u00a0${currency}`
 }
 
 /**
@@ -29,15 +30,6 @@ export function formatPrice(value: number): string {
  */
 export function scrollBehavior(): ScrollBehavior {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
-}
-
-/** Ukrainian plural form: plural(1, ['товар', 'товари', 'товарів']) → "товар", 3 → "товари", 5 → "товарів". */
-export function plural(n: number, [one, few, many]: [string, string, string]): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return one
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few
-  return many
 }
 
 /**
@@ -68,7 +60,8 @@ export function isLightColor(hex: string | null | undefined): boolean {
 export function shortProductTitle(title: string): string {
   const quoteEnd = title.indexOf('»')
   const name = (quoteEnd === -1 ? title : title.slice(0, quoteEnd + 1))
-    .replace(/^\s*жіноч\S*\s+/i, '')
+    // "Жіноча" / "Damska" / "Women's": the store sells women's wear only (titles are translated in the admin)
+    .replace(/^\s*(?:жіноч\S*|damsk\S*|women'?s)\s+/i, '')
     .trim()
   if (!name) return title
   // A short «model name» never breaks inside (no lone «Ранкова on one line and ніжність» on the next)

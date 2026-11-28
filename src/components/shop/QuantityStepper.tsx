@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 /**
@@ -21,10 +22,11 @@ export function QuantityStepper({
   label?: string
   className?: string
 }) {
+  const t = useTranslations('Common')
   return (
     <div
       role="group"
-      aria-label={label ?? 'Кількість'}
+      aria-label={label ?? t('quantity')}
       className={cn('flex items-center rounded-full border border-[#a3a3a3] px-1 text-sm text-ink', className)}
     >
       <button
@@ -32,7 +34,7 @@ export function QuantityStepper({
         onClick={() => onChange(Math.max(1, value - 1))}
         disabled={value <= 1}
         className="relative flex h-8 w-8 items-center justify-center before:absolute before:-inset-1.5 before:content-[''] disabled:opacity-40"
-        aria-label="Зменшити кількість"
+        aria-label={t('decrease')}
       >
         −
       </button>
@@ -44,7 +46,7 @@ export function QuantityStepper({
         onClick={() => onChange(max ? Math.min(max, value + 1) : value + 1)}
         disabled={max !== undefined && value >= max}
         className="relative flex h-8 w-8 items-center justify-center before:absolute before:-inset-1.5 before:content-[''] disabled:opacity-40"
-        aria-label="Збільшити кількість"
+        aria-label={t('increase')}
       >
         +
       </button>

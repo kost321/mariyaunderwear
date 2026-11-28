@@ -41,6 +41,7 @@ export const Media: CollectionConfig = {
       name: 'alt',
       label: 'Alt-текст (для SEO та доступності)',
       type: 'text',
+      localized: true,
     },
   ],
 }

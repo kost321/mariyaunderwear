@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect } from 'react'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { Instagram, X } from 'lucide-react'
+import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 import { CONTACTS } from '@/lib/contacts'
 import { useModalFocus } from '@/hooks/useModalFocus'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 export type MenuCategory = { slug: string; title: string }
 
@@ -25,6 +27,7 @@ export function MobileMenu({
   links: { href: string; label: string }[]
   categories: MenuCategory[]
 }) {
+  const t = useTranslations('Header')
   const panel = useModalFocus<HTMLElement>(open)
 
   // Esc closes the menu; the page underneath does not scroll
@@ -49,13 +52,13 @@ export function MobileMenu({
         ref={panel}
         role="dialog"
         aria-modal="true"
-        aria-label="Меню"
+        aria-label={t('menu')}
         className={cn(
           'absolute inset-y-0 left-0 flex w-[min(360px,85vw)] flex-col overflow-y-auto bg-white px-8 py-8 transition-transform duration-300',
           open ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <button type="button" onClick={onClose} className="-m-2.5 self-end p-2.5 text-brown" aria-label="Закрити меню">
+        <button type="button" onClick={onClose} className="-m-2.5 self-end p-2.5 text-brown" aria-label={t('closeMenu')}>
           <X className="h-6 w-6" strokeWidth={1.5} />
         </button>
 
@@ -70,7 +73,7 @@ export function MobileMenu({
 
         {categories.length > 0 && (
           <div className="mt-10">
-            <p className="text-sm text-brown">Категорії</p>
+            <p className="text-sm text-brown">{t('categories')}</p>
             <ul className="mt-2 flex flex-col text-base text-brown">
               {categories.map((c) => (
                 <li key={c.slug}>
@@ -83,18 +86,24 @@ export function MobileMenu({
           </div>
         )}
 
-        {/* On narrow phones the header has no room for the Instagram icon, so it lives here */}
-        {CONTACTS.instagram && (
-          <a
-            href={CONTACTS.instagram}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-auto flex items-center gap-3 pt-10 text-base text-brown hover:text-ink"
-          >
-            <Instagram className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-            Ми в Instagram
-          </a>
-        )}
+        <div className="mt-auto flex flex-col gap-6 pt-10">
+          {/* The header shows the language switch only on desktop */}
+          <div className="-mx-1.5 text-sm">
+            <LanguageSwitcher />
+          </div>
+          {/* On narrow phones the header has no room for the Instagram icon, so it lives here */}
+          {CONTACTS.instagram && (
+            <a
+              href={CONTACTS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 text-base text-brown hover:text-ink"
+            >
+              <Instagram className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+              {t('instagram')}
+            </a>
+          )}
+        </div>
       </aside>
     </div>
   )

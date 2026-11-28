@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 /**
@@ -19,6 +20,7 @@ export function LegalToc({
   numbered?: boolean
   className?: string
 }) {
+  const t = useTranslations('Legal')
   const [active, setActive] = useState<string | null>(null)
 
   useEffect(() => {
@@ -52,8 +54,8 @@ export function LegalToc({
   }, [items])
 
   return (
-    <nav aria-label="Зміст" className={cn('rounded-card bg-[#f4efeb] px-6 py-5 lg:px-7 lg:py-6', className)}>
-      <p className="text-base font-medium text-ink">Зміст</p>
+    <nav aria-label={t('toc')} className={cn('rounded-card bg-[#f4efeb] px-6 py-5 lg:px-7 lg:py-6', className)}>
+      <p className="text-base font-medium text-ink">{t('toc')}</p>
       <ol className="mt-3 space-y-1.5 text-[15px] leading-6">
         {items.map(({ id, title }, i) => (
           <li key={id}>

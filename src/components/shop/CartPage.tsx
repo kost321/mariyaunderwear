@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
+import { Link, useRouter } from '@/i18n/navigation'
 import { ArrowLeft, Check, ChevronDown, Loader2, ShoppingBag, X } from 'lucide-react'
 import { lineMax, useCart } from '@/hooks/useCart'
 import { cn, colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
@@ -16,9 +17,9 @@ import { CONTACTS, phoneHref } from '@/lib/contacts'
 import type { CartItem, CheckoutForm } from '@/types/shop'
 import type { StockResponse } from '@/app/(frontend)/api/stock/route'
 import { PAYMENT_METHODS } from '@/lib/payment'
-import { FOREIGN_PHONE_ERROR, normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
-import { FIELD_ERRORS, focusFirstInvalid, isEmail } from '@/lib/formErrors'
-import { newOrderKey, SERVER_ERROR, submitOrder } from '@/lib/submitOrder'
+import { normalizeUaPhone, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
+import { focusFirstInvalid, isEmail } from '@/lib/formErrors'
+import { newOrderKey, submitOrder } from '@/lib/submitOrder'
 import { usePhoneMask } from '@/hooks/usePhoneMask'
 
 type Step = 'cart' | 'checkout'
@@ -26,12 +27,8 @@ type Step = 'cart' | 'checkout'
 /** Draft of the checkout form in sessionStorage */
 const CHECKOUT_DRAFT_KEY = 'olga-checkout-draft'
 
-// Checkout tabs from the design: Information → Shipping → Payment
-const CHECKOUT_STEPS = [
-  { id: 'info', label: 'Інформація' },
-  { id: 'shipping', label: 'Доставка' },
-  { id: 'payment', label: 'Оплата' },
-] as const
+// Checkout tabs from the design: Information → Shipping → Payment (labels: Cart.steps.*)
+const CHECKOUT_STEPS = [{ id: 'info' }, { id: 'shipping' }, { id: 'payment' }] as const
 type CheckoutStep = (typeof CHECKOUT_STEPS)[number]['id']
 const stepIndex = (step: CheckoutStep) => CHECKOUT_STEPS.findIndex((s) => s.id === step)
 
@@ -42,15 +39,14 @@ const photo = 'relative overflow-hidden rounded-card bg-placeholder/40'
 
 /** Empty cart: what happened and the way back to the catalog, instead of a blank page. */
 function EmptyCart() {
+  const t = useTranslations('Cart')
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center py-16 text-center">
       <ShoppingBag className="h-12 w-12 text-sand" strokeWidth={1} aria-hidden />
-      <h1 className="heading-page mt-5">Кошик порожній</h1>
-      <p className="mt-4 max-w-[420px] text-balance text-base leading-7 text-brown">
-        Перегляньте каталог і додайте те, що сподобалося: товари збережуться тут до оформлення.
-      </p>
+      <h1 className="heading-page mt-5">{t('empty')}</h1>
+      <p className="mt-4 max-w-[420px] text-balance text-base leading-7 text-brown">{t('emptyText')}</p>
       <Link href="/catalog" className={cn(primaryButton, 'mt-8')}>
-        До каталогу
+        {t('toCatalog')}
       </Link>
     </div>
   )
@@ -103,9 +99,10 @@ function CheckoutSteps({
   reached: number
   onSelect: (step: CheckoutStep) => void
 }) {
+  const t = useTranslations('Cart.steps')
   const currentIndex = CHECKOUT_STEPS.findIndex((s) => s.id === current)
   return (
-    <nav aria-label="Кроки оформлення">
+    <nav aria-label={t('label')}>
       <ol className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[15px]">
         {CHECKOUT_STEPS.map((s, i) => {
           const isCurrent = i === currentIndex
@@ -130,11 +127,11 @@ function CheckoutSteps({
                 )}
               >
                 {i < currentIndex ? (
-                  <Check className="h-4 w-4" strokeWidth={2} aria-label="пройдено" />
+                  <Check className="h-4 w-4" strokeWidth={2} aria-label={t('done')} />
                 ) : (
                   <span className="tabular-nums">{i + 1}</span>
                 )}
-                {s.label}
+                {t(s.id)}
               </button>
             </li>
           )
@@ -146,6 +143,8 @@ function CheckoutSteps({
 
 /** Line of the "Ваше замовлення" panel: small photo, the name as in the cart, colour · size, amount. */
 function SummaryItem({ item }: { item: CartItem }) {
+  const t = useTranslations('Cart')
+  const currency = useTranslations('Common')('currency')
   return (
     <li className="flex gap-3">
       <div className={cn(photo, 'aspect-[4/5] w-16 shrink-0 rounded-xl')}>
@@ -155,10 +154,10 @@ function SummaryItem({ item }: { item: CartItem }) {
         <p className="leading-5 text-ink">{shortProductTitle(item.title)}</p>
         <p className="mt-1 text-brown">
           {variantLine(item)}
-          {item.quantity > 1 && ` · ${item.quantity} шт.`}
+          {item.quantity > 1 && ` · ${t('pcs', { count: item.quantity })}`}
         </p>
       </div>
-      <p className="shrink-0 text-sm tabular-nums text-ink">{formatPrice(item.price * item.quantity)}</p>
+      <p className="shrink-0 text-sm tabular-nums text-ink">{formatPrice(item.price * item.quantity, currency)}</p>
     </li>
   )
 }
@@ -196,6 +195,9 @@ function BagItem({
   /** The line was just brought back with "Повернути": the focus returns to its cross */
   focusRemove?: boolean
 }) {
+  const t = useTranslations('Cart')
+  const common = useTranslations('Common')
+  const currency = common('currency')
   const title = shortProductTitle(item.title)
   const removeButton = useRef<HTMLButtonElement>(null)
   useEffect(() => {
@@ -217,15 +219,15 @@ function BagItem({
               {title}
             </Link>
             <p className="mt-1 text-sm text-brown">{variantLine(item)}</p>
-            {soldOut && <p className="mt-1 text-sm text-destructive">Немає в наявності</p>}
-            {allStock && <p className="mt-1 text-sm text-brown">Більше немає в наявності</p>}
+            {soldOut && <p className="mt-1 text-sm text-destructive">{t('outOfStock')}</p>}
+            {allStock && <p className="mt-1 text-sm text-brown">{t('noMore')}</p>}
           </div>
           <button
             ref={removeButton}
             type="button"
             // :focus-visible at the moment of the press = Enter or Space, not a tap or a click
             onClick={(e) => onRemove(e.currentTarget.matches(':focus-visible'))}
-            aria-label={`Прибрати з кошика: ${title}`}
+            aria-label={t('remove', { title })}
             className="-mr-3 -mt-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-brown transition-colors [@media(hover:hover)]:hover:bg-cream [@media(hover:hover)]:hover:text-ink"
           >
             <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -235,11 +237,13 @@ function BagItem({
           {soldOut ? (
             <span />
           ) : (
-            <QuantityStepper value={item.quantity} onChange={onQuantity} max={lineMax(item)} label={`Кількість: ${title}`} />
+            <QuantityStepper value={item.quantity} onChange={onQuantity} max={lineMax(item)} label={t('quantityOf', { title })} />
           )}
           <div className="text-right">
-            <p className="text-[15px] font-medium tabular-nums text-ink">{formatPrice(item.price * item.quantity)}</p>
-            {item.quantity > 1 && <p className="text-xs tabular-nums text-brown">{formatPrice(item.price)} за шт.</p>}
+            <p className="text-[15px] font-medium tabular-nums text-ink">{formatPrice(item.price * item.quantity, currency)}</p>
+            {item.quantity > 1 && (
+              <p className="text-xs tabular-nums text-brown">{common('perItem', { price: formatPrice(item.price, currency) })}</p>
+            )}
           </div>
         </div>
       </div>
@@ -261,6 +265,7 @@ function RemovedToast({
   /** Removed with the keyboard: the pressed cross is gone with its line, so the focus moves to "Повернути" */
   takeFocus: boolean
 }) {
+  const t = useTranslations('Cart')
   const undoButton = useRef<HTMLButtonElement>(null)
   // The countdown waits while the pointer is over the toast or the focus is in it: nobody loses the undo mid-reach
   const [hovered, setHovered] = useState(false)
@@ -294,14 +299,14 @@ function RemovedToast({
         }}
         className="pointer-events-auto flex items-center gap-2 rounded-full border border-brown/15 bg-white py-1.5 pl-5 pr-1.5 text-sm text-ink shadow-[0_8px_24px_rgba(64,54,51,0.18)]"
       >
-        <span>Товар видалено</span>
+        <span>{t('removed')}</span>
         <button
           ref={undoButton}
           type="button"
           onClick={onUndo}
           className="rounded-full px-3 py-1.5 font-medium underline underline-offset-4 transition-colors hover:bg-[#f4efeb]"
         >
-          Повернути
+          {t('undo')}
         </button>
       </div>
     </div>
@@ -310,6 +315,14 @@ function RemovedToast({
 
 export function CartPage() {
   const { items, ready, totalCount, totalPrice, removeItem, restoreItem, updateQuantity, applyStock, clear } = useCart()
+  const t = useTranslations('Cart')
+  const tField = useTranslations('Fields')
+  const tPhone = useTranslations('Phone')
+  const tOrder = useTranslations('Order')
+  const tPayment = useTranslations('Payment')
+  const common = useTranslations('Common')
+  const currency = common('currency')
+  const locale = useLocale()
   const router = useRouter()
   // The step lives in the address (/cart?step=info|shipping|payment): the browser's Back and Forward walk the
   // checkout steps instead of leaving the cart, and a reload keeps the place. No ?step is the cart itself.
@@ -408,7 +421,7 @@ export function CartPage() {
       clearError('phone')
       setForm((prev) => ({ ...prev, phone: next }))
     },
-    () => setErrors((prev) => ({ ...prev, phone: FOREIGN_PHONE_ERROR })),
+    () => setErrors((prev) => ({ ...prev, phone: tPhone('foreign') })),
   )
 
   // What is typed survives a reload of the page or a crash screen ("Спробувати ще раз" re-mounts the cart):
@@ -486,16 +499,16 @@ export function CartPage() {
   // The phone is checked on the first step: otherwise a typo only surfaces after delivery and payment
   const infoValid = () =>
     check({
-      phone: normalizeUaPhone(form.phone) ? undefined : PHONE_ERROR,
-      email: !form.email?.trim() || isEmail(form.email) ? undefined : FIELD_ERRORS.email,
-      firstName: firstName.trim() ? undefined : FIELD_ERRORS.firstName,
-      lastName: lastName.trim() ? undefined : FIELD_ERRORS.lastName,
+      phone: normalizeUaPhone(form.phone) ? undefined : tPhone('invalid'),
+      email: !form.email?.trim() || isEmail(form.email) ? undefined : tField('email'),
+      firstName: firstName.trim() ? undefined : tField('firstName'),
+      lastName: lastName.trim() ? undefined : tField('lastName'),
     })
 
   const shippingValid = () =>
     check({
-      city: form.city.trim() ? undefined : FIELD_ERRORS.city,
-      novaPoshtaBranch: form.novaPoshtaBranch.trim() ? undefined : FIELD_ERRORS.novaPoshtaBranch,
+      city: form.city.trim() ? undefined : tField('city'),
+      novaPoshtaBranch: form.novaPoshtaBranch.trim() ? undefined : tField('novaPoshtaBranch'),
     })
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -506,7 +519,7 @@ export function CartPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.paymentMethod) {
-      check({ paymentMethod: FIELD_ERRORS.paymentMethod })
+      check({ paymentMethod: tField('paymentMethod') })
       return
     }
     // The disabled button is not enough on its own: a double click or Enter can land before React re-renders
@@ -515,11 +528,15 @@ export function CartPage() {
     setLoading(true)
     setError('')
     try {
-      const placed = await submitOrder({
-        items,
-        form: { ...form, customerName: `${firstName.trim()} ${lastName.trim()}`.trim() },
-        orderKey: orderKey.current,
-      })
+      const placed = await submitOrder(
+        {
+          items,
+          form: { ...form, customerName: `${firstName.trim()} ${lastName.trim()}`.trim() },
+          orderKey: orderKey.current,
+          locale,
+        },
+        { network: tOrder('networkError'), server: tOrder('serverError') },
+      )
       // The order has its own page (/order/<signed token>, see lib/orderToken): a reload there shows the
       // saved order again and sends nothing; replace() keeps the back button from returning to the form
       setRedirecting(true)
@@ -528,7 +545,7 @@ export function CartPage() {
       clear()
     } catch (e) {
       // Everything typed stays in the form: the customer only presses the button again
-      setError(e instanceof Error && e.message ? e.message : SERVER_ERROR)
+      setError(e instanceof Error && e.message ? e.message : tOrder('serverError'))
     } finally {
       submitting.current = false
       setLoading(false)
@@ -551,13 +568,13 @@ export function CartPage() {
   if (step === 'cart') {
     return (
       <div className="pb-6">
-        <Breadcrumbs items={[{ name: 'Головна', href: '/' }, { name: 'Кошик' }]} />
+        <Breadcrumbs items={[{ name: common('home'), href: '/' }, { name: t('title') }]} />
         <h1 className="heading-page mt-2">
-          Кошик <span className="text-brown/80">({totalCount})</span>
+          {t('title')} <span className="text-brown/80">({totalCount})</span>
         </h1>
 
         <div className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-16">
-          <section aria-label="Товари в кошику">
+          <section aria-label={t('items')}>
             <ul className="divide-y divide-brown/15 border-y border-brown/15">
               {items.map((item, i) => (
                 <BagItem
@@ -574,12 +591,12 @@ export function CartPage() {
               className="mt-5 inline-flex items-center gap-2 text-sm text-brown underline-offset-4 transition-colors hover:text-ink hover:underline"
             >
               <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-              Продовжити покупки
+              {t('continue')}
             </Link>
           </section>
 
           <aside className="mt-10 rounded-card bg-[#f4efeb] px-6 py-6 lg:sticky lg:top-8 lg:mt-0 lg:px-8 lg:py-7">
-            <h2 className="mb-5 text-lg font-medium text-ink">Підсумок</h2>
+            <h2 className="mb-5 text-lg font-medium text-ink">{t('summary')}</h2>
             <OrderTotals total={totalPrice} />
             <label className="mt-6 flex cursor-pointer items-start gap-2.5 text-[13px] leading-5 text-brown">
               {/* Own box instead of the native one: its border turns brick red when the consent is missing */}
@@ -603,15 +620,18 @@ export function CartPage() {
                 />
               </span>
               <span>
-                Я погоджуюсь з{' '}
-                <Link href="/oferta" target="_blank" className="underline underline-offset-2 transition-colors hover:text-ink">
-                  умовами договору публічної оферти
-                </Link>
+                {t.rich('consent', {
+                  link: (chunks) => (
+                    <Link href="/oferta" target="_blank" className="underline underline-offset-2 transition-colors hover:text-ink">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
               </span>
             </label>
             {consentMissing && (
               <p id="consent-error" role="alert" className="mt-2 text-[13px] text-destructive">
-                Поставте позначку, щоб продовжити
+                {t('consentMissing')}
               </p>
             )}
             {/* Always clickable: a greyed-out button looks broken. Without the consent it points at the checkbox */}
@@ -631,11 +651,11 @@ export function CartPage() {
               }}
               className="mt-4 flex h-12 w-full items-center justify-center rounded-card bg-ink text-[15px] text-white transition-colors hover:bg-ink/90"
             >
-              Оформити замовлення
+              {t('checkout')}
             </button>
             {soldOutMessage && hasSoldOut && (
               <p role="alert" className="mt-2 text-[13px] text-destructive">
-                Приберіть з кошика товари, яких немає в наявності
+                {t('removeSoldOut')}
               </p>
             )}
           </aside>
@@ -654,9 +674,9 @@ export function CartPage() {
         className="inline-flex items-center gap-2 text-sm text-brown underline-offset-4 transition-colors hover:text-ink hover:underline"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-        Повернутися до кошика
+        {t('backToCart')}
       </button>
-      <h1 className="heading-page mt-2">Оформлення</h1>
+      <h1 className="heading-page mt-2">{t('checkoutTitle')}</h1>
 
       {/* Phones: the order collapsed to one line above the form, so the total is in sight without scrolling */}
       <div className="mt-6 rounded-card bg-[#f4efeb] lg:hidden">
@@ -668,10 +688,10 @@ export function CartPage() {
           className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left text-[15px] text-ink"
         >
           <span>
-            Ваше замовлення <span className="text-brown">({totalCount})</span>
+            {t('yourOrder')} <span className="text-brown">({totalCount})</span>
           </span>
           <span className="flex items-center gap-2 font-medium tabular-nums">
-            {formatPrice(totalPrice)}
+            {formatPrice(totalPrice, currency)}
             <ChevronDown className={cn('h-4 w-4 transition-transform', summaryOpen && 'rotate-180')} strokeWidth={1.5} aria-hidden />
           </span>
         </button>
@@ -683,7 +703,7 @@ export function CartPage() {
               onClick={() => show(null)}
               className="mt-4 text-sm text-brown underline underline-offset-4 transition-colors hover:text-ink"
             >
-              Змінити в кошику
+              {t('changeInCart')}
             </button>
           </div>
         )}
@@ -703,10 +723,10 @@ export function CartPage() {
                 if (infoValid()) advance('shipping')
               }}
             >
-              <h2 className={subheading}>Контактні дані</h2>
+              <h2 className={subheading}>{t('contacts')}</h2>
               <div className="mt-4 grid gap-5">
                 <FormField
-                  label="Телефон"
+                  label={t('phone')}
                   required
                   name="phone"
                   type="tel"
@@ -718,14 +738,14 @@ export function CartPage() {
                   onBlur={() => {
                     // A half-typed number is pointed out on leaving the field; an untouched one only on "Доставка"
                     if (uaPhoneDigits(form.phone) > 0 && !normalizeUaPhone(form.phone))
-                      setErrors((prev) => ({ ...prev, phone: PHONE_ERROR }))
+                      setErrors((prev) => ({ ...prev, phone: tPhone('invalid') }))
                   }}
                   placeholder="+380 (__) ___ __ __"
                   error={errors.phone}
-                  hint="Менеджер зателефонує, щоб підтвердити замовлення"
+                  hint={t('phoneHint')}
                 />
                 <FormField
-                  label="Електронна пошта"
+                  label={t('email')}
                   name="email"
                   type="email"
                   autoComplete="email"
@@ -736,10 +756,10 @@ export function CartPage() {
                 />
               </div>
 
-              <h2 className={cn(subheading, 'mt-10')}>Отримувач</h2>
+              <h2 className={cn(subheading, 'mt-10')}>{t('recipient')}</h2>
               <div className="mt-4 grid gap-5 sm:grid-cols-2">
                 <FormField
-                  label="Імʼя"
+                  label={t('firstName')}
                   required
                   autoComplete="given-name"
                   value={firstName}
@@ -751,7 +771,7 @@ export function CartPage() {
                   error={errors.firstName}
                 />
                 <FormField
-                  label="Прізвище"
+                  label={t('lastName')}
                   required
                   autoComplete="family-name"
                   value={lastName}
@@ -764,12 +784,10 @@ export function CartPage() {
                 />
               </div>
               <p aria-live="polite" className={cn('mt-1.5 px-5 text-xs leading-5', latinName ? 'text-ink' : 'text-brown')}>
-                {latinName
-                  ? 'Схоже, імʼя написане латиницею. Для Нової пошти краще українською, як у паспорті'
-                  : 'Як у паспорті, українською'}
+                {latinName ? t('latinName') : t('nameHint')}
               </p>
 
-              <NextButton>Доставка</NextButton>
+              <NextButton>{t('steps.shipping')}</NextButton>
             </form>
           )}
 
@@ -783,10 +801,10 @@ export function CartPage() {
                 if (shippingValid()) advance('payment')
               }}
             >
-              <h2 className={subheading}>Доставка Новою поштою</h2>
+              <h2 className={subheading}>{t('shippingTitle')}</h2>
               <div className="mt-4 grid gap-5 sm:grid-cols-2">
                 <FormField
-                  label="Місто"
+                  label={t('city')}
                   required
                   name="city"
                   autoComplete="address-level2"
@@ -795,19 +813,19 @@ export function CartPage() {
                   error={errors.city}
                 />
                 <FormField
-                  label="№ відділення"
+                  label={t('branch')}
                   required
                   name="novaPoshtaBranch"
                   value={form.novaPoshtaBranch}
                   onChange={handleChange}
-                  placeholder="Наприклад, 12"
+                  placeholder={t('branchPlaceholder')}
                   // Free text until the Nova Poshta API autocomplete; the hint says a parcel locker number is fine too
-                  hint="Номер відділення або поштомата"
+                  hint={t('branchHint')}
                   error={errors.novaPoshtaBranch}
                 />
                 <div className="sm:col-span-2">
                   <label htmlFor="checkout-comment" className="mb-1.5 block text-sm text-brown">
-                    Коментар до замовлення
+                    {t('comment')}
                   </label>
                   {/* Rounded border on a wrapper, so the resize grip stays inside the curve (as on "Співпраця") */}
                   <div className="rounded-[20px] border border-brown/30 bg-white p-1.5 focus-within:border-ink">
@@ -817,27 +835,27 @@ export function CartPage() {
                       value={form.comment}
                       onChange={handleChange}
                       rows={3}
-                      placeholder="Наприклад, зручний час для дзвінка"
+                      placeholder={t('commentPlaceholder')}
                       className="block w-full resize-y bg-transparent px-3.5 py-1.5 text-sm leading-6 text-ink placeholder:text-brown/50 focus:outline-none"
                     />
                   </div>
                 </div>
               </div>
 
-              <NextButton>Оплата</NextButton>
+              <NextButton>{t('steps.payment')}</NextButton>
             </form>
           )}
 
           {checkoutStep === 'payment' && (
             <form ref={stepForm} noValidate onSubmit={handleSubmit} className="mt-8">
-              <h2 className={subheading}>Перевірте дані</h2>
+              <h2 className={subheading}>{t('review')}</h2>
               <dl className="mt-4 divide-y divide-brown/15 border-y border-brown/15 text-sm">
                 {[
-                  { label: 'Отримувач', value: `${firstName} ${lastName}`, step: 'info' as const },
-                  { label: 'Контакти', value: [form.phone, form.email].filter(Boolean).join(', '), step: 'info' as const },
+                  { label: t('recipient'), value: `${firstName} ${lastName}`, step: 'info' as const },
+                  { label: t('contactsShort'), value: [form.phone, form.email].filter(Boolean).join(', '), step: 'info' as const },
                   {
-                    label: 'Доставка',
-                    value: `Нова пошта, ${form.city}, відділення ${form.novaPoshtaBranch}`,
+                    label: t('steps.shipping'),
+                    value: t('deliverySummary', { city: form.city, branch: form.novaPoshtaBranch }),
                     step: 'shipping' as const,
                   },
                 ].map((row) => (
@@ -849,14 +867,14 @@ export function CartPage() {
                       onClick={() => show(row.step)}
                       className="shrink-0 text-brown underline underline-offset-4 transition-colors hover:text-ink"
                     >
-                      Змінити
+                      {t('change')}
                     </button>
                   </div>
                 ))}
               </dl>
 
               <fieldset className="mt-10">
-                <legend className={subheading}>Спосіб оплати</legend>
+                <legend className={subheading}>{t('paymentMethod')}</legend>
                 <div className="mt-4 space-y-3">
                   {PAYMENT_METHODS.map((m) => (
                     <label
@@ -885,8 +903,8 @@ export function CartPage() {
                         className="mt-1 accent-ink"
                       />
                       <span>
-                        <span className="block text-ink">{m.label}</span>
-                        <span className="mt-1 block text-brown">{m.hint}</span>
+                        <span className="block text-ink">{tPayment(`${m.value}.label`)}</span>
+                        <span className="mt-1 block text-brown">{tPayment(`${m.value}.hint`)}</span>
                       </span>
                     </label>
                   ))}
@@ -898,19 +916,19 @@ export function CartPage() {
                 )}
               </fieldset>
               <p className="mt-4 text-sm leading-6 text-brown">
-                Менеджер зателефонує, щоб підтвердити замовлення та спосіб оплати. Онлайн-оплати на сайті немає.
+                {t('paymentNote')}
               </p>
 
               <NextButton busy={loading} arrow={false}>
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                    Оформлюємо…
+                    {t('sending')}
                   </span>
                 ) : error ? (
-                  'Спробувати ще раз'
+                  t('retry')
                 ) : (
-                  'Підтвердити замовлення'
+                  t('confirm')
                 )}
               </NextButton>
               {/* Under the button, where the eye is after pressing it; a phone number as the way out */}
@@ -918,7 +936,7 @@ export function CartPage() {
                 <div role="alert" className="mt-3 text-sm leading-6">
                   <p className="text-destructive">{error}</p>
                   <p className="mt-1 text-brown">
-                    Якщо не виходить, зателефонуйте нам:{' '}
+                    {t('callUs')}{' '}
                     <a href={`tel:${phoneHref(CONTACTS.phone)}`} className="whitespace-nowrap text-ink underline underline-offset-4 hover:no-underline">
                       {CONTACTS.phone}
                     </a>
@@ -932,14 +950,14 @@ export function CartPage() {
         <aside className="hidden rounded-card bg-[#f4efeb] px-8 py-7 lg:sticky lg:top-8 lg:block">
           <div className="mb-5 flex items-baseline justify-between gap-4">
             <h2 className="text-lg font-medium text-ink">
-              Ваше замовлення <span className="text-brown">({totalCount})</span>
+              {t('yourOrder')} <span className="text-brown">({totalCount})</span>
             </h2>
             <button
               type="button"
               onClick={() => show(null)}
               className="text-sm text-brown underline underline-offset-4 transition-colors hover:text-ink"
             >
-              Змінити
+              {t('change')}
             </button>
           </div>
           <OrderSummary items={items} total={totalPrice} />

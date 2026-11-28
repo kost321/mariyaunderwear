@@ -1,6 +1,7 @@
 import Image from 'next/image'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { Plus } from 'lucide-react'
+import { Link } from '@/i18n/navigation'
 import type { Product } from '@/payload-types'
 import { getMediaUrl, getMediaAlt } from '@/lib/media'
 import { isProductInStock } from '@/lib/stock'
@@ -25,10 +26,13 @@ export function ProductCard({
   priority?: boolean
   className?: string
 }) {
+  const t = useTranslations('Product')
+  const currency = useTranslations('Common')('currency')
+  const title = product.title ?? ''
   // Take the first image from the gallery.
   const firstImage = product.images?.[0]?.image
   const url = getMediaUrl(firstImage)
-  const alt = getMediaAlt(firstImage, product.title)
+  const alt = getMediaAlt(firstImage, title)
   const soldOut = !isProductInStock(product.sizes)
 
   // A model color card shows its own color (colorHex); otherwise the colors inside the card (colors[])
@@ -56,12 +60,12 @@ export function ProductCard({
         ) : (
           // Not dimmed when sold out (unlike the photo): the badge says it, and dimmed text would be unreadable
           <div className="flex h-full items-center justify-center text-sm text-brown">
-            немає фото
+            {t('noPhoto')}
           </div>
         )}
         {soldOut ? (
           <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-xs text-ink shadow-[0_2px_8px_rgba(64,56,52,0.15)]">
-            Немає в наявності
+            {t('outOfStock')}
           </span>
         ) : (
           /*
@@ -77,11 +81,11 @@ export function ProductCard({
       {/* flex-1 + mt-auto: the price row sits at the same height in every card of a row, however many lines the title takes */}
       <div className="mt-3 flex flex-1 flex-col gap-1.5">
         <h3 className={cn('text-sm leading-5 sm:text-[15px] sm:leading-[22px]', soldOut ? 'text-ink/75' : 'text-ink')}>
-          {shortProductTitle(product.title)}
+          {shortProductTitle(title)}
         </h3>
         <div className="mt-auto flex items-center gap-2.5">
           <p className="whitespace-nowrap text-sm leading-5 text-brown sm:text-[15px] sm:leading-[22px]">
-            {formatPrice(product.price)}
+            {formatPrice(product.price, currency)}
           </p>
           {swatch && (
             <span className="flex min-w-0 items-center gap-1.5 text-sm leading-5 text-brown">

@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { formatSlug } from '@/lib/slug'
+import { requiredInDefaultLocale } from '@/lib/localization'
 
 /**
  * Materials: fabric reference list (шовк, бавовна, мікромасло…).
@@ -30,9 +31,14 @@ export const Materials: CollectionConfig = {
       name: 'title',
       label: 'Назва',
       type: 'text',
-      required: true,
+      localized: true,
+      // Required in Ukrainian only (requiredInDefaultLocale): PL/EN may stay empty and show the Ukrainian name
+      validate: requiredInDefaultLocale,
       unique: true,
-      admin: { description: 'Напр. "Шовк", "Бавовна". Показується на сторінці товару та у фільтрі каталогу.' },
+      admin: {
+        description:
+          'Напр. "Шовк", "Бавовна". Показується на сторінці товару та у фільтрі каталогу. Обовʼязково українською; PL/EN — за бажанням.',
+      },
     },
     {
       name: 'slug',
@@ -78,6 +84,7 @@ export const Materials: CollectionConfig = {
       name: 'careText',
       label: 'Догляд',
       type: 'textarea',
+      localized: true,
       admin: {
         // Only relevant for the home page block, so shown only when the card is on the home page
         condition: (data) => Boolean(data?.showOnHome),

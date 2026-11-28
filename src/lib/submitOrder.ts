@@ -6,11 +6,12 @@ import type { CartItem, CheckoutForm } from '@/types/shop'
  *  - the same `orderKey` on every retry, so an order whose answer was lost is returned, not repeated
  *    (api/order, lib/idempotency);
  *  - errors as text for the customer: no connection, a server failure, or the server's own message
- *    (out of stock, too many tries).
+ *    (out of stock, too many tries), which api/order writes in `locale`.
  */
 const ORDER_TIMEOUT_MS = 30_000
-export const NETWORK_ERROR = 'Не вдалося звʼязатися з сервером. Перевірте інтернет і спробуйте ще раз: введені дані збережено.'
-export const SERVER_ERROR = 'Не вдалося оформити замовлення через збій на сервері. Спробуйте ще раз за хвилину: введені дані збережено.'
+
+/** Texts in the shopper's language (Order.networkError / Order.serverError in src/messages). */
+export type OrderErrors = { network: string; server: string }
 
 /** Key of one ordering attempt; randomUUID needs https (or localhost), the fallback covers the rest. */
 export const newOrderKey = () =>
@@ -21,7 +22,10 @@ export const newOrderKey = () =>
 export type PlacedOrder = { orderId: number; token?: string }
 
 /** Resolves with the order; rejects with an Error whose message can be shown as is. */
-export async function submitOrder(body: { items: CartItem[]; form: CheckoutForm; orderKey: string }): Promise<PlacedOrder> {
+export async function submitOrder(
+  body: { items: CartItem[]; form: CheckoutForm; orderKey: string; locale: string },
+  errors: OrderErrors,
+): Promise<PlacedOrder> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), ORDER_TIMEOUT_MS)
   try {
@@ -34,11 +38,11 @@ export async function submitOrder(body: { items: CartItem[]; form: CheckoutForm;
         signal: controller.signal,
       })
     } catch {
-      throw new Error(NETWORK_ERROR)
+      throw new Error(errors.network)
     }
     const data = await res.json().catch(() => null)
     if (!res.ok || !data?.orderId) {
-      throw new Error((res.status === 400 || res.status === 429) && data?.error ? data.error : SERVER_ERROR)
+      throw new Error((res.status === 400 || res.status === 429) && data?.error ? data.error : errors.server)
     }
     return { orderId: data.orderId, token: data.token }
   } finally {

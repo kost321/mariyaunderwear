@@ -1,4 +1,5 @@
 import { Instagram, Mail, type LucideIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { CONTACTS } from '@/lib/contacts'
 
 /** TikTok glyph: lucide has no TikTok icon. Drawn in the same 24px box, filled with currentColor. */
@@ -10,11 +11,12 @@ function TikTok(props: React.SVGProps<SVGSVGElement>) {
   )
 }
 
-type Social = { label: string; href: string; Icon: LucideIcon | typeof TikTok; filled?: boolean }
+type Social = { label?: string; href: string; Icon: LucideIcon | typeof TikTok; filled?: boolean }
 
+// The email label is translated (Common.email); brand names stay as they are.
 const ALL: Record<'instagram' | 'email' | 'tiktok', Social> = {
   instagram: { label: 'Instagram', href: CONTACTS.instagram, Icon: Instagram },
-  email: { label: 'Електронна пошта', href: CONTACTS.email && `mailto:${CONTACTS.email}`, Icon: Mail },
+  email: { href: CONTACTS.email && `mailto:${CONTACTS.email}`, Icon: Mail },
   tiktok: { label: 'TikTok', href: CONTACTS.tiktok, Icon: TikTok, filled: true },
 }
 
@@ -37,7 +39,10 @@ export function SocialLinks({
   /** `light` for dark backgrounds (footer), `dark` for white pages */
   tone?: 'dark' | 'light'
 }) {
-  const links = items.map((key) => ALL[key]).filter((s) => s.href)
+  const t = useTranslations('Common')
+  const links = items
+    .map((key) => ({ ...ALL[key], label: ALL[key].label ?? t('email') }))
+    .filter((s) => s.href)
   if (!links.length) return null
 
   return (

@@ -8,15 +8,30 @@ import { esc, notifyRecipients, str } from '@/lib/mail'
 import { createRateLimiter } from '@/lib/rateLimit'
 import { createIdempotencyCache, idempotencyKey } from '@/lib/idempotency'
 import { isPaymentMethod, paymentMethodLabel } from '@/lib/payment'
-import { normalizeUaPhone, PHONE_ERROR } from '@/lib/phone'
+import { normalizeUaPhone } from '@/lib/phone'
 import { reportFailure } from '@/lib/sentry'
 import { orderToken } from '@/lib/orderToken'
+import { hasLocale } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
+import { routing, localePath, type Locale } from '@/i18n/routing'
 
 const isRateLimited = createRateLimiter(5, 10 * 60 * 1000)
 
-const BAD_REQUEST = () => NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
+type OrderBody = { items?: CartItem[]; form?: Partial<CheckoutForm>; orderKey?: unknown; locale?: unknown }
 
-type OrderBody = { items?: CartItem[]; form?: Partial<CheckoutForm>; orderKey?: unknown }
+/** A product fetched with locale: 'all': localized fields arrive as { uk, pl, en }. */
+type LocalizedFields = {
+  title?: Partial<Record<Locale, string | null>>
+  colorName?: Partial<Record<Locale, string | null>>
+}
+
+/**
+ * Language: the customer's errors and confirmation email are in the language of the site they ordered on
+ * (body.locale); the order in the admin, the store's email and the SMS stay Ukrainian. The cart keeps the
+ * title and colour in the language the customer browsed in, so the colour is mapped back to Ukrainian.
+ */
+const localeOf = (body: OrderBody | undefined): Locale =>
+  hasLocale(routing.locales, body?.locale) ? body.locale : routing.defaultLocale
 
 // One order per checkout attempt: the cart sends the same key with every retry (lib/idempotency). The order
 // is saved before the emails and SMS go out, so a slow network can lose the answer of an order that went
@@ -28,7 +43,8 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json()
   } catch {
-    return BAD_REQUEST()
+    const t = await getTranslations({ locale: routing.defaultLocale, namespace: 'Api' })
+    return NextResponse.json({ error: t('invalid') }, { status: 400 })
   }
 
   const key = idempotencyKey(body?.orderKey)
@@ -38,7 +54,8 @@ export async function POST(req: NextRequest) {
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   if (isRateLimited(ip)) {
-    return NextResponse.json({ error: 'Забагато спроб. Спробуйте пізніше.' }, { status: 429 })
+    const t = await getTranslations({ locale: localeOf(body), namespace: 'Api' })
+    return NextResponse.json({ error: t('tooMany') }, { status: 429 })
   }
 
   const res = await orders.run(key, async () => {
@@ -50,6 +67,10 @@ export async function POST(req: NextRequest) {
 
 /** Checks the cart against the DB, saves the order and sends the notifications. */
 async function placeOrder(body: OrderBody): Promise<NextResponse> {
+  const locale = localeOf(body)
+  const t = await getTranslations({ locale, namespace: 'OrderApi' })
+  const tApi = await getTranslations({ locale, namespace: 'Api' })
+  const BAD_REQUEST = () => NextResponse.json({ error: tApi('invalid') }, { status: 400 })
   const rawItems = body?.items
   const rawForm = body?.form
   if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > 50 || !rawForm) {
@@ -75,10 +96,8 @@ async function placeOrder(body: OrderBody): Promise<NextResponse> {
   // Phone: only Ukrainian numbers, stored as +380XXXXXXXXX (lib/phone).
   const normalizedPhone = normalizeUaPhone(phone)
   if (!normalizedPhone) {
-    return NextResponse.json(
-      { error: PHONE_ERROR },
-      { status: 400 },
-    )
+    const tPhone = await getTranslations({ locale, namespace: 'Phone' })
+    return NextResponse.json({ error: tPhone('invalid') }, { status: 400 })
   }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return BAD_REQUEST()
@@ -114,38 +133,59 @@ async function placeOrder(body: OrderBody): Promise<NextResponse> {
   // for productId, size, color and quantity.
   const ids = [...new Set(rawItems.map((item) => Number(item?.productId)))]
   if (ids.some((id) => !Number.isInteger(id) || id <= 0)) {
-    return NextResponse.json({ error: 'Невірні дані' }, { status: 400 })
+    return BAD_REQUEST()
   }
-  const found = await payload.find({
-    collection: 'products',
-    where: { id: { in: ids }, active: { equals: true } },
-    limit: ids.length,
-    depth: 0,
-    pagination: false,
-  })
+  // Ukrainian values (the default locale) for the order; the same products in every language for
+  // the colour mapping and the customer's own titles
+  const [found, localized] = await Promise.all([
+    payload.find({
+      collection: 'products',
+      where: { id: { in: ids }, active: { equals: true } },
+      limit: ids.length,
+      depth: 0,
+      pagination: false,
+    }),
+    payload.find({
+      collection: 'products',
+      where: { id: { in: ids } },
+      locale: 'all',
+      limit: ids.length,
+      depth: 0,
+      pagination: false,
+      select: { title: true, colorName: true },
+    }),
+  ])
   const productsById = new Map(found.docs.map((p) => [p.id, p]))
+  const localizedById = new Map(localized.docs.map((p) => [p.id, p as unknown as LocalizedFields]))
 
   // How many units of each size are already in the order (one product can
   // appear in the cart several times with different colors).
   const requested = new Map<string, number>()
 
   const items: CartItem[] = []
+  // Title and colour in the customer's language, for their email (same order as `items`)
+  const customerTitles: string[] = []
+  const customerColors: (string | undefined)[] = []
   for (const raw of rawItems) {
     const product = productsById.get(Number(raw.productId))
     const quantity = Number(raw.quantity)
     if (!product || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
-      return NextResponse.json(
-        { error: 'Товар недоступний або невірна кількість' },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: t('unavailable') }, { status: 400 })
     }
+    const translations = localizedById.get(product.id)
+    const ukTitle = product.title ?? ''
+    // The title in the customer's language, for the messages shown to them
+    const title = translations?.title?.[locale] || ukTitle
+    // The colour as the customer saw it (any language) → the Ukrainian name of the card's colour
+    const colorNames = Object.values(translations?.colorName ?? {}).filter(Boolean)
+    const color = raw.color && colorNames.includes(raw.color) ? (product.colorName ?? raw.color) : raw.color
 
     // The size must exist on the product, be in stock (lib/stock: empty stock = not in stock)
     // and the quantity must not exceed the stock.
     const sizeRow = product.sizes?.find((s) => s.value === raw.size)
     if (!sizeRow || !isSizeAvailable(sizeRow)) {
       return NextResponse.json(
-        { error: `Немає в наявності: ${product.title}${raw.size ? `, розмір ${raw.size}` : ''}` },
+        { error: raw.size ? t('outOfStockSize', { title, size: raw.size }) : t('outOfStock', { title }) },
         { status: 400 },
       )
     }
@@ -155,7 +195,7 @@ async function placeOrder(body: OrderBody): Promise<NextResponse> {
     if (total > (sizeRow.stock ?? 0)) {
       return NextResponse.json(
         {
-          error: `Недостатньо в наявності: ${product.title}, розмір ${sizeRow.value} (залишилось ${sizeRow.stock} шт.)`,
+          error: t('notEnough', { title, size: sizeRow.value, stock: sizeRow.stock ?? 0 }),
         },
         { status: 400 },
       )
@@ -164,22 +204,21 @@ async function placeOrder(body: OrderBody): Promise<NextResponse> {
     // The color must be one the product offers: the color card's own color
     // or one of the legacy colors array. Empty is allowed (products without colors).
     const productColors = [product.colorName, ...(product.colors ?? []).map((c) => c.name)].filter(Boolean)
-    if (raw.color && !productColors.includes(raw.color)) {
-      return NextResponse.json(
-        { error: `Колір недоступний: ${product.title}, ${raw.color}` },
-        { status: 400 },
-      )
+    if (color && !productColors.includes(color)) {
+      return NextResponse.json({ error: t('colorUnavailable', { title, color: raw.color ?? '' }) }, { status: 400 })
     }
 
     items.push({
       productId: String(product.id),
-      title: product.title,
+      title: ukTitle,
       price: product.price,
       slug: product.slug ?? '',
       size: raw.size,
-      color: raw.color,
+      color,
       quantity,
     })
+    customerTitles.push(title)
+    customerColors.push(raw.color)
   }
 
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -210,50 +249,63 @@ async function placeOrder(body: OrderBody): Promise<NextResponse> {
   const token = orderToken(order.id)
   const siteUrl = process.env.NEXT_PUBLIC_SERVER_URL
 
-  // Send the emails
-  const itemsHtml = items
-    .map(
-      (item) => `
-      <tr>
-        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.title)}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.size ?? '—')}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.color ?? '—')}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${item.price * item.quantity} грн.</td>
-      </tr>`,
-    )
-    .join('')
+  // Send the emails: the store's in Ukrainian, the customer's in the language of the site they ordered on
+  const ukLabels = await getTranslations({ locale: 'uk', namespace: 'OrderEmail' })
+  const customerLabels = await getTranslations({ locale, namespace: 'OrderEmail' })
+  const paymentUk = await getTranslations({ locale: 'uk', namespace: 'Payment' })
+  const paymentCustomer = await getTranslations({ locale, namespace: 'Payment' })
 
-  const orderTable = `
+  const renderOrder = (
+    l: typeof ukLabels,
+    payment: typeof paymentUk,
+    titles: string[],
+    colors: (string | undefined)[],
+  ) => {
+    const itemsHtml = items
+      .map(
+        (item, i) => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(titles[i] ?? item.title)}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(item.size ?? '—')}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${esc(colors[i] ?? item.color ?? '—')}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${l('amount', { value: item.price * item.quantity })}</td>
+      </tr>`,
+      )
+      .join('')
+
+    const orderTable = `
       <table style="width:100%;border-collapse:collapse;margin-top:16px">
         <thead>
           <tr style="background:#f5f5f5">
-            <th style="padding:8px;text-align:left">Товар</th>
-            <th style="padding:8px;text-align:left">Розмір</th>
-            <th style="padding:8px;text-align:left">Колір</th>
-            <th style="padding:8px;text-align:center">К-сть</th>
-            <th style="padding:8px;text-align:right">Сума</th>
+            <th style="padding:8px;text-align:left">${l('product')}</th>
+            <th style="padding:8px;text-align:left">${l('size')}</th>
+            <th style="padding:8px;text-align:left">${l('color')}</th>
+            <th style="padding:8px;text-align:center">${l('quantity')}</th>
+            <th style="padding:8px;text-align:right">${l('sum')}</th>
           </tr>
         </thead>
         <tbody>${itemsHtml}</tbody>
         <tfoot>
           <tr>
-            <td colspan="4" style="padding:8px;text-align:right"><b>Разом:</b></td>
-            <td style="padding:8px;text-align:right"><b>${totalPrice} грн.</b></td>
+            <td colspan="4" style="padding:8px;text-align:right"><b>${l('total')}</b></td>
+            <td style="padding:8px;text-align:right"><b>${l('amount', { value: totalPrice })}</b></td>
           </tr>
         </tfoot>
       </table>
   `
 
-  const details = `
-      <p><b>Ім'я:</b> ${esc(form.customerName)}</p>
-      <p><b>Телефон:</b> ${esc(form.phone)}</p>
-      ${form.email ? `<p><b>Email:</b> ${esc(form.email)}</p>` : ''}
-      <p><b>Місто:</b> ${esc(form.city)}</p>
-      <p><b>Відділення НП:</b> ${esc(form.novaPoshtaBranch)}</p>
-      <p><b>Оплата:</b> ${form.paymentMethod ? esc(paymentMethodLabel(form.paymentMethod)) : 'уточнити під час дзвінка'}</p>
-      ${form.comment ? `<p><b>Коментар:</b> ${esc(form.comment)}</p>` : ''}
+    const details = `
+      <p><b>${l('name')}</b> ${esc(form.customerName)}</p>
+      <p><b>${l('phone')}</b> ${esc(form.phone)}</p>
+      ${form.email ? `<p><b>${l('email')}</b> ${esc(form.email)}</p>` : ''}
+      <p><b>${l('city')}</b> ${esc(form.city)}</p>
+      <p><b>${l('branch')}</b> ${esc(form.novaPoshtaBranch)}</p>
+      <p><b>${l('payment')}</b> ${form.paymentMethod ? esc(payment(`${form.paymentMethod}.label`)) : l('paymentLater')}</p>
+      ${form.comment ? `<p><b>${l('comment')}</b> ${esc(form.comment)}</p>` : ''}
   `
+    return details + orderTable
+  }
 
   // The order is already saved: an email or SMS failure must not break the response to the customer
   // (otherwise they would retry and create a duplicate).
@@ -264,7 +316,14 @@ async function placeOrder(body: OrderBody): Promise<NextResponse> {
       to: notifyRecipients(),
       ...(form.email && { replyTo: form.email }),
       subject: `Нове замовлення #${order.id} — ${String(form.customerName).replace(/[\r\n]+/g, ' ')}`,
-      html: `<h2>Нове замовлення #${order.id}</h2>${details}${orderTable}`,
+      html: `<h2>Нове замовлення #${order.id}</h2>${
+        locale !== 'uk' ? `<p><b>Мова сайту:</b> ${locale.toUpperCase()}</p>` : ''
+      }${renderOrder(
+        ukLabels,
+        paymentUk,
+        items.map((item) => item.title),
+        items.map((item) => item.color),
+      )}`,
     },
     // Confirmation to the customer, a separate email so they do not see the store's notification addresses
     ...(form.email
@@ -272,16 +331,12 @@ async function placeOrder(body: OrderBody): Promise<NextResponse> {
           {
             to: [form.email],
             replyTo: notifyRecipients()[0],
-            subject: `Ваше замовлення #${order.id} — Mariya Underwear`,
+            subject: customerLabels('subject', { id: order.id }),
             html: `
-      <h2>Дякуємо за замовлення #${order.id}!</h2>
-      <p>${
-        form.paymentMethod === 'prepaid'
-          ? 'Ми звʼяжемося з вами найближчим часом, щоб підтвердити замовлення. Реквізити для оплати надішлемо після підтвердження — будь ласка, не переказуйте кошти раніше.'
-          : 'Ми звʼяжемося з вами найближчим часом, щоб підтвердити замовлення і спосіб оплати.'
-      }</p>
-      ${details}${orderTable}
-      ${siteUrl ? `<p style="margin-top:24px"><a href="${siteUrl}/order/${token}">Переглянути замовлення на сайті</a></p>` : ''}
+      <h2>${customerLabels('thanks', { id: order.id })}</h2>
+      <p>${form.paymentMethod === 'prepaid' ? customerLabels('prepaidText') : customerLabels('confirmText')}</p>
+      ${renderOrder(customerLabels, paymentCustomer, customerTitles, customerColors)}
+      ${siteUrl ? `<p style="margin-top:24px"><a href="${siteUrl}${localePath(locale)}/order/${token}">${customerLabels('viewOnSite')}</a></p>` : ''}
     `,
           },
         ]

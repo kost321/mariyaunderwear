@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
+import { useLocale, useTranslations } from 'next-intl'
 import { Check, Loader2, X } from 'lucide-react'
 import type { CartItem } from '@/types/shop'
-import { FOREIGN_PHONE_ERROR, normalizeUaPhone, PHONE_ERROR, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
-import { FIELD_ERRORS, focusFirstInvalid } from '@/lib/formErrors'
-import { newOrderKey, SERVER_ERROR, submitOrder } from '@/lib/submitOrder'
+import { normalizeUaPhone, UA_PHONE_PREFIX, uaPhoneDigits } from '@/lib/phone'
+import { focusFirstInvalid } from '@/lib/formErrors'
+import { newOrderKey, submitOrder } from '@/lib/submitOrder'
 import { CONTACTS, phoneHref } from '@/lib/contacts'
 import { colorLabel, formatPrice, shortProductTitle } from '@/lib/utils'
 import { usePhoneMask } from '@/hooks/usePhoneMask'
@@ -24,6 +25,12 @@ import { FormField } from '@/components/shop/FormField'
  * error stays under the button with the shop's phone. After the order the window says so itself.
  */
 export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClose: () => void; item: CartItem }) {
+  const t = useTranslations('QuickOrder')
+  const tPhone = useTranslations('Phone')
+  const tField = useTranslations('Fields')
+  const tOrder = useTranslations('Order')
+  const currency = useTranslations('Common')('currency')
+  const locale = useLocale()
   const [name, setName] = useState('')
   const [phoneValue, setPhoneValue] = useState(UA_PHONE_PREFIX)
   const [nameError, setNameError] = useState('')
@@ -39,7 +46,7 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
       setPhoneError('')
       setPhoneValue(next)
     },
-    () => setPhoneError(FOREIGN_PHONE_ERROR),
+    () => setPhoneError(tPhone('foreign')),
   )
 
   // Keyboard focus moves into the window and stays there until it closes
@@ -72,7 +79,9 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
   if (!open) return null
 
   const title = shortProductTitle(item.title)
-  const variant = [item.color && colorLabel(item.color), item.size, `${item.quantity} шт.`].filter(Boolean).join(' · ')
+  const variant = [item.color && colorLabel(item.color), item.size, t('pcs', { count: item.quantity })]
+    .filter(Boolean)
+    .join(' · ')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -80,8 +89,8 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
     // Both fields are checked at once (noValidate: the site's messages, not the browser's bubble)
     const nameMissing = !name.trim()
     const phoneWrong = !normalizeUaPhone(phoneValue)
-    setNameError(nameMissing ? FIELD_ERRORS.firstName : '')
-    setPhoneError(phoneWrong ? PHONE_ERROR : '')
+    setNameError(nameMissing ? tField('firstName') : '')
+    setPhoneError(phoneWrong ? tPhone('invalid') : '')
     if (nameMissing || phoneWrong) {
       focusFirstInvalid(panel.current)
       return
@@ -97,15 +106,17 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
           phone: phoneValue,
           city: '',
           novaPoshtaBranch: '',
+          // For the manager, so always Ukrainian
           comment: 'Швидке замовлення — уточнити деталі по телефону',
         },
         orderKey: orderKey.current,
-      })
+        locale,
+      }, { network: tOrder('networkError'), server: tOrder('serverError') })
       setOrderId(placed.orderId)
       setName('')
       setPhoneValue(UA_PHONE_PREFIX)
     } catch (e) {
-      setError(e instanceof Error && e.message ? e.message : SERVER_ERROR)
+      setError(e instanceof Error && e.message ? e.message : tOrder('serverError'))
     } finally {
       submitting.current = false
       setLoading(false)
@@ -132,7 +143,7 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
           type="button"
           onClick={onClose}
           className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full text-brown transition-colors hover:bg-cream hover:text-ink sm:right-3 sm:top-3"
-          aria-label="Закрити"
+          aria-label={t('close')}
         >
           <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
         </button>
@@ -143,26 +154,26 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
               <Check className="h-6 w-6" strokeWidth={1.75} aria-hidden />
             </span>
             <h2 id="quick-order-title" className="mt-4 font-serif text-2xl text-ink-text">
-              Дякуємо!
+              {t('thanks')}
             </h2>
-            <p className="mt-2 text-lg font-medium text-ink">Замовлення №{orderId} прийнято</p>
+            <p className="mt-2 text-lg font-medium text-ink">{t('accepted', { id: orderId })}</p>
             <p className="mx-auto mt-2 max-w-[340px] text-balance text-[15px] leading-6 text-brown">
-              Менеджер зателефонує найближчим часом, щоб уточнити доставку й оплату.
+              {t('thanksText')}
             </p>
             <button
               type="button"
               onClick={onClose}
               className="mt-6 flex h-12 w-full items-center justify-center rounded-card bg-ink text-[15px] text-white transition-colors hover:bg-ink/90"
             >
-              Продовжити покупки
+              {t('continue')}
             </button>
           </div>
         ) : (
           <form noValidate onSubmit={handleSubmit}>
             <h2 id="quick-order-title" className="pr-10 font-serif text-2xl text-ink-text">
-              Швидке замовлення
+              {t('title')}
             </h2>
-            <p className="mt-1 text-sm leading-6 text-brown">Менеджер зателефонує, щоб уточнити доставку й оплату.</p>
+            <p className="mt-1 text-sm leading-6 text-brown">{t('subtitle')}</p>
 
             {/* What is being ordered: the same line as in the cart */}
             <div className="mt-5 flex items-center gap-3 rounded-2xl bg-[#f4efeb] p-3">
@@ -173,12 +184,12 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
                 <p className="leading-5 text-ink">{title}</p>
                 <p className="mt-0.5 text-brown">{variant}</p>
               </div>
-              <p className="shrink-0 pr-1 text-sm font-medium tabular-nums text-ink">{formatPrice(item.price * item.quantity)}</p>
+              <p className="shrink-0 pr-1 text-sm font-medium tabular-nums text-ink">{formatPrice(item.price * item.quantity, currency)}</p>
             </div>
 
             <div className="mt-5 grid gap-4">
               <FormField
-                label="Імʼя"
+                label={t('name')}
                 required
                 autoComplete="name"
                 value={name}
@@ -189,7 +200,7 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
                 error={nameError}
               />
               <FormField
-                label="Телефон"
+                label={t('phone')}
                 required
                 type="tel"
                 inputMode="tel"
@@ -198,7 +209,7 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
                 value={phoneValue}
                 onChange={phone.onChange}
                 onBlur={() => {
-                  if (uaPhoneDigits(phoneValue) > 0 && !normalizeUaPhone(phoneValue)) setPhoneError(PHONE_ERROR)
+                  if (uaPhoneDigits(phoneValue) > 0 && !normalizeUaPhone(phoneValue)) setPhoneError(tPhone('invalid'))
                 }}
                 placeholder="+380 (__) ___ __ __"
                 error={phoneError}
@@ -214,19 +225,19 @@ export function QuickOrderModal({ open, onClose, item }: { open: boolean; onClos
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  Оформлюємо…
+                  {t('sending')}
                 </>
               ) : error ? (
-                'Спробувати ще раз'
+                t('retry')
               ) : (
-                'Замовити'
+                t('submit')
               )}
             </button>
             {error && (
               <div role="alert" className="mt-3 text-sm leading-6">
                 <p className="text-destructive">{error}</p>
                 <p className="mt-1 text-brown">
-                  Якщо не виходить, зателефонуйте нам:{' '}
+                  {t('callUs')}{' '}
                   <a
                     href={`tel:${phoneHref(CONTACTS.phone)}`}
                     className="whitespace-nowrap text-ink underline underline-offset-4 hover:no-underline"

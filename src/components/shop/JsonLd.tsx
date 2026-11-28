@@ -1,4 +1,5 @@
 import { CONTACTS } from '@/lib/contacts'
+import { localePath, type Locale } from '@/i18n/routing'
 
 /** Site origin without a trailing slash, for absolute URLs in structured data. */
 export const SITE_URL = (process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
@@ -16,8 +17,8 @@ export function JsonLd({ data }: { data: Record<string, unknown> }) {
   )
 }
 
-/** Breadcrumbs for search results: "Головна › Нічні сорочки › …". `url` is a site path. */
-export function breadcrumbsLd(items: { name: string; url: string }[]) {
+/** Breadcrumbs for search results: "Головна › Нічні сорочки › …". `url` is a site path without the language prefix. */
+export function breadcrumbsLd(items: { name: string; url: string }[], locale: Locale) {
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -25,7 +26,7 @@ export function breadcrumbsLd(items: { name: string; url: string }[]) {
       '@type': 'ListItem',
       position: i + 1,
       name: item.name,
-      item: `${SITE_URL}${item.url}`,
+      item: `${SITE_URL}${localePath(locale)}${item.url === '/' ? '' : item.url}`,
     })),
   }
 }
@@ -34,7 +35,8 @@ export function breadcrumbsLd(items: { name: string; url: string }[]) {
  * Home page: the store (name, logo, contacts, social profiles) and the site with its catalog search,
  * which Google can show as a search box under the result.
  */
-export function storeLd() {
+export function storeLd(locale: Locale) {
+  const home = `${SITE_URL}${localePath(locale)}`
   const sameAs = [CONTACTS.instagram, CONTACTS.tiktok].filter(Boolean)
   return {
     '@context': 'https://schema.org',
@@ -43,7 +45,7 @@ export function storeLd() {
         '@type': 'OnlineStore',
         '@id': `${SITE_URL}/#store`,
         name: 'Mariya Underwear',
-        url: `${SITE_URL}/`,
+        url: home,
         logo: `${SITE_URL}/brand/logo.jpg`,
         image: `${SITE_URL}/brand/og-image.png`,
         ...(CONTACTS.email && { email: CONTACTS.email }),
@@ -64,12 +66,12 @@ export function storeLd() {
         '@type': 'WebSite',
         '@id': `${SITE_URL}/#website`,
         name: 'Mariya Underwear',
-        url: `${SITE_URL}/`,
-        inLanguage: 'uk',
+        url: home,
+        inLanguage: locale,
         publisher: { '@id': `${SITE_URL}/#store` },
         potentialAction: {
           '@type': 'SearchAction',
-          target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/catalog?q={search_term_string}` },
+          target: { '@type': 'EntryPoint', urlTemplate: `${home}/catalog?q={search_term_string}` },
           'query-input': 'required name=search_term_string',
         },
       },

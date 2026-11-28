@@ -2,14 +2,18 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
 import { Search, X } from 'lucide-react'
 import type { SearchItem, SearchResponse } from '@/app/(frontend)/api/search/route'
-import { cn, formatPrice, isLightColor, plural } from '@/lib/utils'
+import { Link } from '@/i18n/navigation'
+import { localePath } from '@/i18n/routing'
+import { cn, formatPrice, isLightColor } from '@/lib/utils'
 
 const MIN_CHARS = 2
 
 function ResultRow({ item, onPick }: { item: SearchItem; onPick: () => void }) {
+  const t = useTranslations('Search')
+  const currency = useTranslations('Common')('currency')
   return (
     <li>
       <Link
@@ -25,7 +29,7 @@ function ResultRow({ item, onPick }: { item: SearchItem; onPick: () => void }) {
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm text-ink">{item.title}</span>
           <span className="mt-0.5 flex items-center gap-1.5 text-sm text-brown">
-            {formatPrice(item.price)}
+            {formatPrice(item.price, currency)}
             {item.hex && (
               <span
                 aria-hidden
@@ -36,7 +40,7 @@ function ResultRow({ item, onPick }: { item: SearchItem; onPick: () => void }) {
             {item.color && <span className="truncate text-brown">{item.color}</span>}
           </span>
         </span>
-        {!item.inStock && <span className="hidden shrink-0 text-xs text-brown sm:block">Немає в наявності</span>}
+        {!item.inStock && <span className="hidden shrink-0 text-xs text-brown sm:block">{t('outOfStock')}</span>}
       </Link>
     </li>
   )
@@ -48,6 +52,8 @@ function ResultRow({ item, onPick }: { item: SearchItem; onPick: () => void }) {
  * with the query. Closes on Esc, on a click outside and after picking a result.
  */
 export function HeaderSearch({ onClose }: { onClose: () => void }) {
+  const t = useTranslations('Search')
+  const locale = useLocale()
   const [q, setQ] = useState('')
   const [data, setData] = useState<SearchResponse | null>(null)
   const [loading, setLoading] = useState(false)
@@ -84,7 +90,9 @@ export function HeaderSearch({ onClose }: { onClose: () => void }) {
     const ctrl = new AbortController()
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: ctrl.signal })
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&locale=${locale}`, {
+          signal: ctrl.signal,
+        })
         if (res.ok) setData(await res.json())
       } catch {
         // aborted or offline: keep the previous results
@@ -96,7 +104,7 @@ export function HeaderSearch({ onClose }: { onClose: () => void }) {
       clearTimeout(timer)
       ctrl.abort()
     }
-  }, [query])
+  }, [query, locale])
 
   const catalogHref = `/catalog?q=${encodeURIComponent(query)}`
 
@@ -108,7 +116,7 @@ export function HeaderSearch({ onClose }: { onClose: () => void }) {
       <div ref={panel} id="header-search" className="absolute inset-x-0 top-full bg-white shadow-[0_16px_32px_-16px_rgba(64,56,52,0.35)]">
         <div className="container pb-6">
           {/* Plain GET form: Enter opens the full results in the catalog; the header closes the panel on navigation */}
-          <form action="/catalog" role="search" className="relative">
+          <form action={`${localePath(locale)}/catalog`} role="search" className="relative">
             <Search className="absolute left-5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-brown" strokeWidth={1.5} aria-hidden />
             <input
               ref={input}
@@ -116,8 +124,8 @@ export function HeaderSearch({ onClose }: { onClose: () => void }) {
               name="q"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Пошук товарів"
-              aria-label="Пошук товарів"
+              placeholder={t('placeholder')}
+              aria-label={t('placeholder')}
               autoComplete="off"
               className="h-[50px] w-full rounded-full bg-cream/70 pl-12 pr-12 text-sm text-ink placeholder:text-brown/70 focus:outline-none focus:ring-1 focus:ring-brown/40 [&::-webkit-search-cancel-button]:hidden"
             />
@@ -128,7 +136,7 @@ export function HeaderSearch({ onClose }: { onClose: () => void }) {
                   setQ('')
                   input.current?.focus()
                 }}
-                aria-label="Очистити"
+                aria-label={t('clear')}
                 className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-brown hover:bg-cream"
               >
                 <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
@@ -149,17 +157,17 @@ export function HeaderSearch({ onClose }: { onClose: () => void }) {
                   onClick={onClose}
                   className="mt-4 inline-flex h-10 items-center rounded-full border border-brown/40 px-5 text-sm text-brown transition-colors hover:border-ink hover:text-ink"
                 >
-                  Усі результати ({data.total} {plural(data.total, ['товар', 'товари', 'товарів'])})
+                  {t('allResults', { count: data.total })}
                 </Link>
               </div>
             )}
 
             {data && data.total === 0 && !loading && (
               <div className="mt-5">
-                <p className="text-sm text-ink">Нічого не знайдено за запитом «{query}»</p>
+                <p className="text-sm text-ink">{t('nothingFound', { query })}</p>
                 {data.suggestions.length > 0 && (
                   <>
-                    <p className="mt-4 text-sm text-brown">Є в наявності:</p>
+                    <p className="mt-4 text-sm text-brown">{t('inStock')}</p>
                     <ul className="mt-2 grid gap-1 md:grid-cols-2 md:gap-x-6">
                       {data.suggestions.map((item) => (
                         <ResultRow key={item.href} item={item} onPick={onClose} />

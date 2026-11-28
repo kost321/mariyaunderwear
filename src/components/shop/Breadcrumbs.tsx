@@ -1,5 +1,6 @@
 import { Fragment } from 'react'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 
 export type Crumb = { name: string; href?: string }
 
@@ -8,8 +9,9 @@ export type Crumb = { name: string; href?: string }
  * Pair it with breadcrumbsLd (components/shop/JsonLd) for Google.
  */
 export function Breadcrumbs({ items }: { items: Crumb[] }) {
+  const t = useTranslations('Common')
   return (
-    <nav aria-label="Хлібні крихти" className="text-xs text-brown">
+    <nav aria-label={t('breadcrumbs')} className="text-xs text-brown">
       {items.map((item, i) => (
         <Fragment key={item.name}>
           {i > 0 && ' / '}

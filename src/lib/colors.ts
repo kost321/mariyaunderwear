@@ -2,13 +2,23 @@
  * The one order of colours across the site, light to dark: hero swatches, the catalog colour filter
  * and the colour switch on the product page all follow it. Names are matched case-insensitively.
  * A colour missing from the list goes after the listed ones, alphabetically: add new colours here.
+ *
+ * Colour names are translated in the admin (Products.colorName is localized), so each place holds
+ * the Ukrainian name and its usual Polish and English translations.
  */
-export const COLOR_ORDER = ['молочний', 'чайна роза', 'бежевий', 'кавовий', 'синій', 'чорний']
+export const COLOR_ORDER: string[][] = [
+  ['молочний', 'mleczny', 'milky', 'milk'],
+  ['чайна роза', 'herbaciana róża', 'tea rose'],
+  ['бежевий', 'beżowy', 'beige'],
+  ['кавовий', 'kawowy', 'coffee'],
+  ['синій', 'granatowy', 'niebieski', 'blue', 'navy'],
+  ['чорний', 'czarny', 'black'],
+]
 
-const rank = (name: string | null | undefined): number => {
-  const i = COLOR_ORDER.indexOf((name ?? '').trim().toLowerCase())
-  return i === -1 ? COLOR_ORDER.length : i
-}
+const RANK = new Map(COLOR_ORDER.flatMap((names, i) => names.map((name) => [name, i] as const)))
+
+const rank = (name: string | null | undefined): number =>
+  RANK.get((name ?? '').trim().toLowerCase()) ?? COLOR_ORDER.length
 
 /** Comparator for Array.sort: by COLOR_ORDER, unknown colours alphabetically after it. */
 export function compareColors(a: string | null | undefined, b: string | null | undefined): number {

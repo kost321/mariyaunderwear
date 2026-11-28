@@ -1,0 +1,478 @@
+{
+  "Meta": {
+    "siteTitle": "Women's nightgowns and homewear — Mariya Underwear",
+    "siteDescription": "Mariya Underwear online store: women's nightgowns, pajamas, robes and sets. Made in Ukraine, delivered by Nova Poshta.",
+    "cartTitle": "Cart"
+  },
+  "Common": {
+    "currency": "UAH",
+    "close": "Close",
+    "toHome": "Home page",
+    "breadcrumbs": "Breadcrumbs",
+    "home": "Home",
+    "quantity": "Quantity",
+    "decrease": "Decrease quantity",
+    "increase": "Increase quantity",
+    "email": "Email",
+    "phone": "Phone",
+    "noPhoto": "Photo coming soon",
+    "prev": "Back",
+    "next": "Forward",
+    "skipToContent": "Skip to content",
+    "perItem": "{price} each"
+  },
+  "Totals": {
+    "subtotal": "Subtotal",
+    "delivery": "Delivery",
+    "deliveryCost": "at Nova Poshta rates",
+    "total": "Total"
+  },
+  "Fields": {
+    "firstName": "Enter your first name",
+    "lastName": "Enter your last name",
+    "emailRequired": "Enter your email",
+    "email": "Check the email address, for example name@example.com",
+    "city": "Enter your city",
+    "novaPoshtaBranch": "Enter the branch or parcel locker number",
+    "paymentMethod": "Choose a payment method"
+  },
+  "Payment": {
+    "prepaid": {
+      "label": "Prepayment to the seller's account",
+      "hint": "The manager will send the payment details once availability is confirmed"
+    },
+    "cod": {
+      "label": "Cash on delivery",
+      "hint": "Pay at the Nova Poshta branch when you collect the order"
+    }
+  },
+  "Order": {
+    "networkError": "Could not reach the server. Check your internet connection and try again: what you entered has been saved.",
+    "serverError": "The order could not be placed because of a server error. Please try again in a minute: what you entered has been saved."
+  },
+  "Footer": {
+    "toTop": "Back to top",
+    "contacts": "Contacts",
+    "cooperation": "Wholesale",
+    "care": "Care",
+    "offer": "Public offer agreement",
+    "privacy": "Privacy policy",
+    "delivery": "Payment, delivery, returns",
+    "customerCare": "Customer care",
+    "address": "Address",
+    "info": "Information",
+    "contactsAndSocial": "Contacts and social media"
+  },
+  "Header": {
+    "home": "Home",
+    "bestsellers": "Bestsellers",
+    "newArrivals": "New arrivals",
+    "catalog": "Catalog",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "menu": "Menu",
+    "categories": "Categories",
+    "toHome": "Mariya Underwear, home page",
+    "search": "Search",
+    "closeSearch": "Close search",
+    "cart": "Cart",
+    "cartCount": "Cart, items: {count}",
+    "instagram": "Follow us on Instagram",
+    "language": "Language"
+  },
+  "Search": {
+    "placeholder": "Search products",
+    "clear": "Clear",
+    "outOfStock": "Out of stock",
+    "allResults": "All results ({count, plural, one {# product} other {# products}})",
+    "nothingFound": "Nothing found for “{query}”",
+    "inStock": "In stock:"
+  },
+  "Store": {
+    "address": "12 Mazepy St, Sheptytskyi, Lviv Oblast, Ukraine, 80100",
+    "workHours": "Mon–Fri 09:00–18:00 (Kyiv time)",
+    "weekend": "Sat–Sun closed",
+    "wholesaleContact": "Mariya"
+  },
+  "Lightbox": {
+    "viewer": "Photo viewer",
+    "close": "Close",
+    "prev": "Previous photo",
+    "next": "Next photo"
+  },
+  "Home": {
+    "heroH1": "Women's nightgowns and homewear",
+    "heroTitle": "Tenderness every day",
+    "heroSubtitle": "Made in Ukraine. Sizes S–2XL",
+    "toCatalog": "Shop the catalog",
+    "colors": "Colors",
+    "colorCount": "{count, plural, one {# color} other {# colors}}",
+    "newArrivals": "New arrivals",
+    "seeAll": "See all",
+    "careTitle": "Garment care",
+    "careText": "The right care keeps the fabric soft and the garment in shape. A gentle wash at 30°, no bleach, dry flat — and your things will stay like new for a long time.",
+    "aboutTitle": "About the brand",
+    "about1": "Mariya Underwear is a Ukrainian brand of women's homewear and sleepwear.",
+    "about2": "We choose fabrics that feel good on the skin and pay close attention to fit, so our pieces are cosy every day — at home, asleep and while you rest.",
+    "instagram": "Follow us on Instagram →",
+    "fabrics": {
+      "silk": "Silk",
+      "cotton": "Cotton",
+      "micromodal": "Micromodal",
+      "viscose": "Viscose"
+    }
+  },
+  "Trust": {
+    "label": "Delivery, payment and returns",
+    "delivery": {
+      "title": "Nova Poshta delivery",
+      "text": "anywhere in Ukraine, at the carrier's rates"
+    },
+    "payment": {
+      "title": "Pay on delivery",
+      "text": "cash on delivery or prepayment to the seller's account"
+    },
+    "returns": {
+      "title": "Exchanges and returns",
+      "text": "within 14 days for unworn items"
+    },
+    "madeIn": {
+      "title": "Made in Ukraine",
+      "text": "Mariya Underwear is a Ukrainian homewear brand"
+    }
+  },
+  "Product": {
+    "noPhoto": "no photo",
+    "outOfStock": "Out of stock",
+    "photoOfZoom": "Photo {n} of {total}, zoom in",
+    "photo": "Photo {n}",
+    "added": "Added ✓",
+    "alreadyInCart": "Already in the cart",
+    "addToCart": "Add to cart",
+    "zoom": "Zoom in",
+    "sku": "SKU: {sku}",
+    "composition": "Composition: {value}",
+    "material": "Fabric:",
+    "color": "Color",
+    "colorSoldOut": "{name}, out of stock",
+    "selected": "{label} (selected)",
+    "size": "Size",
+    "chooseSize": "Choose a size",
+    "quantity": "Quantity",
+    "inCart": "{count} already in the cart",
+    "inCartAll": "{count} already in the cart, that is all we have",
+    "inCartMore": "{count} already in the cart, you can add {more} more",
+    "colorEnded": "This color is sold out. In stock:",
+    "oneClick": "Buy in one click",
+    "addedStatus": "Added to the cart",
+    "info": {
+      "care": "Care",
+      "delivery": "Delivery and payment",
+      "deliveryText": "By Nova Poshta anywhere in Ukraine, at the carrier's rates. Pay on delivery or prepay to the seller's account.",
+      "more": "Learn more",
+      "returns": "Exchanges and returns",
+      "returnsText": "Within 14 days if the item has not been worn.",
+      "howToReturn": "How to return"
+    },
+    "reviewsCount": "{count, plural, one {# review} other {# reviews}}"
+  },
+  "Legal": {
+    "edition": "Version of {date}",
+    "toc": "Contents",
+    "ukrainianOnly": "This document is available in Ukrainian only: it is the binding version under Ukrainian law. If you have any questions, please contact us and we will be glad to explain.",
+    "offerTitle": "Public offer agreement",
+    "offerDescription": "Terms of sale at the Mariya Underwear online store.",
+    "privacyTitle": "Privacy policy",
+    "privacyDescription": "How the Mariya Underwear online store collects, uses and protects personal data."
+  },
+  "Phone": {
+    "invalid": "Enter a Ukrainian phone number, for example +380 67 123 45 67",
+    "foreign": "A Ukrainian number is required: +380 and 9 digits"
+  },
+  "Contacts": {
+    "title": "Contacts",
+    "description": "Phone, email, social media and address of Mariya Underwear.",
+    "customerCare": "Customer care",
+    "wholesale": "Wholesale",
+    "email": "Email",
+    "hours": "Working hours",
+    "address": "Address",
+    "social": "Social media"
+  },
+  "Cooperation": {
+    "title": "Wholesale and partnerships",
+    "description": "PR, collaborations and B2B partnerships with Mariya Underwear: distribution, trade fairs, wholesale.",
+    "prText": "For collaborations, interviews and partnerships:",
+    "b2bText": "If you are interested in working with Mariya Underwear on distribution, trade fairs or wholesale, we would be glad to hear from you. Fill in the contact form or get in touch with us directly.",
+    "emailLabel": "Email:",
+    "phoneLabel": "Phone:",
+    "catalogText": "We will share our current catalog and tell you about the terms."
+  },
+  "CooperationForm": {
+    "error": "The form could not be sent. Please try again or email us.",
+    "thanks": "Thank you!",
+    "thanksText": "We have received your request and will get back to you soon.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "company": "Organization / company / shop",
+    "phone": "Phone",
+    "message": "What are you interested in?",
+    "messagePlaceholder": "For example: a wholesale order for a shop, a collaboration, a trade fair",
+    "sending": "Sending…",
+    "submit": "Send the form",
+    "consent": "required fields. By sending the form you agree to the <link>privacy policy</link>."
+  },
+  "Api": {
+    "invalid": "Invalid data",
+    "tooMany": "Too many attempts. Please try again later."
+  },
+  "Delivery": {
+    "title": "Payment, delivery, returns",
+    "description": "Nova Poshta delivery, payment and return terms at Mariya Underwear.",
+    "sections": {
+      "delivery": "Order delivery",
+      "payment": "Payment",
+      "returns": "Returns and refunds"
+    }
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "text1": "The link may be out of date or the address may have a typo.",
+    "text2": "Go back to the home page or browse the catalog.",
+    "toCatalog": "Go to the catalog"
+  },
+  "ErrorPage": {
+    "title": "Something went wrong",
+    "text": "A server error occurred. Try refreshing the page or come back a little later.",
+    "contact": "If the error keeps happening, message us on <instagram>Instagram</instagram> or call: <phone></phone>",
+    "retry": "Try again"
+  },
+  "OrderPage": {
+    "metaTitle": "Order received",
+    "deliveryLine": "Nova Poshta, {city}, branch {branch}",
+    "recipient": "Recipient",
+    "phone": "Phone",
+    "email": "Email",
+    "delivery": "Delivery",
+    "payment": "Payment",
+    "paymentLater": "to be agreed on the phone",
+    "comment": "Comment",
+    "title": "Thank you for your order",
+    "accepted": "Order no. {id} has been received",
+    "managerCall": "Our manager will call you shortly to confirm the order.",
+    "managerCallPayment": "Our manager will call you shortly to confirm the order and the payment method.",
+    "prepaidNote": "We will send the payment details after confirmation. Please do not transfer any money before that.",
+    "emailNote": "A confirmation with the order details will be sent to {email}.",
+    "continue": "Continue shopping",
+    "instagram": "Follow us on Instagram",
+    "items": "Your order",
+    "pcs": "{count} pcs",
+    "details": "Details"
+  },
+  "Catalog": {
+    "title": "Catalog",
+    "description": "The Mariya Underwear catalog: women's nightgowns, pajamas, robes and sets for home and sleep. Nova Poshta delivery.",
+    "bestsellers": "Bestsellers",
+    "bestsellersDescription": "Mariya Underwear bestsellers: the nightgowns, pajamas and homewear chosen most often. Nova Poshta delivery.",
+    "categoryDescription": "{title} by Mariya Underwear: women's homewear and sleepwear. Nova Poshta delivery across Ukraine.",
+    "categories": "Categories",
+    "all": "All products",
+    "count": "{count, plural, one {# product} other {# products}}",
+    "empty": {
+      "bestsellersSoon": "Bestsellers are coming soon",
+      "bestsellersSoonHint": "Meanwhile, take a look at the whole catalog.",
+      "noFilters": "No products match these filters",
+      "noFiltersHint": "Try removing some filters or browse the whole catalog.",
+      "queryFilters": "Nothing matches “{q}” with these filters",
+      "queryFiltersHint": "Try resetting the filters: the item may be available in another size or color.",
+      "inSection": "Nothing found for “{q}” in “{section}”",
+      "inSectionHint": "Across all products this search finds {count, plural, one {# product} other {# products}}.",
+      "query": "Nothing found for “{q}”",
+      "queryHint": "Check the spelling or try a shorter word, for example “nightgown”.",
+      "resetFilters": "Reset filters",
+      "searchAll": "Search all products",
+      "allProducts": "All products",
+      "inStock": "In stock"
+    }
+  },
+  "Filters": {
+    "title": "Filters",
+    "size": "Size",
+    "color": "Color",
+    "inStockOnly": "In stock only",
+    "material": "Fabric",
+    "price": "Price",
+    "fromValue": "from {value}",
+    "toValue": "to {value}",
+    "priceFrom": "Price from",
+    "priceTo": "Price to",
+    "apply": "OK",
+    "reset": "Reset filters",
+    "sort": "Sort",
+    "sortOptions": {
+      "new": "Newest first",
+      "price-asc": "Price: low to high",
+      "price-desc": "Price: high to low"
+    },
+    "search": "Search",
+    "searchLabel": "Search products",
+    "clearSearch": "Clear search"
+  },
+  "ProductPage": {
+    "notFound": "Product not found",
+    "metaDescription": "{title}: buy online at Mariya Underwear.",
+    "catalog": "Catalog",
+    "specs": "Specifications",
+    "related": "Frequently bought together"
+  },
+  "SizeChart": {
+    "title": "Size chart",
+    "close": "Close",
+    "selected": "selected"
+  },
+  "QuickOrder": {
+    "pcs": "{count} pcs",
+    "close": "Close",
+    "thanks": "Thank you!",
+    "accepted": "Order no. {id} has been received",
+    "thanksText": "Our manager will call you shortly to arrange delivery and payment.",
+    "continue": "Continue shopping",
+    "title": "Quick order",
+    "subtitle": "Our manager will call you to arrange delivery and payment.",
+    "name": "Name",
+    "phone": "Phone",
+    "sending": "Placing the order…",
+    "retry": "Try again",
+    "submit": "Order",
+    "callUs": "If it does not work, call us:"
+  },
+  "Cart": {
+    "empty": "Your cart is empty",
+    "emptyText": "Browse the catalog and add what you like: the items will stay here until you check out.",
+    "toCatalog": "Go to the catalog",
+    "steps": {
+      "label": "Checkout steps",
+      "done": "done",
+      "info": "Details",
+      "shipping": "Delivery",
+      "payment": "Payment"
+    },
+    "pcs": "{count} pcs",
+    "outOfStock": "Out of stock",
+    "noMore": "No more in stock",
+    "remove": "Remove from cart: {title}",
+    "quantityOf": "Quantity: {title}",
+    "removed": "Item removed",
+    "undo": "Undo",
+    "title": "Cart",
+    "items": "Items in the cart",
+    "continue": "Continue shopping",
+    "summary": "Summary",
+    "consent": "I agree to the <link>terms of the public offer agreement</link>",
+    "consentMissing": "Tick the box to continue",
+    "checkout": "Check out",
+    "removeSoldOut": "Remove the out-of-stock items from the cart",
+    "backToCart": "Back to the cart",
+    "checkoutTitle": "Checkout",
+    "yourOrder": "Your order",
+    "changeInCart": "Edit the cart",
+    "contacts": "Contact details",
+    "phone": "Phone",
+    "phoneHint": "Our manager will call you to confirm the order",
+    "email": "Email",
+    "recipient": "Recipient",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "latinName": "The name seems to be in Latin letters. For Nova Poshta it is better in Ukrainian, as in the passport",
+    "nameHint": "As in your passport",
+    "shippingTitle": "Nova Poshta delivery",
+    "city": "City",
+    "branch": "Branch no.",
+    "branchPlaceholder": "For example, 12",
+    "branchHint": "Branch or parcel locker number",
+    "comment": "Order comment",
+    "commentPlaceholder": "For example, a convenient time to call",
+    "review": "Check your details",
+    "contactsShort": "Contacts",
+    "deliverySummary": "Nova Poshta, {city}, branch {branch}",
+    "change": "Edit",
+    "paymentMethod": "Payment method",
+    "paymentNote": "Our manager will call you to confirm the order and the payment method. There is no online payment on the site.",
+    "sending": "Placing the order…",
+    "retry": "Try again",
+    "confirm": "Confirm the order",
+    "callUs": "If it does not work, call us:"
+  },
+  "OrderApi": {
+    "unavailable": "The product is unavailable or the quantity is invalid",
+    "outOfStock": "Out of stock: {title}",
+    "outOfStockSize": "Out of stock: {title}, size {size}",
+    "notEnough": "Not enough in stock: {title}, size {size} ({stock} left)",
+    "colorUnavailable": "Color unavailable: {title}, {color}"
+  },
+  "OrderEmail": {
+    "subject": "Your order #{id} — Mariya Underwear",
+    "thanks": "Thank you for your order #{id}!",
+    "prepaidText": "We will contact you shortly to confirm the order. We will send the payment details after confirmation — please do not transfer any money before that.",
+    "confirmText": "We will contact you shortly to confirm the order and the payment method.",
+    "viewOnSite": "View the order on the website",
+    "product": "Product",
+    "size": "Size",
+    "color": "Color",
+    "quantity": "Qty",
+    "sum": "Amount",
+    "total": "Total:",
+    "amount": "{value} UAH",
+    "name": "Name:",
+    "phone": "Phone:",
+    "email": "Email:",
+    "city": "City:",
+    "branch": "Nova Poshta branch:",
+    "payment": "Payment:",
+    "paymentLater": "to be agreed on the phone",
+    "comment": "Comment:"
+  },
+  "Reviews": {
+    "title": "Reviews",
+    "fitSummary": "Fit: {fit} ({count} of {of})",
+    "write": "Write a review",
+    "empty": "No reviews yet. Bought this piece? Tell us how you like it.",
+    "showMore": "Show {count, plural, one {# more review} other {# more reviews}}",
+    "moreOnInstagram": "More reviews on Instagram →",
+    "homeEmpty": "What our customers say about the fabrics, the fit and the delivery — in our pinned stories.",
+    "fromInstagram": "from Instagram",
+    "size": "Size {size}",
+    "openScreenshot": "Open the review screenshot",
+    "reply": "Reply from Mariya Underwear",
+    "viewOnInstagram": "View on Instagram",
+    "screenshotAlt": "Review by {author}",
+    "starsLabel": "Rated {value} out of 5",
+    "fit": {
+      "small": "Runs small",
+      "fits": "True to size",
+      "large": "Runs large"
+    }
+  },
+  "ReviewForm": {
+    "ratingError": "Give a rating from 1 to 5",
+    "textError": "Write a few words about the piece",
+    "error": "The review could not be sent. Please try again.",
+    "thanks": "Thank you for your review!",
+    "thanksText": "It will appear on the site as soon as we have checked it.",
+    "rating": "Your rating",
+    "ratingLabel": "{n} out of 5 — {word}",
+    "rating1": "Poor",
+    "rating2": "So-so",
+    "rating3": "Okay",
+    "rating4": "Good",
+    "rating5": "Excellent",
+    "name": "Name",
+    "text": "Review",
+    "textPlaceholder": "Fabric, fit, how it wears",
+    "fit": "How did the size fit?",
+    "sending": "Sending…",
+    "submit": "Send the review",
+    "consent": "Your review will appear after moderation. By sending it you agree to the <link>privacy policy</link>."
+  }
+}

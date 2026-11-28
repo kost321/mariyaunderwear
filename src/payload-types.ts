@@ -98,14 +98,14 @@ export interface Config {
   db: {
     defaultIDType: number;
   };
-  fallbackLocale: null;
+  fallbackLocale: ('false' | 'none' | 'null') | false | null | ('uk' | 'pl' | 'en') | ('uk' | 'pl' | 'en')[];
   globals: {
     settings: Setting;
   };
   globalsSelect: {
     settings: SettingsSelect<false> | SettingsSelect<true>;
   };
-  locale: null;
+  locale: 'uk' | 'pl' | 'en';
   widgets: {
     collections: CollectionsWidget;
   };
@@ -139,7 +139,10 @@ export interface UserAuthOperations {
  */
 export interface Product {
   id: number;
-  title: string;
+  /**
+   * Обов'язково українською. PL/EN — за бажанням: порожньо — на сайті буде українська назва.
+   */
+  title?: string | null;
   /**
    * Залиште порожнім — згенерується з назви.
    */
@@ -227,7 +230,10 @@ export interface Product {
  */
 export interface Category {
   id: number;
-  title: string;
+  /**
+   * Обов'язково українською. PL/EN — за бажанням: порожньо — на сайті буде українська назва.
+   */
+  title?: string | null;
   /**
    * Залиште порожнім — згенерується з назви.
    */
@@ -263,9 +269,9 @@ export interface Media {
 export interface Material {
   id: number;
   /**
-   * Напр. "Шовк", "Бавовна". Показується на сторінці товару та у фільтрі каталогу.
+   * Напр. "Шовк", "Бавовна". Показується на сторінці товару та у фільтрі каталогу. Обовʼязково українською; PL/EN — за бажанням.
    */
-  title: string;
+  title?: string | null;
   /**
    * Залиште порожнім — згенерується з назви.
    */

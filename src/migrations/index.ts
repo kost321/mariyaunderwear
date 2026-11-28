@@ -12,6 +12,7 @@ import * as migration_20261101_120000_materials from './20261101_120000_material
 import * as migration_20261101_150000_materials_care_text from './20261101_150000_materials_care_text';
 import * as migration_20261112_120000_products_bestseller from './20261112_120000_products_bestseller';
 import * as migration_20261121_120000_reviews from './20261121_120000_reviews';
+import * as migration_20261128_120000_localization from './20261128_120000_localization';
 
 export const migrations = [
   {
@@ -83,5 +84,10 @@ export const migrations = [
     up: migration_20261121_120000_reviews.up,
     down: migration_20261121_120000_reviews.down,
     name: '20261121_120000_reviews',
+  },
+  {
+    up: migration_20261128_120000_localization.up,
+    down: migration_20261128_120000_localization.down,
+    name: '20261128_120000_localization',
   },
 ];

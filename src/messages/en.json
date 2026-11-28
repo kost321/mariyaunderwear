@@ -134,7 +134,7 @@
     },
     "returns": {
       "title": "Exchanges and returns",
-      "text": "within 14 days for unworn items"
+      "text": "pyjamas within 14 days, other items can be checked at the post office"
     },
     "madeIn": {
       "title": "Made in Ukraine",
@@ -171,7 +171,7 @@
       "deliveryText": "By Nova Poshta anywhere in Ukraine, at the carrier's rates. Pay on delivery or prepay to the seller's account.",
       "more": "Learn more",
       "returns": "Exchanges and returns",
-      "returnsText": "Within 14 days if the item has not been worn.",
+      "returnsText": "Pyjamas: within 14 days if unworn. Other underwear can be checked at the Nova Poshta branch and refused if it doesn't fit.",
       "howToReturn": "How to return"
     },
     "reviewsCount": "{count, plural, one {# review} other {# reviews}}"

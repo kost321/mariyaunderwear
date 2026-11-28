@@ -134,7 +134,7 @@
     },
     "returns": {
       "title": "Wymiana i zwrot",
-      "text": "w ciągu 14 dni dla rzeczy bez śladów użytkowania"
+      "text": "piżamy — w ciągu 14 dni, resztę bielizny obejrzysz na poczcie"
     },
     "madeIn": {
       "title": "Wyprodukowano na Ukrainie",
@@ -171,7 +171,7 @@
       "deliveryText": "Nową Pocztą na terenie całej Ukrainy, według taryf przewoźnika. Płatność przy odbiorze lub przedpłata na konto sprzedawcy.",
       "more": "Więcej",
       "returns": "Wymiana i zwrot",
-      "returnsText": "W ciągu 14 dni, jeśli rzecz nie była używana.",
+      "returnsText": "Piżamy — w ciągu 14 dni, jeśli nie były używane. Pozostałą bieliznę możesz obejrzeć w oddziale Nowej Poczty i odmówić odbioru, jeśli nie pasuje.",
       "howToReturn": "Jak zwrócić"
     },
     "reviewsCount": "{count, plural, one {# opinia} few {# opinie} many {# opinii} other {# opinii}}"

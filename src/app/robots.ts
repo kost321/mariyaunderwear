@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { routing, localePath } from '@/i18n/routing'
+import { isProductionSite } from '@/lib/siteEnv'
 
 const base = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
@@ -19,6 +20,8 @@ const localizedDisallow = [
  * of the same catalog. Category pages stay open.
  */
 export default function robots(): MetadataRoute.Robots {
+  // Staging and local dev: closed entirely, no sitemap (see lib/siteEnv).
+  if (!isProductionSite()) return { rules: { userAgent: '*', disallow: '/' } }
   return {
     rules: {
       userAgent: '*',

@@ -87,7 +87,7 @@ The public part of the site, one branch per language (see "Multilingual site" ab
 - **`api/review/route.ts`**: review endpoint for the product page form: validates, rate-limits by IP, drops bots through a hidden `website` field, saves the review as `pending` and emails the owner a link to it in the admin (in Ukrainian; errors in the visitor's language). Reviews are stored as written, not translated; the fit answer is a key (`small`/`fits`/`large`) shown as `Reviews.fit.*`.
 - **`contacts`, `cooperation`, `delivery`, `oferta`, `privacy`**: info pages. The offer, the privacy policy and the delivery terms are Ukrainian only (the binding edition): on /pl and /en their titles are translated and a note says the text is in Ukrainian.
 - **`not-found.tsx`, `[...rest]/page.tsx`, `error.tsx`**: localized 404 and error screens.
-- **`src/app/robots.ts`, `src/app/sitemap.ts`**: `robots.txt` and `sitemap.xml` (every page in every language with hreflang).
+- **`src/app/robots.ts`, `src/app/sitemap.ts`**: `robots.txt` and `sitemap.xml` (every page in every language with hreflang). Outside production (`lib/siteEnv.ts`: staging, local dev) `robots.txt` is `Disallow: /` and every response carries `X-Robots-Tag: noindex` (`next.config.mjs`).
 
 ## Payload `src/app/(payload)/`
 
@@ -128,7 +128,8 @@ Standard Payload files that mount the admin UI and API into Next.js. Rarely edit
 | `catalog.ts` | In-memory catalog filters and facets; `availableFirst` puts orderable products ahead of sold-out ones (catalog and home) |
 | `media.ts` | `getMediaUrl`: builds a Cloudinary URL from a Media object |
 | `payload.ts` | Payload initialization for server code (Local API) |
-| `cloudinaryAdapter.ts` | Custom Payload storage adapter that uploads files to Cloudinary |
+| `cloudinaryAdapter.ts` | Custom Payload storage adapter that uploads files to Cloudinary. Outside production: uploads go to `olga-shop-dev`, deleting keeps the file (the account is shared with production) |
+| `siteEnv.ts` | `isProductionSite()`: true only when `NEXT_PUBLIC_SERVER_URL` is `mariyaunderwear.com` |
 | `slug.ts` | Slug generation with Cyrillic transliteration |
 | `torgsoftImport.ts` | Parses and applies a Torgsoft export |
 | `torgsoftImportEndpoint.ts` | `POST /api/torgsoft-import` (admins only) |

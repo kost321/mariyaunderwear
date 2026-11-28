@@ -5,8 +5,22 @@ import createNextIntlPlugin from 'next-intl/plugin'
 // Підключає src/i18n/request.ts (мова + словник для кожного запиту).
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
+// Same check as src/lib/siteEnv.ts: only the copy on the shop's domain may be indexed.
+const isProductionSite = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SERVER_URL ?? '').hostname === 'mariyaunderwear.com'
+  } catch {
+    return false
+  }
+})()
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Staging and local dev: every response says noindex, in case a link to them is found despite robots.txt.
+  async headers() {
+    if (isProductionSite) return []
+    return [{ source: '/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }]
+  },
   // Allowed next/image domains, redirects, headers, etc. are configured here.
   // Ukrainian lives at /ua (language code uk). If someone types /uk/… out of
   // habit, send them to /ua/…

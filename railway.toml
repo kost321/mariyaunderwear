@@ -3,6 +3,7 @@ builder = "nixpacks"
 
 [deploy]
 startCommand = "sh scripts/start.sh"
-healthcheckPath = "/"
+# "/" answers 307 (the language redirect of the middleware); Railway wants a 200, so the Ukrainian home page is checked
+healthcheckPath = "/ua"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
